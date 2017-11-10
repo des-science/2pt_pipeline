@@ -6,5 +6,5 @@ A collection of tools and modules for producing the 2pt data products and necess
 
  - https://github.com/joezuntz/2point/ (merge this with this repo?)
  - https://github.com/esheldon/fitsio
- - https://github.com/rmjarvis/TreeCorr/
- 
+ - https://github.com/rmjarvis/TreeCorr/ (to calculate 2pt functions, stage 2pt)
+ - https://bitbucket.org/timeifler/cosmolike (to calculate covariance, stage cov)
