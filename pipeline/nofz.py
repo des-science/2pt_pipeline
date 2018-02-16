@@ -32,14 +32,14 @@ class nofz(PipelineStage):
         """
         super(nofz,self).__init__(param_file)
 
-        # Load data
+        # Load data #Lucas: the magic happens here
         self.load_data()
         if 'pzbin_col' in self.gold.dtype.names:
             print 'ignoring any specified bins, since a bin column has been supplied in gold file'
 
         # Construct new weight and cache - move to catalog
         if 'weight' in self.pz.dtype.names:
-            self.weight = np.sqrt(self.pz['weight'] * self.shape['weight'])
+            self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #Lucas: every access to self.pz or shape columns should be replaced by an access of the hdf5 cat itself. Use functions from destest.
         else:
             self.weight = self.shape['weight']
         filename = self.output_path("weight")
@@ -235,7 +235,7 @@ class nofz(PipelineStage):
 
         return array
 
-    def load_data(self):
+    def load_data(self): #Lucas: modify here to read hdf5 files, modify also measure2pt.py
         """
         Load data files.
         """
