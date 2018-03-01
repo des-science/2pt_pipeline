@@ -7,6 +7,8 @@ from .stage import PipelineStage, NOFZ_NAMES
 import subprocess
 import os
 import warnings
+import destest
+import yaml
 
 class nofz(PipelineStage):
     name = "nofz"
@@ -31,15 +33,54 @@ class nofz(PipelineStage):
         Produces n(z)s from input catalogs.
         """
         super(nofz,self).__init__(param_file)
+        
+        print 'doing mcal selector'
+        #a first test with mcal:
+        mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
+        params_mcal = yaml.load(open(mcal_file))
+        params_mcal[mcal_file] = mcal_file
+        source_mcal = destest.H5Source(params_mcal)
+        selector_mcal = destest.Selector(params_mcal,source_mcal)
+        #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
+        print 'doing gold selector'
+        #test with gold:                                                                                                               
+        gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
+        params_gold = yaml.load(open(gold_file))
+        params_gold[gold_file] = gold_file
+        source_gold = destest.H5Source(params_gold)
+        selector_gold = destest.Selector(params_gold,source_gold)
+
+        print 'doing pz selector'
+        #test with photoz (bpz for now):                                                                                                       
+        pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
+        params_pz = yaml.load(open(pz_file))
+        params_pz[pz_file] = pz_file
+        source_pz = destest.H5Source(params_pz)
+        selector_pz = destest.Selector(params_pz,source_pz)
+
+
+        #params = yaml.load(open(param_file)) ... see inclued yaml param file for example of how to specify the metacal part of the h5 file.
+        #param_file should be destest.yaml, and need 3 copies of each of these , one for gold (maybe won't need), one for shape and one for photo-z
+        #maybe can get rid of the gold file at all, source means a catalog source, not necessarily SHAPES, so I'll need 2 sources, one for lenses, one for sources
+
+        #source = destest.H5Source(params)
+        #selector = destest.Selector(params,source)
+
+        print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
+        print 'output of selector_pz.get_col(weight)'
+        print selector_pz.get_col('weight')
+        
         # Load data #Lucas: the magic happens here
-        self.load_data()
+        self.load_data() #Lucas: maybe will have to get rid of this entirely
         if 'pzbin_col' in self.gold.dtype.names:
             print 'ignoring any specified bins, since a bin column has been supplied in gold file'
 
         # Construct new weight and cache - move to catalog
         if 'weight' in self.pz.dtype.names:
-            self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #Lucas: every access to self.pz or shape columns should be replaced by an access of the hdf5 cat itself. Use functions from destest.
+            print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
+            self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #my modification
+            #self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #Lucas: every access to self.pz or shape columns should be replaced by an access of the hdf5 cat itself. Use functions from destest. So this should be switched by selector.get_col(column_name)
         else:
             self.weight = self.shape['weight']
         filename = self.output_path("weight")
@@ -219,7 +260,7 @@ class nofz(PipelineStage):
             dtypes  += [('pzstack_'+str(i),'f8') for i in range(len(self.params['pdf_z']))]
 
         fits = fio.FITS(self.params[file])[-1]
-        array = fits.read(columns=[d[key] for key in keys])
+        array = fits.read(columns=[d[key] for key in keys]) #Lucas: somewhere around here?
 
         array = rename_fields(array,{v: k for k, v in d.iteritems()})
 
@@ -250,9 +291,14 @@ class nofz(PipelineStage):
         #     renames   = dict(zip(old_names, new_names))
         #     return rename_fields(arr, renames)
         t0 = time.time()
-
+        
+        
         self.gold      = self.load_array(col.gold_dict, 'goldfile')
         print 'Done goldfile',time.time()-t0,self.gold.dtype.names
+        
+        print self.gold #Lucas: test
+        print destest.Selector.get_col('goldfile') #Lucas: test
+
         self.shape     = self.load_array(col.shape_dict, 'shapefile')
         print 'Done shapefile',time.time()-t0,self.shape.dtype.names
         self.pz        = self.load_array(col.pz_bin_dict, 'photozfile')
