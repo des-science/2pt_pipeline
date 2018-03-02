@@ -38,7 +38,7 @@ class nofz(PipelineStage):
         #a first test with mcal:
         mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
         params_mcal = yaml.load(open(mcal_file))
-        params_mcal[mcal_file] = mcal_file
+        params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
         selector_mcal = destest.Selector(params_mcal,source_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
@@ -47,7 +47,7 @@ class nofz(PipelineStage):
         #test with gold:                                                                                                               
         gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
         params_gold = yaml.load(open(gold_file))
-        params_gold[gold_file] = gold_file
+        params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
         selector_gold = destest.Selector(params_gold,source_gold)
 
@@ -55,7 +55,7 @@ class nofz(PipelineStage):
         #test with photoz (bpz for now):                                                                                                       
         pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
-        params_pz[pz_file] = pz_file
+        params_pz['param_file'] = pz_file
         source_pz = destest.H5Source(params_pz)
         selector_pz = destest.Selector(params_pz,source_pz)
 
@@ -68,8 +68,8 @@ class nofz(PipelineStage):
         #selector = destest.Selector(params,source)
 
         print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
-        print 'output of selector_pz.get_col(weight)'
-        print selector_pz.get_col('weight')
+        print 'output of selector_mcal.get_col(unsheared/R11)'
+        print selector_mcal.get_col('sheared_1p/e1')
         
         # Load data #Lucas: the magic happens here
         self.load_data() #Lucas: maybe will have to get rid of this entirely
