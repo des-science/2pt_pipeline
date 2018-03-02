@@ -9,6 +9,8 @@ import os
 import warnings
 import destest
 import yaml
+import pdb
+import importlib
 
 class nofz(PipelineStage):
     name = "nofz"
@@ -33,6 +35,8 @@ class nofz(PipelineStage):
         Produces n(z)s from input catalogs.
         """
         super(nofz,self).__init__(param_file)
+        
+        #using a dictionary that changes names of columns in the hdf5 master catalog to simpler 
         
         print 'doing mcal selector'
         #a first test with mcal:
@@ -67,25 +71,34 @@ class nofz(PipelineStage):
         #source = destest.H5Source(params)
         #selector = destest.Selector(params,source)
 
-        print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
-        print 'output of selector_mcal.get_col(unsheared/R11)'
-        print selector_mcal.get_col('sheared_1p/e1')
-        
+        #print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
+        #print 'output of selector_mcal.get_col(something)'
+        #print selector_mcal.get_col('weight')
+        #pdb.set_trace()
+
         # Load data #Lucas: the magic happens here
         self.load_data() #Lucas: maybe will have to get rid of this entirely
+
+        #once we actually start using weights, use the few lines below
+        ''' 
         if 'pzbin_col' in self.gold.dtype.names:
             print 'ignoring any specified bins, since a bin column has been supplied in gold file'
 
         # Construct new weight and cache - move to catalog
         if 'weight' in self.pz.dtype.names:
             print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
-            self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #my modification
+            self.weight = np.sqrt(selector_pz.get_col('weight') * selector_mcal.get_col('weight')) #my modification
             #self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #Lucas: every access to self.pz or shape columns should be replaced by an access of the hdf5 cat itself. Use functions from destest. So this should be switched by selector.get_col(column_name)
         else:
             self.weight = self.shape['weight']
+        
         filename = self.output_path("weight")
         np.save(filename, np.vstack((self.gold['objid'], self.weight)).T)
         # deal with photo-z weights for lenses later...
+        '''
+
+
+
         # Setup binning
         if self.params['pdf_type']!='pdf': 
             self.z       = (np.linspace(0.,4.,401)[1:]+np.linspace(0.,4.,401)[:-1])/2.+1e-4 # 1e-4 for buzzard redshift files
@@ -103,7 +116,7 @@ class nofz(PipelineStage):
             self.binedges = self.params['zbins']
         else:
             self.tomobins = self.params['zbins']
-            self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask])
+            self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas:1st mod
 
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
