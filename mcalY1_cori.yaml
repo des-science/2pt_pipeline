@@ -18,7 +18,7 @@ shapefile      : /global/cscratch1/sd/troxel/finaly1cats/mcal-y1a1-combined-riz-
 lensfile       : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_higherlum_jointmask_0.15-0.9_magauto_mof_combo_removedupes_spt_fwhmi_exptimei_cut_badpix_sample_weighted2sig_sorted.fit #was .fits.gz, but that file does not exist in troxel's scratch
 randomfile     : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_higherlum_jointmask_0.15-0.9_magauto_mof_combo_removedupes_spt_fwhmi_exptimei_cut_badpix_randoms.fits.gz
 footprintfile  : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_higherlum_jointmask_0.15-0.9_magauto_mof_combo_removedupes_spt_fwhmi_exptimei_cut_badpix_mask.fits.gz
-dict_file      : dict_des_y1_mcal
+dict_file      : dict_des_y3_mcal
 oneplusm       : True
 has_sheared    : True
 dg             : 0.01

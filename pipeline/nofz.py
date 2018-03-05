@@ -38,8 +38,10 @@ class nofz(PipelineStage):
         
         #using a dictionary that changes names of columns in the hdf5 master catalog to simpler 
         
-        print 'doing mcal selector'
-        #a first test with mcal:
+        Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
+        print 'using dictionary: ',self.params['dict_file']
+                
+        print 'mcal selector'
         mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
         params_mcal = yaml.load(open(mcal_file))
         params_mcal['param_file'] = mcal_file
@@ -47,36 +49,31 @@ class nofz(PipelineStage):
         selector_mcal = destest.Selector(params_mcal,source_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
-        print 'doing gold selector'
-        #test with gold:                                                                                                               
+        print 'gold selector'
         gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
         params_gold = yaml.load(open(gold_file))
         params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
         selector_gold = destest.Selector(params_gold,source_gold)
 
-        print 'doing pz selector'
-        #test with photoz (bpz for now):                                                                                                       
+        print 'pz selector'
         pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
         params_pz['param_file'] = pz_file
+        if params_pz['group'][-3:] == 'bpz':
+            print "will use BPZ's column names"
+            Dict.pz_dict = Dict.bpz_dict
+        else:
+            print "will use DNF's column names"
+            Dict.pz_dict = Dict.dnf_dict
         source_pz = destest.H5Source(params_pz)
         selector_pz = destest.Selector(params_pz,source_pz)
 
 
-        #params = yaml.load(open(param_file)) ... see inclued yaml param file for example of how to specify the metacal part of the h5 file.
-        #param_file should be destest.yaml, and need 3 copies of each of these , one for gold (maybe won't need), one for shape and one for photo-z
-        #maybe can get rid of the gold file at all, source means a catalog source, not necessarily SHAPES, so I'll need 2 sources, one for lenses, one for sources
+        #print 'testing get_col(pzbin):\n'
+        #print selector_pz.get_col(Dict.pz_dict['pzbin'])
 
-        #source = destest.H5Source(params)
-        #selector = destest.Selector(params,source)
-
-        #print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
-        #print 'output of selector_mcal.get_col(something)'
-        #print selector_mcal.get_col('weight')
-        #pdb.set_trace()
-
-        # Load data #Lucas: the magic happens here
+        # Load data 
         self.load_data() #Lucas: maybe will have to get rid of this entirely
 
         #once we actually start using weights, use the few lines below
@@ -97,8 +94,7 @@ class nofz(PipelineStage):
         # deal with photo-z weights for lenses later...
         '''
 
-
-
+        
         # Setup binning
         if self.params['pdf_type']!='pdf': 
             self.z       = (np.linspace(0.,4.,401)[1:]+np.linspace(0.,4.,401)[:-1])/2.+1e-4 # 1e-4 for buzzard redshift files
@@ -116,8 +112,9 @@ class nofz(PipelineStage):
             self.binedges = self.params['zbins']
         else:
             self.tomobins = self.params['zbins']
-            self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas:1st mod
-
+            #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas:1st mod
+            self.binedges = self.find_bin_edges(selector_pz.get_col(Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
+            
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
                 self.lens_tomobins = len(self.params['lens_zbins']) - 1
@@ -309,8 +306,8 @@ class nofz(PipelineStage):
         self.gold      = self.load_array(col.gold_dict, 'goldfile')
         print 'Done goldfile',time.time()-t0,self.gold.dtype.names
         
-        print self.gold #Lucas: test
-        print destest.Selector.get_col('goldfile') #Lucas: test
+        #print self.gold #Lucas: test
+        #print destest.Selector.get_col('goldfile') #Lucas: test
 
         self.shape     = self.load_array(col.shape_dict, 'shapefile')
         print 'Done shapefile',time.time()-t0,self.shape.dtype.names
