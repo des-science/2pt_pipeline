@@ -125,7 +125,7 @@ class nofz(PipelineStage):
                 #self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) #Lucas: original
                 self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
                 #deal with lenses later
-        print '\n\npassed second part\n\n'
+        print 'passed second part\n\n'
         
         return
 
@@ -133,6 +133,7 @@ class nofz(PipelineStage):
 
     def run(self):
         
+        print 
         # Calculate source n(z)s and write to file
         if self.params['has_sheared']:
             pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin']),
