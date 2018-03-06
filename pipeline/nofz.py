@@ -12,6 +12,7 @@ import yaml
 import pdb
 import importlib
 
+
 class nofz(PipelineStage):
     name = "nofz"
     inputs = {}
@@ -36,9 +37,9 @@ class nofz(PipelineStage):
         """
         super(nofz,self).__init__(param_file)
         
-        #using a dictionary that changes names of columns in the hdf5 master catalog to simpler 
         
-        Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
+        #using a dictionary that changes names of columns in the hdf5 master catalog to simpler 
+        self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print 'using dictionary: ',self.params['dict_file']
                 
         print 'mcal selector'
@@ -46,7 +47,7 @@ class nofz(PipelineStage):
         params_mcal = yaml.load(open(mcal_file))
         params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
-        selector_mcal = destest.Selector(params_mcal,source_mcal)
+        self.selector_mcal = destest.Selector(params_mcal,source_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
         print 'gold selector'
@@ -54,7 +55,7 @@ class nofz(PipelineStage):
         params_gold = yaml.load(open(gold_file))
         params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
-        selector_gold = destest.Selector(params_gold,source_gold)
+        self.selector_gold = destest.Selector(params_gold,source_gold)
 
         print 'pz selector'
         pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
@@ -62,19 +63,17 @@ class nofz(PipelineStage):
         params_pz['param_file'] = pz_file
         if params_pz['group'][-3:] == 'bpz':
             print "will use BPZ's column names"
-            Dict.pz_dict = Dict.bpz_dict
+            self.Dict.pz_dict = self.Dict.bpz_dict
         else:
             print "will use DNF's column names"
-            Dict.pz_dict = Dict.dnf_dict
+            self.Dict.pz_dict = self.Dict.dnf_dict
         source_pz = destest.H5Source(params_pz)
-        selector_pz = destest.Selector(params_pz,source_pz)
+        self.selector_pz = destest.Selector(params_pz,source_pz)
+        #now you get columns by doing col=selector_pz.get_col(Dict.pz_dict['pzbin']) for instance
+        
 
-
-        #print 'testing get_col(pzbin):\n'
-        #print selector_pz.get_col(Dict.pz_dict['pzbin'])
-
-        # Load data 
-        self.load_data() #Lucas: maybe will have to get rid of this entirely
+        # Load data #comment it now as a test
+        #self.load_data() #Lucas: maybe will have to get rid of this entirely
 
         #once we actually start using weights, use the few lines below
         ''' 
@@ -107,13 +106,15 @@ class nofz(PipelineStage):
             self.z       = (self.binlow+self.binhigh)/2.
             self.dz      = self.binlow[1]-self.binlow[0]
 
+        print '\n\npassed first part\n\n'
+
         if hasattr(self.params['zbins'], "__len__"):
             self.tomobins = len(self.params['zbins']) - 1
             self.binedges = self.params['zbins']
         else:
             self.tomobins = self.params['zbins']
-            #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas:1st mod
-            self.binedges = self.find_bin_edges(selector_pz.get_col(Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
+            #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas: original
+            self.binedges = self.find_bin_edges(selector_pz.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
             
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
@@ -121,18 +122,31 @@ class nofz(PipelineStage):
                 self.lens_binedges = self.params['lens_zbins']
             else:
                 self.lens_tomobins = self.params['lens_zbins']
-                self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight'])
-
+                #self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) #Lucas: original
+                self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
+                #deal with lenses later
+        print '\n\npassed second part\n\n'
+        
         return
 
-    def run(self):
+        
 
+    def run(self):
+        
         # Calculate source n(z)s and write to file
         if self.params['has_sheared']:
-            pzbin = [self.pz['pzbin'],self.pz_1p['pzbin'],self.pz_1m['pzbin'],self.pz_2p['pzbin'],self.pz_2m['pzbin']]
+            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin']),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1p']),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1m']),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2p']),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2m'])]
+            #pzbin = [self.pz['pzbin'],self.pz_1p['pzbin'],self.pz_1m['pzbin'],self.pz_2p['pzbin'],self.pz_2m['pzbin']] #original
         else:
-            pzbin = self.pz['pzbin']
+            pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
+            #pzbin = self.pz['pzbin'] #original
+            
 
+        print '\n\npassed third part\n\n'
         
         if self.params['pdf_type']!='pdf':        
             zbin, self.nofz = self.build_nofz_bins(
