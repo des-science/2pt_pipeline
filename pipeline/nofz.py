@@ -133,21 +133,21 @@ class nofz(PipelineStage):
 
     def run(self):
         
-        print 
+        print '\n\nGetting to the buggy part:'
         # Calculate source n(z)s and write to file
         if self.params['has_sheared']:
             pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin']),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1p']),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1m']),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2p']),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2m'])]
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1p'],nosheared=False),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1m'],nosheared=False),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2p'],nosheared=False),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2m'],nosheared=False)]
             #pzbin = [self.pz['pzbin'],self.pz_1p['pzbin'],self.pz_1m['pzbin'],self.pz_2p['pzbin'],self.pz_2m['pzbin']] #original
         else:
             pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
             #pzbin = self.pz['pzbin'] #original
             
 
-        print '\n\npassed third part\n\n'
+        print '\n\npassed the buggy part\n\n'
         
         if self.params['pdf_type']!='pdf':        
             zbin, self.nofz = self.build_nofz_bins(
