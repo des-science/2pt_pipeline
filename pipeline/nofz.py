@@ -71,6 +71,8 @@ class nofz(PipelineStage):
         self.selector_pz = destest.Selector(params_pz,source_pz)
         #now you get columns by doing col=selector_pz.get_col(Dict.pz_dict['pzbin']) for instance
         
+        self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
+
 
         # Load data #comment it now as a test
         #self.load_data() #Lucas: maybe will have to get rid of this entirely
@@ -133,21 +135,27 @@ class nofz(PipelineStage):
 
     def run(self):
         
-        print '\n\nGetting to the buggy part:'
+        #print '\n\nGetting to the buggy part:'
+        #print "printing self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False).shape\n",len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False))
+        #print "printing self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True).shape\n",len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
+
+        
         # Calculate source n(z)s and write to file
+    
         if self.params['has_sheared']:
-            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin']),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1p'],nosheared=False),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_1m'],nosheared=False),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2p'],nosheared=False),
-                     self.selector_pz.get_col(self.Dict.pz_dict['pz_2m'],nosheared=False)]
+            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True),
+                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1p']],
+                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1m']],
+                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['2p']],
+                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['2m']]
+            ]
             #pzbin = [self.pz['pzbin'],self.pz_1p['pzbin'],self.pz_1m['pzbin'],self.pz_2p['pzbin'],self.pz_2m['pzbin']] #original
         else:
-            pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
+            pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True)
             #pzbin = self.pz['pzbin'] #original
             
 
-        print '\n\npassed the buggy part\n\n'
+        print 'passed third part\n\n'
         
         if self.params['pdf_type']!='pdf':        
             zbin, self.nofz = self.build_nofz_bins(

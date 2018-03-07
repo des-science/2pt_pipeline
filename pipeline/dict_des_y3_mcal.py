@@ -31,10 +31,10 @@ pz_bin_dict = {
 bpz_dict = {
     'objid' : 'coadd_object_id',
     'pzbin' : 'bpz_zmean_sof', #this will only work for 'catalog/bpz/unsheared'
-    'pz_1p' : 'bpz_zmean_sof_1p',
-    'pz_1m' : 'bpz_zmean_sof_1m',
-    'pz_2p' : 'bpz_zmean_sof_2p',
-    'pz_2m' : 'bpz_zmean_sof_2m'
+    #'pz_1p' : 'bpz_zmean_sof_1p',
+    #'pz_1m' : 'bpz_zmean_sof_1m',
+    #'pz_2p' : 'bpz_zmean_sof_2p',
+    #'pz_2m' : 'bpz_zmean_sof_2m'
 }
 
 dnf_dict = {
@@ -69,3 +69,11 @@ ran_dict = {
     'dec'           : 'DEC',
     'ranbincol'     : 'Z'
     }    
+
+index_dict = {
+    'u':0,
+    '1p':1,
+    '1m':2,
+    '2p':3,
+    '2m':4
+}
