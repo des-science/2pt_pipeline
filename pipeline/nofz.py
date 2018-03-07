@@ -79,9 +79,9 @@ class nofz(PipelineStage):
 
         #once we actually start using weights, use the few lines below
         S = len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
-        print S
+        #print S
         self.weight = np.ones(S)
-        print '\nweights done\n'
+        #print '\nweights done\n'
         ''' 
         if 'pzbin_col' in self.gold.dtype.names:
             print 'ignoring any specified bins, since a bin column has been supplied in gold file'
@@ -531,18 +531,22 @@ class nofz(PipelineStage):
             for i in range(zbins):
                 mask        =  (xbins == i)
                 if shape:
-                    mask = mask&self.mask
+                    #mask = mask&self.mask #forget this mask since get_col deals with it
                     if self.params['has_sheared']:
+                        
                         mask_1p = (xbins0[1] == i)&self.mask_1p
                         mask_1m = (xbins0[2] == i)&self.mask_1m
                         mask_2p = (xbins0[3] == i)&self.mask_2p
                         mask_2m = (xbins0[4] == i)&self.mask_2m
+                        
                         m1   = np.mean(self.shape['m1'][mask&self.mask])
                         m2   = np.mean(self.shape['m2'][mask&self.mask])
                         m1   += (np.mean(self.shape['e1'][mask_1p&self.mask_1p]) - np.mean(self.shape['e1'][mask_1m&self.mask_1m])) / (2.*self.params['dg'])
                         m2   += (np.mean(self.shape['e2'][mask_2p&self.mask_2p]) - np.mean(self.shape['e2'][mask_2m&self.mask_2m])) / (2.*self.params['dg'])
                         m1   = m1*np.ones(len(mask))
                         m2   = m2*np.ones(len(mask))
+                        
+                        
                     else:
                         m1 = self.shape['m1']
                         m2 = self.shape['m2']
