@@ -78,10 +78,15 @@ class nofz(PipelineStage):
         #self.load_data() #Lucas: maybe will have to get rid of this entirely
 
         #once we actually start using weights, use the few lines below
+        S = len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
+        print S
+        self.weight = np.ones(S)
+        print '\nweights done\n'
         ''' 
         if 'pzbin_col' in self.gold.dtype.names:
             print 'ignoring any specified bins, since a bin column has been supplied in gold file'
 
+        self.weight = np.sqrt(self.selector_pz.get_col('weight') * selector_mcal.get_col('weight'))
         # Construct new weight and cache - move to catalog
         if 'weight' in self.pz.dtype.names:
             print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
@@ -116,7 +121,7 @@ class nofz(PipelineStage):
         else:
             self.tomobins = self.params['zbins']
             #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas: original
-            self.binedges = self.find_bin_edges(selector_pz.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
+            self.binedges = self.find_bin_edges(self.selector_pz.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
             
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
@@ -161,14 +166,15 @@ class nofz(PipelineStage):
         #pdb.set_trace()
         if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
             zbin, self.nofz = self.build_nofz_bins(
-                               self.tomobins,#created in init
-                               self.binedges,#same
-                               pzbin,
-                               self.pz_nofz['pzstack'],
-                               self.params['pdf_type'],
-                               self.weight,
-                               shape=True)
-        else:
+                self.tomobins,#created in init
+                self.binedges,#same
+                pzbin,
+                #self.pz_nofz['pzstack'],#original line
+                self.selector_pz.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']],
+                self.params['pdf_type'],
+                self.weight,
+                shape=True)
+        else: #I don't know what happens if you fall here. Certainly the pipeline will fail
             pdfs = np.zeros((len(self.pz),len(self.z)))
             for i in range(len(self.z)):
                 pdfs[:,i] = self.pz['pzstack'+str(i)]
@@ -180,6 +186,9 @@ class nofz(PipelineStage):
                                self.params['pdf_type'],
                                self.weight,
                                shape=True)
+        
+        print '\n\n passed fourth part\n\n '
+        pdb.set_trace()
 
         self.get_sigma_e(zbin,self.tomobins,self.shape)
         self.get_neff(zbin,self.tomobins,self.shape)
@@ -498,18 +507,18 @@ class nofz(PipelineStage):
         """
 
         if shape&(self.params['has_sheared']):
-            if 'pzbin_col' in self.gold.dtype.names:
-                xbins = self.gold['pzbin_col']
-            else:
-                xbins0=[]
-                for x in bin_col:
-                    xbins0.append(np.digitize(x, edge, right=True) - 1)
-                xbins = xbins0[0]
+            #if 'pzbin_col' in self.gold.dtype.names:
+            #    xbins = self.gold['pzbin_col']
+            #else:
+            xbins0=[]
+            for x in bin_col:
+                xbins0.append(np.digitize(x, edge, right=True) - 1)
+            xbins = xbins0[0]
         else:
-            if 'pzbin_col' in self.gold.dtype.names:
-                xbins0 = self.gold['pzbin_col']
-            else:
-                xbins0 = np.digitize(bin_col, edge, right=True) - 1
+            #if 'pzbin_col' in self.gold.dtype.names:
+            #    xbins0 = self.gold['pzbin_col']
+            #else:
+            xbins0 = np.digitize(bin_col, edge, right=True) - 1
             xbins=xbins0
 
         # Stack n(z)
