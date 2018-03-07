@@ -48,6 +48,7 @@ class nofz(PipelineStage):
         params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
         self.selector_mcal = destest.Selector(params_mcal,source_mcal)
+        self.calibrator = MetaCalib(params_mcal,self.selector_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
         print 'gold selector'
@@ -122,6 +123,7 @@ class nofz(PipelineStage):
             self.tomobins = self.params['zbins']
             #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas: original
             self.binedges = self.find_bin_edges(self.selector_pz.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
+            print 'remind troxel to replace this function to use destest classes' #troxel: don't remove
             
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
@@ -538,19 +540,14 @@ class nofz(PipelineStage):
                         mask_1m = (xbins0[2] == i)&self.mask_1m
                         mask_2p = (xbins0[3] == i)&self.mask_2p
                         mask_2m = (xbins0[4] == i)&self.mask_2m
-                        
-                        m1   = np.mean(self.shape['m1'][mask&self.mask])
-                        m2   = np.mean(self.shape['m2'][mask&self.mask])
-                        m1   += (np.mean(self.shape['e1'][mask_1p&self.mask_1p]) - np.mean(self.shape['e1'][mask_1m&self.mask_1m])) / (2.*self.params['dg'])
-                        m2   += (np.mean(self.shape['e2'][mask_2p&self.mask_2p]) - np.mean(self.shape['e2'][mask_2m&self.mask_2m])) / (2.*self.params['dg'])
-                        m1   = m1*np.ones(len(mask))
-                        m2   = m2*np.ones(len(mask))
-                        
+
+                        weight *= self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        print 'check that theres no double weighting in final pipeline' #troxel: don't remove
                         
                     else:
                         m1 = self.shape['m1']
                         m2 = self.shape['m2']
-                    weight *= (m1+m2)/2.
+                        weight *= (m1+m2)/2.
                 nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight[mask])
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
@@ -640,12 +637,8 @@ class nofz(PipelineStage):
                 mask_2p = (zbin[3] == i)
                 mask_2m = (zbin[4] == i)
 
-                m1   = np.mean(cat['m1'][mask&self.mask])
-                m2   = np.mean(cat['m2'][mask&self.mask])
-                m1   += (np.mean(cat['e1'][mask_1p&self.mask_1p]) - np.mean(cat['e1'][mask_1m&self.mask_1m])) / (2.*self.params['dg'])
-                m2   += (np.mean(cat['e2'][mask_2p&self.mask_2p]) - np.mean(cat['e2'][mask_2m&self.mask_2m])) / (2.*self.params['dg'])
-                m1   = m1*np.ones(len(mask))
-                m2   = m2*np.ones(len(mask))
+                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+
             else:
                 mask = (zbin == i)
                 m1 = cat['m1']
@@ -658,7 +651,7 @@ class nofz(PipelineStage):
                 e1  = cat['e1'][mask]
                 e2  = cat['e2'][mask]
                 w   = cat['weight'][mask]
-                s   = (m1[mask]+m2[mask])/2.
+                s   = R
                 var = cat['cov00'][mask] + cat['cov11'][mask]
                 var[var>2] = 2.
             else:
@@ -720,16 +713,8 @@ class nofz(PipelineStage):
                 mask_2p = (zbin[3] == i)
                 mask_2m = (zbin[4] == i)
 
-                m1   = np.mean(cat['m1'][mask&self.mask])
-                m2   = np.mean(cat['m2'][mask&self.mask])
-                print 'rg',m1,m2
-                m1   += (np.mean(cat['e1'][mask_1p&self.mask_1p]) - np.mean(cat['e1'][mask_1m&self.mask_1m])) / (2.*self.params['dg'])
-                m2   += (np.mean(cat['e2'][mask_2p&self.mask_2p]) - np.mean(cat['e2'][mask_2m&self.mask_2m])) / (2.*self.params['dg'])
-                print 'rs',(np.mean(cat['e1'][mask_1p&self.mask_1p]) - np.mean(cat['e1'][mask_1m&self.mask_1m])) / (2.*self.params['dg']),(np.mean(cat['e2'][mask_2p&self.mask_2p]) - np.mean(cat['e2'][mask_2m&self.mask_2m])) / (2.*self.params['dg'])
-                m1   = m1*np.ones(len(mask))
-                m2   = m2*np.ones(len(mask))
-                print 'sn',i,np.sum(self.mask_1p),np.sum(self.mask_1m),np.sum(self.mask_2p),np.sum(self.mask_2m)
-                print 'sn',i,np.sum(mask_1p&self.mask_1p),np.sum(mask_1m&self.mask_1m),np.sum(mask_2p&self.mask_2p),np.sum(mask_2m&self.mask_2m)
+                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+
             else:
                 mask = (zbin == i)
                 m1 = cat['m1']
@@ -741,7 +726,7 @@ class nofz(PipelineStage):
                 e1  = cat['e1'][mask]
                 e2  = cat['e2'][mask]
                 w   = np.ones(len(cat[mask]))#cat['weight'][mask]
-                s   = (m1[mask]+m2[mask])/2.
+                s   = R
                 var = cat['cov00'][mask] + cat['cov11'][mask]
                 var[var>2] = 2.
             else:
