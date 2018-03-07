@@ -48,7 +48,7 @@ class nofz(PipelineStage):
         params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
         self.selector_mcal = destest.Selector(params_mcal,source_mcal)
-        self.calibrator = MetaCalib(params_mcal,self.selector_mcal)
+        self.calibrator = destest.MetaCalib(params_mcal,self.selector_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
         print 'gold selector'
