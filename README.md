@@ -16,3 +16,4 @@ stage_name is one of nofz, 2pt, cov, write_fits.
  - https://github.com/esheldon/fitsio
  - https://github.com/rmjarvis/TreeCorr/ (to calculate 2pt functions, stage 2pt)
  - https://bitbucket.org/timeifler/cosmolike (to calculate covariance, stage cov)
+ - https://github.com/des-science/destest/ (For Y3 improvements, using data source/selector classes there.)
