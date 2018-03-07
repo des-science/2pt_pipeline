@@ -143,7 +143,7 @@ class nofz(PipelineStage):
         # Calculate source n(z)s and write to file
     
         if self.params['has_sheared']:
-            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True),
+            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True),#nosheared=True is only the unsheared column
                      self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1p']],
                      self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1m']],
                      self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['2p']],
@@ -157,10 +157,12 @@ class nofz(PipelineStage):
 
         print 'passed third part\n\n'
         
-        if self.params['pdf_type']!='pdf':        
+        #print self.pz_nofz
+        #pdb.set_trace()
+        if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
             zbin, self.nofz = self.build_nofz_bins(
-                               self.tomobins,
-                               self.binedges,
+                               self.tomobins,#created in init
+                               self.binedges,#same
                                pzbin,
                                self.pz_nofz['pzstack'],
                                self.params['pdf_type'],
