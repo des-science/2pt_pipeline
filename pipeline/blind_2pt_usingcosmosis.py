@@ -1,17 +1,18 @@
 
 """"
-
+blind_2pt_usingcosmosis.py
 -------------------------------------------------------------------------
-This script is an attempt to re-implement some of the blinding code in a way that 
-is more flexible (read: less idosyncratic to tests I wrote while trying to learn
-the basics of how to work with the 3x2pt pipeline). The goal is to be able
-to blind using a cosmosis pipeline setup directly, so without having to pre-compute
-a bunch of blinding factors ahead of time. 
+This script will apply a blinding factor to 2pt functios stored in a fits file, using
+cosmosis to compute the blinding factors. 
 
 The workhorse function that puts everything together is do2ptblinding(). This script 
 can be called with command line arguments, or by calling that function in another script.
 
 The script uses cosmosis, so you'll need to  source its setup file before running this.
+
+Currently the angle ranges for the angular bins is hard coded in; look for "Passed check: 
+blinding factor and fits file have same angle values" to print to make sure you're applying
+factors at the right angles.
 ............................................................
 Arguments:
   -u, --origfits : name of unblinded fits file
@@ -58,6 +59,7 @@ from astropy.io import fits
 import hashlib
 import importlib
 import time
+from scipy.interpolate import interp1d
 
 #############################################################################
 # FUNCTIONS FOR GETTING SHIFT IN PARAMETER SPACE
@@ -127,44 +129,30 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,importfro
 
 
 # Generate 2pt funcs for set of params
-def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini',outf ='_TEMPOUTPUT_2pt.fits',deleteoutf = True):
+def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini'):
     """ 
-    Runs cosmosis pipeline to generate 2pt functions. In practice, saves them to a 
-    temporary output fits file, which it then reads and then deletes. 
+    Runs cosmosis pipeline to generate 2pt functions. 
 
     If a parameter value is passed through the dictionary pdict...
         ...and SHIFTS = False, the param it will be set to that value.
         ...and SHIFTS = True, the param will be shifted by that amount compared to values file
     Otherwise, it will be set to whatever value is in values file.
     
-    outf - is name of output fits file containing 2pt data
-    deleteoutf - (default True) tells script whether or not to delete the output file. 
-               Defaults to True since for blinding we don't want to hang onto the input 2pt files
-
     If a parameter value is passed through the dictionary pdict, it will be set to that value.
     Otherwise, it will be set to whatever value is in values file.
-
-    Output files will be put in outdir, fbase will be the start of the filenames. 
 
     Note that you'll need to source the cosmosis setup file before running this.
     """
     # # THINGS TO TEST
-    # #  - does this work? YES, it runs
-    # #  - does it matter if ini file is on test sampler or multinest?
+    # #  - does it matter if ini file is on test sampler or multinest? No
     # #  - check that blinding factor is applied as expected
-    # #  - does this work if we use the cosmosis-standard-library version of save_2pt instead of the 6x2pt version?
-    # #     no. The codes are different, but subtley enough that I can't quickly see why.
-    # #     will need to fix this if people want to work on other branches of cosmosi-des-library (this is for des_cmp_2pt)
-    # #     Can we edit this to not have to save and delete a fits file?
     
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
     from cosmosis.datablock.cosmosis_py import block
     ini=Inifile(inifile)
     print '     cosmosis ini object initialized from',inifile
-    #find savesample module to be able to edit filename
-    ini.set('save_2pt','filename',outf)
-    print 'outfile is set to',ini.get('save_2pt','filename')
+    #ini.set('fits_nz','nz_file',unblfile)
     
     pipeline = LikelihoodPipeline(ini)
     print '     cosmosis pipeline object initialized'
@@ -205,15 +193,185 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini',o
     print "RUNNING PIPELINE=============== [{0:s}]".format(time.strftime("%Y-%m-%d %H:%M"))
     data = pipeline.run_parameters([])
     print ' at end of run_cosmosis_togen_datavec [{0:s}]'.format(time.strftime("%Y-%m-%d %H:%M"))
+    twoptdict = get_twoptdict_from_pipelinedata(data)
 
-    #read in 2pt data
-    print 'looking for',outf,os.path.isfile(outf)
-    twoptdict = get_twoptdict_fromfits_1darrays(outf)
-    #delete outfile
-    if deleteoutf:
-        print "REMOVING",outf #test before using
-        os.remove(outf)
     return twoptdict
+
+#============================================================
+def get_twoptdict_from_pipelinedata(data):
+    """
+    Given datablock object returned by cosmosis pipeline.run_parameters([]),
+    get twopt data in a dictionary whose format matches what you'd get
+    if you saved to fits via save_2pt module and read it in with
+    get_twoptdict_fromfits_1darrays
+    """
+    # this theta handling is pulled from save_2pt.py
+    # hard coding this isn't ideal, but it'll work for now
+    theta_min = 2.5
+    theta_max = 250.
+    n_theta = 20
+    theta = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta+1, endpoint=True)
+    a = theta[:-1]
+    b = theta[1:]
+    theta = 2./3. * (b**3-a**3)/(b**2-a**2)
+    # ^ see Krause et al. methods paper for where this comes from
+    #print "Computing factors for theta=",theta
+
+    #these are the types
+    galaxy_position_fourier = "GPF"
+    galaxy_shear_emode_fourier = "GEF"
+    galaxy_shear_bmode_fourier = "GBF"
+    galaxy_position_real = "GPR"
+    galaxy_shear_plus_real = "G+R"
+    galaxy_shear_minus_real = "G-R"
+
+    #we don't apply any bin or angular cuts here. When we apply blinding factors
+    # we'll make sure bin numbers and angular bin numbers match up with those in the
+    # unblinded fits file. So, as long as the angular and z bin indices correpond to the
+    # same angles and bins, cuts will be handled in that stage.
+    
+    outdict = {}
+    if data.has_section('galaxy_xi'):
+        types = (galaxy_position_real,galaxy_position_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins,angbins = spectrum_array_from_block(data,'galaxy_xi',types,theta,True)
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins
+        outdict[ykey+'_angbins'] = angbins
+    if data.has_section('galaxy_shear_xi'):
+        types = (galaxy_position_real,galaxy_shear_plus_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins,angbins = spectrum_array_from_block(data,'galaxy_shear_xi',types,theta,True)
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins
+        outdict[ykey+'_angbins'] = angbins
+    if data.has_section('shear_xi'):
+        #xip
+        types = (galaxy_shear_plus_real,galaxy_shear_plus_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins,angbins = spectrum_array_from_block(data,'shear_xi',types,theta,True,bin_format = 'xiplus_{0}_{1}')
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins
+        outdict[ykey+'_angbins'] = angbins
+        #xim
+        types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins,angbins = spectrum_array_from_block(data,'shear_xi',types,theta,True,bin_format = 'ximinus_{0}_{1}')
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins
+        outdict[ykey+'_angbins'] = angbins
+            
+    return outdict
+
+#-----------------------------------------------            
+def spectrum_array_from_block(block, section_name, types,  angle_sample, real_space, bin_format = 'bin_{0}_{1}'):
+    """
+    Adapting this from save_2pt.py's spectrum_measurement_from_block
+
+    No scale cutting implemented. I think that this is ok, since the fits files 
+    currently contain data inside cut regions. Just need to cut out
+    bins that aren't in the arrays for the fits files. 
+
+    (as these 2pt dictionaries are set up, we don't track bin info, so
+     have to make sure they're in the same order.)
+    """
+
+    # for cross correlations we must save bin_ji as well as bin_ij.
+    # but not for auto-correlations. Also the numbers of bins can be different
+    is_auto = (types[0] == types[1])
+    if block.has_value(section_name, "nbin"):
+        nbin_a = block[section_name, "nbin"]
+    else:
+        nbin_a = block[section_name, "nbin_a"]
+        nbin_b = block[section_name, "nbin_b"]
+
+
+    #This is the ell values that have been calculated by cosmosis, not to
+    #be confused with the ell values at which we want to save the results
+    #(which is ell_sample)
+    if real_space:
+        # This is in radians
+        theory_angle = block[section_name, "theta"]
+        angle_sample_radians = np.radians(angle_sample/60.)
+    else:
+        theory_angle = block[section_name, "ell"]
+        angle_sample_radians = angle_sample
+
+    #This is the length of the sample values
+    n_angle_sample = len(angle_sample)
+    
+    #The fits format stores all the measurements
+    #as one long vector.  So we build that up here from the various
+    #bins that we will load in.  These are the different columns
+    value = []
+    angle = []
+    bin1 = []
+    bin2 = []
+    angular_bin = []
+        
+    #Bin pairs. Varies depending on auto-correlation
+    for i in xrange(nbin_a):
+        if is_auto:
+            jmax = i+1
+        else:
+            jmax = nbin_b
+        for j in xrange(jmax):
+            #if ((i,j) in bincuts) or (is_auto and (j,i) in bincuts):
+            #    print 'cutting out bin combo',i,j,' for ',section_name
+            #    continue
+                
+            #Load and interpolate from the block
+            cl = block[section_name, bin_format.format(i+1,j+1)]
+            #Convert arcmin to radians for the interpolation
+            cl_interp = SpectrumInterp(theory_angle, cl)
+            cl_sample = cl_interp(angle_sample_radians)
+            bin1.append(np.repeat(i + 1, n_angle_sample))
+            bin2.append(np.repeat(j + 1, n_angle_sample))
+            angular_bin.append(np.arange(n_angle_sample))
+            #Build up on the various vectors that we need
+            value.append(cl_sample)
+            angle.append(angle_sample)
+
+    #Convert all the lists of vectors into long single vectors
+    value = np.concatenate(value)
+    angle = np.concatenate(angle)
+    bin1 = np.concatenate(bin1)
+    bin2 = np.concatenate(bin2)
+    bins = (bin1,bin2)
+    angularbin = np.concatenate(angular_bin)
+
+    return angle, value, bins, angularbin
+
+#-----------------------------------------------        
+class SpectrumInterp(object):
+    """
+    This is copied from 2pt_like, for use in spectrum_array_from_block
+    """
+    def __init__(self,angle,spec,bounds_error=True):
+	if np.all(spec>0):
+	    self.interp_func=interp1d(np.log(angle),np.log(spec),bounds_error=bounds_error,fill_value=-np.inf)
+	    self.interp_type='loglog'
+	elif np.all(spec<0):
+	    self.interp_func=interp1d(np.log(angle),np.log(-spec),bounds_error=bounds_error,fill_value=-np.inf)
+	    self.interp_type='minus_loglog'
+	else:
+	    self.interp_func=interp1d(np.log(angle),spec,bounds_error=bounds_error,fill_value=0.)
+	    self.interp_type="log_ang"
+
+    def __call__(self,angle):
+	if self.interp_type=='loglog':
+	    spec=np.exp(self.interp_func(np.log(angle)))
+	elif self.interp_type=='minus_loglog':
+	    spec=-np.exp(self.interp_func(np.log(angle)))
+	else:
+	    assert self.interp_type=="log_ang"
+	    spec=self.interp_func(np.log(angle))
+        return spec
+
 
 #============================================================
 def get_twoptdict_fromfits_1darrays(fitsfile):
@@ -235,9 +393,13 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             xkey,ykey = get_dictkey_for_2pttype(type1,type2)
             xgrid = t.data['ANG']
             ygrid = t.data['VALUE']
+            bin1 = t.data['BIN1']
+            bin2 = t.data['BIN2']
+            angbins = t.data['ANGBIN']
             outdict[xkey] = xgrid
             outdict[ykey] = ygrid
-                        
+            outdict[ykey+'_bins'] = (bin1,bin2)
+            outdict[ykey+'_angbins'] = angbins
     h.close()
     return outdict 
 #============================================================
@@ -250,19 +412,19 @@ def get_factordict(refdict,shiftdict,bftype='add'):
              'add' : bf = - ref + shift
              'mult': bf = shift/ref
     """
-    ratiodict = {}
+    factordict = {}
     for key in refdict:
         end = key[key.rfind('_')+1:]
-        if end in ['ell','l','theta']:
-            ratiodict[key] = refdict[key]
+        if end in ['ell','l','theta','bins','angbins']:
+            factordict[key] = refdict[key]
         else:
             if bftype=='mult' or bftype=='multNOCS':
-                ratiodict[key] = shiftdict[key]/refdict[key]
+                factordict[key] = shiftdict[key]/refdict[key]
             elif bftype=='add':
-                ratiodict[key] = shiftdict[key] - refdict[key]
+                factordict[key] = shiftdict[key] - refdict[key]
             else:
                 raise ValueError('In get_factordict: blinding factor type not recognized')
-    return ratiodict
+    return factordict
 
 #===============================================================
 #   HELPER FUNCTIONS FOR WORKIGN WITH DICTS AND FITS FILES
@@ -343,7 +505,7 @@ def get_dictkey_for_2pttype(type1,type2):
         raise ValueError("Spectra type {0:s} - {1:s} not recognized.".format(type1,type2))
     return xkey,ykey
 #---------------------------------------     
-def get_data_from_dict_for_2pttype(type1,type2,datadict):
+def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,angbfits,datadict):
     """ Given strings identifying the type of 2pt data in a fits file 
     and a dictionary of 2pt data (i.e. the blinding factors), 
     returns the data from the dictionary matching those types."""
@@ -352,7 +514,25 @@ def get_data_from_dict_for_2pttype(type1,type2,datadict):
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
     xfromdict = datadict[xkey]
     yfromdict = datadict[ykey]
-    return xfromdict,yfromdict
+    binsdict = datadict[ykey+'_bins']
+    b1dict = binsdict[0]
+    b2dict = binsdict[1]
+    angbdict = datadict[ykey+'_angbins']
+
+    Nentries = bin1fits.size
+    xout = np.zeros(Nentries)
+    yout = np.zeros(Nentries)
+    for i in xrange(Nentries):
+        b1 = bin1fits[i]
+        b2 = bin2fits[i]
+        ab = angbfits[i]
+        whichind = (b1==b1dict)*(b2==b2dict)*(ab==angbdict)
+        xout[i] = xfromdict[whichind]
+        yout[i] = yfromdict[whichind]
+
+    #we want to return a subset of the 'fromdict' arrays
+    # for which the angular and z bins match the fits versions
+    return xout,yout
 
 #---------------------------------------
 def get_dictdat_tomatch_fitsdat(table,dictdata):
@@ -367,12 +547,20 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
         return
     type1 = table.header['QUANT1']
     type2 = table.header['QUANT2']
-    bin1fromfits = table.data['BIN1'] #which bin is quant1 from?
-    Nbin1 = np.max(bin1fromfits) #labels start at 1, not 0
-    bin2fromfits = table.data['BIN2'] #which bin is quant2 from?
-    Nbin2 = np.max(bin2fromfits)
+
+    bin1 = table.data['BIN1'] #which bin is quant1 from?
+    bin2 = table.data['BIN2'] #which bin is quant2 from?
+    angbin = table.data['ANGBIN'] #which angular bin is data from
     xfromfits = table.data['ANG']
-    xfromdict,yfromdict = get_data_from_dict_for_2pttype(type1,type2,dictdata)
+    xfromdict,yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,angbin,dictdata)
+
+    if np.all(xfromdict==xfromfits):
+        print "Passed check: blinding factor and fits file have same angle values."
+    else:
+        print "FAILED CHECK: blinding factor and fits file DO NOT have same angle values."
+        print '        fits file angles:',xfromfits
+        print '  blinding factor angles:',xfromdict
+        
     return yfromdict
 
 #############################################################################
@@ -495,9 +683,8 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     paramshifts = draw_paramshift(seedstring, importfrom = paramshift_module)
 
     #get blinding factors
-    deleteoutfs = True #would set to false for testing
-    refdict = run_cosmosis_togen_2ptdict(inifile = initemplate, outf = '_TEMP_ref_2pt.fits',deleteoutf = deleteoutfs)
-    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate, outf = '_TEMP_shifted_2pt.fits',deleteoutf = deleteoutfs)
+    refdict = run_cosmosis_togen_2ptdict(inifile = initemplate)
+    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate)
     factordict = get_factordict(refdict,shiftdict,bftype = bftype)
 
     #apply them
