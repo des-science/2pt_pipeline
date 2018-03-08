@@ -42,7 +42,7 @@ What it does:
 3. Collects the 2pt functions into dictionaries of a specific format 
    (see get_twoptdict_fromfits_1darrays). Deletes  new fits files from step 2 (no peeking!). 
 
-3. Take ratio between 2pt datavectors to get blinding factor, in same dictionary format.
+3. Take ratio or difference of 2pt datavectors to get blinding factor, in same dictionary format.
 
 4. Apply blinding factor to desired datafile, saving a new fits file with 
    string key in filename. 
@@ -57,6 +57,7 @@ import getopt, sys, shutil, os
 from astropy.io import fits
 import hashlib
 import importlib
+import time
 
 #############################################################################
 # FUNCTIONS FOR GETTING SHIFT IN PARAMETER SPACE
@@ -100,7 +101,7 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,importfro
     #do something convoluted to turn the string into a number that can be
     # used to seed numpy.random
     seedind = int(int(hashlib.md5(seedstring).hexdigest(),16)%1.e8)
-    numpy.random.seed(seedind)
+    np.random.seed(seedind)
     #do the paramter shifts
     if importfrom is None:
         params2shift = sorted(ranges.keys()) #sort to make sure it's always the same order
@@ -126,7 +127,7 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,importfro
 
 
 # Generate 2pt funcs for set of params
-def run_cosmosis_togen_2ptdict(pdict={},inifile='params_template.ini',outf ='_TEMPOUTPUT_2pt.fits',deleteoutf = True):
+def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini',outf ='_TEMPOUTPUT_2pt.fits',deleteoutf = True):
     """ 
     Runs cosmosis pipeline to generate 2pt functions. In practice, saves them to a 
     temporary output fits file, which it then reads and then deletes. 
@@ -147,45 +148,55 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='params_template.ini',outf ='_TE
 
     Note that you'll need to source the cosmosis setup file before running this.
     """
-    # THINGS TO TEST
-    #  - does this work?
-    #  - does it matter if ini file is on test sampler or multinest?
-    #  - check that blinding factor is applied as expected
-    #  - does this work if we use the cosmosis-standard-library version of save_2pt instead of the 6x2pt version?
-    #     no. The codes are different, but subtley enough that I can't quickly see why.
-    #     will need to fix this if people want to work on other branches of cosmosi-des-library (this is for des_cmp_2pt)
-    #     Can we edit this to not have to save and delete a fits file?
+    # # THINGS TO TEST
+    # #  - does this work? YES, it runs
+    # #  - does it matter if ini file is on test sampler or multinest?
+    # #  - check that blinding factor is applied as expected
+    # #  - does this work if we use the cosmosis-standard-library version of save_2pt instead of the 6x2pt version?
+    # #     no. The codes are different, but subtley enough that I can't quickly see why.
+    # #     will need to fix this if people want to work on other branches of cosmosi-des-library (this is for des_cmp_2pt)
+    # #     Can we edit this to not have to save and delete a fits file?
     
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
     from cosmosis.datablock.cosmosis_py import block
     ini=Inifile(inifile)
     print '     cosmosis ini object initialized from',inifile
+    #find savesample module to be able to edit filename
+    ini.set('save_2pt','filename',outf)
+    print 'outfile is set to',ini.get('save_2pt','filename')
+    
     pipeline = LikelihoodPipeline(ini)
     print '     cosmosis pipeline object initialized'
     
-    #find savesample module to be able to edit filename
-    ini.set('save_2pt','filename',outf)
-
-    SHIFT = pdict['SHIFT']
-    haveshifted = []
-    # set parameters as desired
+    
+    doshifts = len(pdict.keys())
+    if doshifts:
+        SHIFTS = pdict['SHIFTS']
+        haveshifted = []
+        # set parameters as desired
     for parameter in pipeline.parameters:
-        key = parameter.name
-        #set the values  
-        try:
-            if SHIFTS:
-                parameter.start = parameter.start + pdict[key]
-            else:
-                parameter.start = pdict[key]
-            haveshifted.append(key)
-        except:
-            pass
-        # need to set all of the parameters to be fixed for run_parameters([]) to work 
+        key = str(parameter)
+        #print 'working on parameter',key
+        
+        #set the values
+        if doshifts:
+            try:
+                if SHIFTS:
+                    parameter.start = parameter.start + pdict[key]
+                else:
+                    parameter.start = pdict[key]
+                haveshifted.append(key)
+            except:
+                #print '  no entry in pdict'
+                pass
+            
+        # need to set all of the parameters to be fixed for run_parameters([]) to work
         pipeline.set_fixed(parameter.section, parameter.name, parameter.start)
 
-    
-    if len(haveshifted)!= len(pdict.keys()) -1:
+    if doshifts:
+        print 'haveshifted',haveshifted
+    if doshifts and (len(haveshifted)!= len(pdict.keys()) -1):
         print "WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE."
         print "  asked for shifts in:",pdict.keys()
         print "  did shifts in:",haveshifted
@@ -196,6 +207,7 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='params_template.ini',outf ='_TE
     print ' at end of run_cosmosis_togen_datavec [{0:s}]'.format(time.strftime("%Y-%m-%d %H:%M"))
 
     #read in 2pt data
+    print 'looking for',outf,os.path.isfile(outf)
     twoptdict = get_twoptdict_fromfits_1darrays(outf)
     #delete outfile
     if deleteoutf:
@@ -220,10 +232,9 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             t = table
             type1 = t.header['QUANT1']
             type2 = t.header['QUANT2']
-            xkey,ykey = get_dictkey_for_2pttype(type2,type2)
+            xkey,ykey = get_dictkey_for_2pttype(type1,type2)
             xgrid = t.data['ANG']
             ygrid = t.data['VALUE']
-
             outdict[xkey] = xgrid
             outdict[ykey] = ygrid
                         
@@ -297,7 +308,7 @@ def get_dictkey_forcovname(covname):
     else:
         raise ValueError("Spectra type {0:s} not recognized in get_dictkey_forcovname.".format(covname))
 #---------------------------------------     
-def get_dictkey_for_2pttype(type2,type2):
+def get_dictkey_for_2pttype(type1,type2):
         #spectra type codes in fits file, under hdutable.header['quant1'] and quant2
     galaxy_position_fourier = "GPF"
     galaxy_shear_emode_fourier = "GEF"
@@ -309,7 +320,7 @@ def get_dictkey_for_2pttype(type2,type2):
     if type1==galaxy_position_fourier and type2 == galaxy_position_fourier:
         ykey = 'gal_gal_cl'
         xkey = 'gal_gal_l'
-    elif (type1==galaxy_shear_emode_fourier and type2 == galaxy_position_fourier)
+    elif (type2==galaxy_shear_emode_fourier and type1 == galaxy_position_fourier):
         ykey ='gal_shear_cl'
         xkey = 'gal_shear_l'
     elif (type1==galaxy_shear_emode_fourier and type2 == galaxy_shear_emode_fourier):
@@ -318,7 +329,7 @@ def get_dictkey_for_2pttype(type2,type2):
     elif type1==galaxy_position_real and type2 == galaxy_position_real:
         ykey = 'gal_gal_xi'
         xkey = 'gal_gal_theta'
-    elif (type1==galaxy_shear_plus_real and type2 == galaxy_position_real):
+    elif (type2==galaxy_shear_plus_real and type1 == galaxy_position_real):
         # not symmetric
         ykey = 'gal_shear_xi'
         xkey = 'gal_shear_theta'
@@ -338,10 +349,9 @@ def get_data_from_dict_for_2pttype(type1,type2,datadict):
     returns the data from the dictionary matching those types."""
     #spectra type codes in fits file, under hdutable.header['quant1'] and quant2
 
-    xkey,ykey = get_dictkey_for_2pttype(type2,type2)
+    xkey,ykey = get_dictkey_for_2pttype(type1,type2)
     xfromdict = datadict[xkey]
     yfromdict = datadict[ykey]
- 
     return xfromdict,yfromdict
 
 #---------------------------------------
@@ -487,7 +497,7 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     #get blinding factors
     deleteoutfs = True #would set to false for testing
     refdict = run_cosmosis_togen_2ptdict(inifile = initemplate, outf = '_TEMP_ref_2pt.fits',deleteoutf = deleteoutfs)
-    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate, outf = '_TEMP_shifted_2pt.fits',deleteoutf = deleteoutfs, SHIFTS=True)
+    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate, outf = '_TEMP_shifted_2pt.fits',deleteoutf = deleteoutfs)
     factordict = get_factordict(refdict,shiftdict,bftype = bftype)
 
     #apply them
@@ -507,7 +517,7 @@ if __name__=="__main__":
     unblindedfile = 'simulated_nobias_Y3cov.fits' #contains 2pt data to be blinded
                       # [set on command line with -u <fname> or --origfits <fname>]
 
-    initemplate = 'params_template.ini' #cosmosis pipeline for generating 2pt dat (needes save_2pt module!)
+    initemplate = 'blinding_params_template.ini' #cosmosis pipeline for generating 2pt dat (needes save_2pt module!)
     # ref cosmology will be set at whatever its values file is centered at
            # [set on command line with -i <fname> or --ini <fname>]
 
