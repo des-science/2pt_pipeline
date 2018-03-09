@@ -94,12 +94,6 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,importfro
     Make sure any parameters that are shifted here also appear in the 
     key check part of run_cosmosis_togen_2ptdict()
     """
-
-    #TO TEST:
-    # same string -> same parameter shifts?
-    # calling distribution from another file actualy works
-    # ssame string -> same shift when calling another file
-    
     #do something convoluted to turn the string into a number that can be
     # used to seed numpy.random
     seedind = int(int(hashlib.md5(seedstring).hexdigest(),16)%1.e8)
