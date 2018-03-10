@@ -662,8 +662,8 @@ class nofz(PipelineStage):
                 w[w > snvar**-2] = snvar**-2
                 print 'var',var.min(),var.max()
 
-            self.mean_e1.append(np.asscalar(np.average(cat['e1'][mask],weights=cat['weight'][mask])/np.average(m1[mask],weights=cat['weight'][mask])))
-            self.mean_e2.append(np.asscalar(np.average(cat['e2'][mask],weights=cat['weight'][mask])/np.average(m2[mask],weights=cat['weight'][mask])))
+            self.mean_e1.append(np.asscalar(np.average(cat['e1'][mask],weights=cat['weight'][mask])))
+            self.mean_e2.append(np.asscalar(np.average(cat['e2'][mask],weights=cat['weight'][mask])))
             a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
             a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
             b  = np.sum(w**2)
