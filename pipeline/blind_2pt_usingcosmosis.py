@@ -406,6 +406,7 @@ def get_factordict(refdict,shiftdict,bftype='add'):
              'add' : bf = - ref + shift
              'mult': bf = shift/ref
     """
+    #print bftype,'in get_factordict'
     factordict = {}
     for key in refdict:
         end = key[key.rfind('_')+1:]
@@ -413,15 +414,17 @@ def get_factordict(refdict,shiftdict,bftype='add'):
             factordict[key] = refdict[key]
         else:
             if bftype=='mult' or bftype=='multNOCS':
+                #print 'dividing!'
                 factordict[key] = shiftdict[key]/refdict[key]
             elif bftype=='add':
+                #print 'adding'
                 factordict[key] = shiftdict[key] - refdict[key]
             else:
                 raise ValueError('In get_factordict: blinding factor type not recognized')
     return factordict
 
 #===============================================================
-#   HELPER FUNCTIONS FOR WORKIGN WITH DICTS AND FITS FILES
+#   HELPER FUNCTIONS FOR WORKING WITH DICTS AND FITS FILES
 #  (Expects shear and number density data with these keys:)
 #===============================================================
 def get_2pttype_for_dictkey(dictkey):
@@ -463,6 +466,7 @@ def get_dictkey_forcovname(covname):
         xkey = 'gal_gal_theta'
     else:
         raise ValueError("Spectra type {0:s} not recognized in get_dictkey_forcovname.".format(covname))
+    return xkey,ykey
 #---------------------------------------     
 def get_dictkey_for_2pttype(type1,type2):
         #spectra type codes in fits file, under hdutable.header['quant1'] and quant2
@@ -584,14 +588,12 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                     d_blind = d_input*f, f = d_shift/d_ref, cov_bl = cov
     """
     # TO TEST:
-    # - does this run?
-    # - does filenaming work as expected?
     # - does applied blinding factor match what we expect?
-    #    for add, for mult, for multNOCS?
+    #    for add, for mult, for multNOCS?; multNOCS!=mult, which is bad
     # - does cov scaling match what we expect?
-
     
     print 'apply2ptblinding for',origfitsfile
+    print 'bftype',bftype
     # check whether data is already blinded and whether Nbins match
     for table in fits.open(origfitsfile): #look through tables to find 2ptdata
         if table.header.get('2PTDATA'): 
@@ -614,10 +616,13 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 
         # apply blinding factors 
         for table in hdulist: #look all tables
+            #workign here uncomment
             if table.header.get('2PTDATA'):
                 if bftype=='mult' or bftype=='multNOCS':
+                    print 'dividing!'
                     table.data['value'] *= get_dictdat_tomatch_fitsdat(table, factordict)
                 elif bftype=='add':
+                    print 'adding!'
                     table.data['value'] += get_dictdat_tomatch_fitsdat(table, factordict)
                 else:
                     raise ValueError('bftype {0:s} not recognized'.format(bftype))
@@ -628,20 +633,21 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                 Ndat = table.data.shape[0] #length of datavector
 
                 #get covmat info:
-                covmat = covtable.data
-                headerkeys = covtable.header.keys()
+                covmat = table.data
+                headerkeys = table.header.keys()
                 names = []
                 startinds =[]
                 for i in xrange(len(headerkeys)):
                     key = headerkeys[i]
                     if key[:5] == 'STRT_':
-                        startinds.append(covtable.header[key])
+                        startinds.append(table.header[key])
                     if key[:5] == 'NAME_':
-                        name = covtable.header[key]
+                        name = table.header[key]
                         names.append(name)
                 startinds.append(Ndat)
                 
                 bf = np.zeros(Ndat)
+                print names,startinds
                 for i,covname in enumerate(names):
                     starti = startinds[i]
                     endi = startinds[i+1]
@@ -671,7 +677,7 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
          and test modules, and in test module options set save_dir= to nothing
     unblinded fits - fits file containing unblinded data
     outfname - if passed, will be name of output file. If not passed, will defaulted to
-                [unblinded filename]_[seedstring].fits
+                [unblinded filename].[seedstring].fits
     """
     #get parameter shifts
     paramshifts = draw_paramshift(seedstring, importfrom = paramshift_module)
@@ -682,10 +688,9 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     factordict = get_factordict(refdict,shiftdict,bftype = bftype)
 
     #apply them
-    if outftag is None: #may set this for testing 
-        tagstr = ''
-    else:
-        tagstr = outftag+'_'
+    tagstr = bftype+'.'
+    if outftag is not None:
+        tagstr = outftag+'_'+tagstr
     apply2ptblinding_tofits(factordict, origfitsfile = unblindedfits, outfname = outfname, outftag = tagstr+seedstring, bftype = bftype)
     
 ##############################################################################
