@@ -50,7 +50,7 @@ What it does:
 
 -------------------------------------------------------------------------
 Script maintained by Jessica Muir (jlmuir@umich.edu).
-last update 3/7/18 (NEEDS SIGNIFICANT TESTING)
+last update 3/13/18 (NEEDS SIGNIFICANT TESTING)
 """
 
 import numpy as np
@@ -467,6 +467,27 @@ def get_dictkey_forcovname(covname):
     else:
         raise ValueError("Spectra type {0:s} not recognized in get_dictkey_forcovname.".format(covname))
     return xkey,ykey
+
+def get_covname_for2pttype(type1,type2):
+        #spectra type codes in fits file, under hdutable.header['quant1'] and quant2
+    galaxy_position_fourier = "GPF"
+    galaxy_shear_emode_fourier = "GEF"
+    galaxy_shear_bmode_fourier = "GBF"
+    galaxy_position_real = "GPR"
+    galaxy_shear_plus_real = "G+R"
+    galaxy_shear_minus_real = "G-R"
+    
+    if  type1==galaxy_position_real and type2 == galaxy_position_real:
+        return 'wtheta'
+    elif (type2==galaxy_shear_plus_real and type1 == galaxy_position_real):
+        return 'gammat'
+    elif (type1==galaxy_shear_plus_real and type2 == galaxy_shear_plus_real):
+        return 'xip'
+    elif (type1==galaxy_shear_minus_real and type2 == galaxy_shear_minus_real):
+        return 'xim'
+    else:
+        raise ValueError("Spectra type {0:s} - {1:s} not recognized in get_covname_for2pttype.".format(type1,type2))
+
 #---------------------------------------     
 def get_dictkey_for_2pttype(type1,type2):
         #spectra type codes in fits file, under hdutable.header['quant1'] and quant2
@@ -613,48 +634,58 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
         shutil.copyfile(origfitsfile,outfname)
 
         hdulist = fits.open(outfname,mode='update') #update lets us write over
-
+        covscaledict = {}
         # apply blinding factors 
         for table in hdulist: #look all tables
-            #workign here uncomment
             if table.header.get('2PTDATA'):
+                factor = get_dictdat_tomatch_fitsdat(table, factordict)
                 if bftype=='mult' or bftype=='multNOCS':
-                    print 'dividing!'
-                    table.data['value'] *= get_dictdat_tomatch_fitsdat(table, factordict)
+                    #print 'multiplying!'
+                    table.data['value'] *= factor
+                    if bftype=='mult': #store info about how to scale covmat
+                        type1 = table.header['QUANT1']
+                        type2 = table.header['QUANT2']
+                        cname = get_covname_for2pttype(type1,type2)
+                        covscaledict[cname] = factor
+                        print 'added entry to covscaledict:',cname
                 elif bftype=='add':
-                    print 'adding!'
-                    table.data['value'] += get_dictdat_tomatch_fitsdat(table, factordict)
+                    #print 'adding!'
+                    table.data['value'] += factor
                 else:
                     raise ValueError('bftype {0:s} not recognized'.format(bftype))
                 
                 #add new header entry to note that blinding has occurred, and what type
                 table.header['BLINDED'] = bftype
-            elif table.header.get('COVDATA') and bftype=='mult':
-                Ndat = table.data.shape[0] #length of datavector
+        #print 'covscaledict is',covscaledict
+        if bftype=='mult': #doc cov scaling
+            covmatname = "COVMAT"
+            table = hdulist[covmatname]
+            Ndat = table.data.shape[0] #length of datavector
 
-                #get covmat info:
-                covmat = table.data
-                headerkeys = table.header.keys()
-                names = []
-                startinds =[]
-                for i in xrange(len(headerkeys)):
-                    key = headerkeys[i]
-                    if key[:5] == 'STRT_':
-                        startinds.append(table.header[key])
-                    if key[:5] == 'NAME_':
-                        name = table.header[key]
-                        names.append(name)
-                startinds.append(Ndat)
+            #get covmat info:
+            covmat = table.data
+            headerkeys = table.header.keys()
+            names = []
+            startinds =[]
+            for i in xrange(len(headerkeys)):
+                key = headerkeys[i]
+                if key[:5] == 'STRT_':
+                    startinds.append(table.header[key])
+                if key[:5] == 'NAME_':
+                    name = table.header[key]
+                    names.append(name)
+            startinds.append(Ndat)
                 
-                bf = np.zeros(Ndat)
-                print names,startinds
-                for i,covname in enumerate(names):
-                    starti = startinds[i]
-                    endi = startinds[i+1]
-                    xkey,ykey = get_dictkey_forcovname(covname)
-                    bf[starti:endi] = factordict[ykey]
+            bf = np.zeros(Ndat)
+            #print names,startinds
+            for i,covname in enumerate(names):
+                starti = startinds[i]
+                endi = startinds[i+1]
+                bfi = covscaledict[covname]
+                #print i,covname, endi-starti,bfi.shape
+                bf[starti:endi] = bfi
                 # Do cov_new[i,j] = cov[i,j]*bf[i]*bf[j]     
-                table.data = bf.reshhape((bf.size,1))*table.data*bf
+            table.data = bf.reshape((bf.size,1))*table.data*bf
             #else:
             #    #print '-------\n',table.name,'\n-------\nNOT TWO POINT DATA'
             #    pass
