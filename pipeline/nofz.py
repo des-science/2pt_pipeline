@@ -508,6 +508,7 @@ class nofz(PipelineStage):
         Build an n(z), non-tomographic [:,0] and tomographic [:,1:].
         """
 
+        #R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Lucas: attempting to load mask here.
         if shape&(self.params['has_sheared']):
             #if 'pzbin_col' in self.gold.dtype.names:
             #    xbins = self.gold['pzbin_col']
@@ -533,10 +534,10 @@ class nofz(PipelineStage):
             for i in range(zbins):
                 mask        =  (xbins == i)
                 if shape:
-                    #mask = mask&self.mask #forget this mask since get_col deals with it
+                    #mask = mask&self.mask #Lucas: forget this mask since get_col deals with it
                     if self.params['has_sheared']:
                         
-                        mask_1p = (xbins0[1] == i)&self.mask_1p
+                        mask_1p = (xbins0[1] == i)&self.mask_1p #Lucas: Currently crashing here
                         mask_1m = (xbins0[2] == i)&self.mask_1m
                         mask_2p = (xbins0[3] == i)&self.mask_2p
                         mask_2m = (xbins0[4] == i)&self.mask_2m
@@ -713,7 +714,7 @@ class nofz(PipelineStage):
                 mask_2p = (zbin[3] == i)
                 mask_2m = (zbin[4] == i)
 
-                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Added by Troxel. Lucas: R will be the final mean response
 
             else:
                 mask = (zbin == i)
