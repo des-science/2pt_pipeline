@@ -537,10 +537,10 @@ class nofz(PipelineStage):
                     #mask = mask&self.mask #Lucas: forget this mask since get_col deals with it
                     if self.params['has_sheared']:
                         
-                        mask_1p = (xbins0[1] == i)&self.mask_1p #Lucas: Currently crashing here
-                        mask_1m = (xbins0[2] == i)&self.mask_1m
-                        mask_2p = (xbins0[3] == i)&self.mask_2p
-                        mask_2m = (xbins0[4] == i)&self.mask_2m
+                        mask_1p = (xbins0[1] == i)
+                        mask_1m = (xbins0[2] == i)
+                        mask_2p = (xbins0[3] == i)
+                        mask_2m = (xbins0[4] == i)
 
                         weight *= self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print 'check that theres no double weighting in final pipeline' #troxel: don't remove
