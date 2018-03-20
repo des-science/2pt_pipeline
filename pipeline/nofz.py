@@ -43,7 +43,8 @@ class nofz(PipelineStage):
         print 'using dictionary: ',self.params['dict_file']
                 
         print 'mcal selector'
-        mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
+        #mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
+        mcal_file = 'destest_mcal.yaml'
         params_mcal = yaml.load(open(mcal_file))
         params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
@@ -52,14 +53,16 @@ class nofz(PipelineStage):
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
         print 'gold selector'
-        gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
+        #gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
+        gold_file = 'destest_gold.yaml'
         params_gold = yaml.load(open(gold_file))
         params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
         self.selector_gold = destest.Selector(params_gold,source_gold)
 
         print 'pz selector'
-        pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
+        #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
+        pz_file = 'destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
         params_pz['param_file'] = pz_file
         if params_pz['group'][-3:] == 'bpz':
