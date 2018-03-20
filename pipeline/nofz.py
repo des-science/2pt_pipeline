@@ -177,6 +177,7 @@ class nofz(PipelineStage):
                 self.weight,
                 shape=True)
         else: #I don't know what happens if you fall here. Certainly the pipeline will fail
+            print '\nThe pipeline will certainly fail now...\n'
             pdfs = np.zeros((len(self.pz),len(self.z)))
             for i in range(len(self.z)):
                 pdfs[:,i] = self.pz['pzstack'+str(i)]
