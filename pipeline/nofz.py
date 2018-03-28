@@ -78,6 +78,10 @@ class nofz(PipelineStage):
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
 
+        snr = self.selector_mcal.get_col('snr')
+        for i in range(5):
+            print np.max(snr[i]),np.min(snr[i])
+
         # Load data #comment it now as a test
         #self.load_data() #Lucas: maybe will have to get rid of this entirely
 
@@ -151,20 +155,8 @@ class nofz(PipelineStage):
 
         
         # Calculate source n(z)s and write to file
+        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
     
-        if self.params['has_sheared']:
-            pzbin = [self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True),#nosheared=True is only the unsheared column
-                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1p']],
-                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['1m']],
-                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['2p']],
-                     self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False)[self.Dict.ind['2m']]
-            ]
-            #pzbin = [self.pz['pzbin'],self.pz_1p['pzbin'],self.pz_1m['pzbin'],self.pz_2p['pzbin'],self.pz_2m['pzbin']] #original
-        else:
-            pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True)
-            #pzbin = self.pz['pzbin'] #original
-            
-
         print 'passed third part\n\n'
         
         #print self.pz_nofz
@@ -546,14 +538,17 @@ class nofz(PipelineStage):
                         mask_2p = (xbins0[3] == i)
                         mask_2m = (xbins0[4] == i)
 
-                        weight *= self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        if len(weight)<=5:
+                            weight_ = weight[0]*self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        else:
+                            weight_ = weight*self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
                         print 'check that theres no double weighting in final pipeline' #troxel: don't remove
                         
                     else:
                         m1 = self.shape['m1']
                         m2 = self.shape['m2']
                         weight *= (m1+m2)/2.
-                nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight[mask])
+                nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
         # Stacking pdfs
