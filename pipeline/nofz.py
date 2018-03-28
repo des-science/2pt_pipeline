@@ -58,7 +58,7 @@ class nofz(PipelineStage):
         params_gold = yaml.load(open(gold_file))
         params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
-        self.selector_gold = destest.Selector(params_gold,source_gold)
+        self.selector_gold = destest.Selector(params_gold,source_gold,inheret=self.selector_mcal)
 
         print 'pz selector'
         #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
@@ -72,7 +72,7 @@ class nofz(PipelineStage):
             print "will use DNF's column names"
             self.Dict.pz_dict = self.Dict.dnf_dict
         source_pz = destest.H5Source(params_pz)
-        self.selector_pz = destest.Selector(params_pz,source_pz)
+        self.selector_pz = destest.Selector(params_pz,source_pz,inheret=self.selector_mcal)
         #now you get columns by doing col=selector_pz.get_col(Dict.pz_dict['pzbin']) for instance
         
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
