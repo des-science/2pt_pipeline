@@ -186,11 +186,12 @@ class nofz(PipelineStage):
                                shape=True)
         
         print '\n\n passed fourth part\n\n '
-        pdb.set_trace()
+        #pdb.set_trace()
 
         self.get_sigma_e(zbin,self.tomobins,self.shape)
         self.get_neff(zbin,self.tomobins,self.shape)
 
+        print '\n\n passed fifth part\n\n '
         if self.params['has_sheared']:
             zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m=zbin
             np.save(self.output_path("nz_source"), np.vstack((self.gold['objid'], zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m)).T)
