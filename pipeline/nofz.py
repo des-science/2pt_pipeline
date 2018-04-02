@@ -647,6 +647,10 @@ class nofz(PipelineStage):
 
         self.mean_e1 = []
         self.mean_e2 = []
+        self.sigma_e = []
+        self.sigma_ec = []
+        self.neff = []
+        self.neffc = []
         e1_  = self.selector_mcal.get_col(self.Dict.shape_dict['e1'],nosheared=True)[0]
         e2_  = self.selector_mcal.get_col(self.Dict.shape_dict['e2'],nosheared=True)[0]
         cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)[0]
