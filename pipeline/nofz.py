@@ -188,8 +188,8 @@ class nofz(PipelineStage):
         print '\n\n passed fourth part\n\n '
         #pdb.set_trace()
 
-        self.get_sigma_e(zbin,self.tomobins,self.shape)
-        self.get_neff(zbin,self.tomobins,self.shape)
+        self.get_sigma_e(zbin,self.tomobins)
+        self.get_neff(zbin,self.tomobins)
 
         print '\n\n passed fifth part\n\n '
         if self.params['has_sheared']:
@@ -212,7 +212,7 @@ class nofz(PipelineStage):
             ran_binning = np.digitize(self.randoms['ranbincol'], self.lens_binedges, right=True) - 1
             np.save(self.output_path("randoms"), ran_binning)
 
-            self.get_lens_neff(lens_zbin,self.lens_tomobins,self.lens)
+            self.get_lens_neff(lens_zbin,self.lens_tomobins)
 
 
     def write(self):
@@ -620,7 +620,7 @@ class nofz(PipelineStage):
 
         return r
 
-    def get_neff(self, zbin, tomobins, cat):
+    def get_neff(self, zbin, tomobins):
         """
         Calculate neff for catalog.
         """
@@ -674,7 +674,7 @@ class nofz(PipelineStage):
 
         return
 
-    def get_lens_neff(self, zbin, tomobins, cat):
+    def get_lens_neff(self, zbin, tomobins):
         """
         Calculate neff for catalog.
         """
@@ -694,7 +694,7 @@ class nofz(PipelineStage):
         return
 
 
-    def get_sigma_e(self, zbin, tomobins, cat):
+    def get_sigma_e(self, zbin, tomobins):
         """
         Calculate sigma_e for shape catalog.
         """
