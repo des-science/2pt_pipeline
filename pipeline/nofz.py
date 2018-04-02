@@ -274,13 +274,13 @@ class nofz(PipelineStage):
             "area": self.area,
             "repository_version:": find_git_hash(),
         }
-        if 'pzbin_col' in self.gold.dtype.names:
-            data["source_bins"] = "gold_file_bins"
+        #if 'pzbin_col' in self.gold.dtype.names:
+        #    data["source_bins"] = "gold_file_bins"
+        #else:
+        if type(self.binedges) is list:
+            data.update({ "source_bins" : self.binedges })
         else:
-            if type(self.binedges) is list:
-                data.update({ "source_bins" : self.binedges })
-            else:
-                data.update({ "source_bins" : self.binedges.tolist() })
+            data.update({ "source_bins" : self.binedges.tolist() })
 
         if self.params['lensfile'] != 'None':
             data.update({ "lens_neff" : self.lens_neff,
