@@ -193,7 +193,7 @@ class nofz(PipelineStage):
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
         lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
-        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)[0] #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
         #lens_weight = self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
         
         if self.params['lensfile'] != 'None':
@@ -556,7 +556,10 @@ class nofz(PipelineStage):
                         weight_ = weight*(m1+m2)/2.
                 else:
                     weight_ = lens_weight
-                nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                if np.isscalar(weight_):
+                    nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]))
+                else:
+                    nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
         # Stacking pdfs
