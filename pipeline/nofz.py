@@ -531,7 +531,8 @@ class nofz(PipelineStage):
         # MC Sample of pdf or redmagic (if redmagic, takes random draw from gaussian of width 0.01)
         if (pdf_type == 'sample') | (pdf_type == 'rm'):
             if pdf_type == 'rm':
-                stack_col = np.random.normal(stack_col, self.lens_pz['pzerr']*np.ones(len(stack_col)))
+                #stack_col = np.random.normal(stack_col, self.lens_pz['pzerr']*np.ones(len(stack_col)))
+                stack_col = np.random.normal(stack_col, self.selector_lens.get_col(self.Dict.lens_pz_dict['pzerr'])*np.ones(len(stack_col)))
             for i in range(zbins):
                 mask        =  (xbins == i)
                 if shape:
