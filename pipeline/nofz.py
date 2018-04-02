@@ -156,7 +156,6 @@ class nofz(PipelineStage):
         
         # Calculate source n(z)s and write to file
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'zbin length',len(pzbin)
     
         print 'passed third part\n\n'
         
@@ -186,8 +185,7 @@ class nofz(PipelineStage):
                                self.weight,
                                shape=True)
 
-            print 'zbin lenght',len(zbin)
-        
+
         print '\n\n passed fourth part\n\n '
         #pdb.set_trace()
 
@@ -656,7 +654,6 @@ class nofz(PipelineStage):
         for i in range(tomobins):
             if self.params['has_sheared']:
                 mask = (zbin[0] == i)
-                print 'mask',len(mask),len(zbin[0])
                 mask_1p = (zbin[1] == i)
                 mask_1m = (zbin[2] == i)
                 mask_2p = (zbin[3] == i)
@@ -670,7 +667,6 @@ class nofz(PipelineStage):
                 m2 = cat['m2']
 
             if self.params['has_sheared']:
-                print 'e1',len(e1_[0])
                 e1  = e1_[mask]
                 e2  = e2_[mask]
                 s   = R
