@@ -152,48 +152,47 @@ class nofz(PipelineStage):
         #print "printing self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True).shape\n",len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
         
         # Calculate source n(z)s and write to file
-        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
+#        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
     
-        print 'passed third part\n\n'
+
+
         
-        #print self.pz_nofz
-        #pdb.set_trace()
-        if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
-            zbin, self.nofz = self.build_nofz_bins(
-                self.tomobins,#created in init
-                self.binedges,#same
-                pzbin,
-                #self.pz_nofz['pzstack'],#original line
-                self.selector_pz.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']],
-                self.params['pdf_type'],
-                self.weight,
-                shape=True)
-        else: #I don't know what happens if you fall here. Certainly the pipeline will fail
-            print '\nThe pipeline will certainly fail now...\n'
-            pdfs = np.zeros((len(self.pz),len(self.z)))
-            for i in range(len(self.z)):
-                pdfs[:,i] = self.pz['pzstack'+str(i)]
-            zbin, self.nofz = self.build_nofz_bins(
-                               self.tomobins,
-                               self.binedges,
-                               pzbin,
-                               pdfs,
-                               self.params['pdf_type'],
-                               self.weight,
-                               shape=True)
+#        print 'passed third part\n\n'
+        
+#         if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
+#            zbin, self.nofz = self.build_nofz_bins(
+#                self.tomobins,#created in init
+#                self.binedges,#same
+#                pzbin,
+#                self.selector_pz.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']],
+#                self.params['pdf_type'],
+#                self.weight,
+#                shape=True)
+#        else: #I don't know what happens if you fall here. Certainly the pipeline will fail
+#            print '\nThe pipeline will certainly fail now...\n'
+#            pdfs = np.zeros((len(self.pz),len(self.z)))
+#            for i in range(len(self.z)):
+#                pdfs[:,i] = self.pz['pzstack'+str(i)]
+#            zbin, self.nofz = self.build_nofz_bins(
+#                               self.tomobins,
+#                               self.binedges,
+#                               pzbin,
+#                               pdfs,
+#                               self.params['pdf_type'],
+#                               self.weight,
+#                               shape=True)
 
-        print '\n\n passed fourth part\n\n '
-        #pdb.set_trace()
+#        print '\n\n passed fourth part\n\n '
 
-        self.get_sige_neff(zbin,self.tomobins)
-        self.zbin = zbin
+#        self.get_sige_neff(zbin,self.tomobins)
+#        self.zbin = zbin
 
         print '\n\n passed fifth part\n\n '
 
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
         lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
-        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)[0] #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
         #lens_weight = self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
         
         if self.params['lensfile'] != 'None':
@@ -555,7 +554,7 @@ class nofz(PipelineStage):
                         m2 = self.shape['m2']
                         weight_ = weight*(m1+m2)/2.
                 else:
-                    weight_ = lens_weight
+                    weight_ = weight
                 if np.isscalar(weight_):
                     nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]))
                 else:
