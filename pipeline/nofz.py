@@ -215,6 +215,7 @@ class nofz(PipelineStage):
             f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol']), self.lens_binedges, right=True) - 1
+            print 'ran_binning=',ran_binning
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
             f['nofz/ran_zbin'][:] = ran_binning
 
