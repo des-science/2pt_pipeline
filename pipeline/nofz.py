@@ -196,16 +196,16 @@ class nofz(PipelineStage):
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
         lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
-        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
                 
         if self.params['lensfile'] != 'None':
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
                                          self.lens_tomobins,
                                          self.lens_binedges,
-                                         lens_pzbin,#self.lens_pz['pzbin'],
-                                         lens_pzstack,#self.lens_pz['pzstack'],
+                                         lens_pzbin,
+                                         lens_pzstack,
                                          self.params['lens_pdf_type'],
-                                         lens_weight)#self.lens['weight'])
+                                         lens_weight)
             print '\n\nsaving...\n\n'
 
             f = h5py.File( self.output_path("nz_lens"), mode='r+')
