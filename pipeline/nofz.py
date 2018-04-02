@@ -78,9 +78,9 @@ class nofz(PipelineStage):
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
 
-        snr = self.selector_mcal.get_col('snr')
-        for i in range(5):
-            print np.max(snr[i]),np.min(snr[i])
+        # snr = self.selector_mcal.get_col('snr')
+        # for i in range(5):
+        #     print np.max(snr[i]),np.min(snr[i])
 
         # Load data #comment it now as a test
         #self.load_data() #Lucas: maybe will have to get rid of this entirely
@@ -671,11 +671,10 @@ class nofz(PipelineStage):
 
             if self.params['has_sheared']:
                 print 'e1',len(e1_[0])
-                e1  = self.selector_mcal.get_masked(e1_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-                e2  = self.selector_mcal.get_masked(e2_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                e1  = e1_[mask]
+                e2  = e2_[mask]
                 s   = R
-                var = self.selector_mcal.get_masked(cov00_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-                + self.selector_mcal.get_masked(cov11_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                var = cov00_[mask]+cov11_[mask]
                 var[var>2] = 2.
             else:
                 e1  = cat['e1'][mask]
