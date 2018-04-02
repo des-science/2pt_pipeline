@@ -649,10 +649,10 @@ class nofz(PipelineStage):
 
         self.mean_e1 = []
         self.mean_e2 = []
-        e1_  = self.selector_mcal.get_col(self.Dict.shape_dict['e1'],nosheared=True)
-        e2_  = self.selector_mcal.get_col(self.Dict.shape_dict['e2'],nosheared=True)
-        cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)
-        cov11_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov11'],nosheared=True)
+        e1_  = self.selector_mcal.get_col(self.Dict.shape_dict['e1'],nosheared=True)[0]
+        e2_  = self.selector_mcal.get_col(self.Dict.shape_dict['e2'],nosheared=True)[0]
+        cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)[0]
+        cov11_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov11'],nosheared=True)[0]
         for i in range(tomobins):
             if self.params['has_sheared']:
                 mask = (zbin[0] == i)
