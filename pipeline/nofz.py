@@ -188,8 +188,8 @@ class nofz(PipelineStage):
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
             print 'zbin_,zname=',zbin_,zname
-            f.create_dataset( 'nofz/'+zname, maxshape=(len(2*len(zbin_)),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
-            f['nofz/'+zname] = zbin_
+            f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(1000000,) )
+            f['nofz/'+zname][:] = zbin_
         f.close()
 
         print '\n\n passed fifth part\n\n '
@@ -211,11 +211,11 @@ class nofz(PipelineStage):
 
             f = h5py.File( self.output_path("nz_lens"), mode='r+')
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=self.lens_zbin.dtype, chunks=(1000000,) )
-            f['nofz/lens_zbin'] = lens_zbin
+            f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol']), self.lens_binedges, right=True) - 1
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
-            f['nofz/ran_zbin'] = ran_binning
+            f['nofz/ran_zbin'][:] = ran_binning
 
             f.close()
 
