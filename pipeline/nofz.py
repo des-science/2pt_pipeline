@@ -158,7 +158,7 @@ class nofz(PipelineStage):
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
         print 'passed third part\n\n'
         
-         if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
+        if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
             zbin, self.nofz = self.build_nofz_bins(
                 self.tomobins,#created in init
                 self.binedges,#same
@@ -185,11 +185,11 @@ class nofz(PipelineStage):
 
         self.get_sige_neff(zbin,self.tomobins)
 
-         f = h5py.File( self.output_path("nz_source"), mode='w')
-         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
-             f.create_dataset( 'nofz/'+zname, maxshape=(len(self.selector_mcal.mask_),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
-             f['nofz/'+zname] = zbin_
-         f.close()
+        f = h5py.File( self.output_path("nz_source"), mode='w')
+        for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
+            f.create_dataset( 'nofz/'+zname, maxshape=(len(self.selector_mcal.mask_),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
+            f['nofz/'+zname] = zbin_
+        f.close()
 
         print '\n\n passed fifth part\n\n '
 
