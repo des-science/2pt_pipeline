@@ -12,7 +12,7 @@ import destest
 import yaml
 import pdb
 import importlib
-
+import h5py
 
 class nofz(PipelineStage):
     name = "nofz"
@@ -60,8 +60,8 @@ class nofz(PipelineStage):
         source_lens = destest.H5Source(params_lens)
         self.selector_lens = destest.Selector(params_lens,source_lens)
         self.calibrator_lens = destest.NoCalib(params_lens,self.selector_lens)
+
         print 'pz selector'
-        #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
         pz_file = 'destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
         params_pz['param_file'] = pz_file
