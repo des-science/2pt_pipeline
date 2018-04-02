@@ -59,7 +59,7 @@ class nofz(PipelineStage):
         params_lens['param_file'] = lens_file
         source_lens = destest.H5Source(params_lens)
         self.selector_lens = destest.Selector(params_lens,source_lens)
-        
+        self.calibrator_lens = destest.NoCalib(params_lens,self.selector_lens)
         print 'pz selector'
         #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
         pz_file = 'destest_pz.yaml'
@@ -193,7 +193,9 @@ class nofz(PipelineStage):
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
         lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
-        lens_weight = self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) #self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        #lens_weight = self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
+        
         if self.params['lensfile'] != 'None':
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
                                          self.lens_tomobins,
