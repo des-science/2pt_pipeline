@@ -188,8 +188,7 @@ class nofz(PipelineStage):
         print '\n\n passed fourth part\n\n '
         #pdb.set_trace()
 
-        self.get_sigma_e(zbin,self.tomobins)
-        self.get_neff(zbin,self.tomobins)
+        self.get_sige_neff(zbin,self.tomobins)
 
         print '\n\n passed fifth part\n\n '
         if self.params['has_sheared']:
@@ -620,60 +619,6 @@ class nofz(PipelineStage):
 
         return r
 
-    def get_neff(self, zbin, tomobins):
-        """
-        Calculate neff for catalog.
-        """
-
-        if not hasattr(self,'area'):
-            self.get_area()
-
-        self.neff = []
-        self.neffc = []
-        for i in range(self.tomobins):
-            if self.params['has_sheared']:
-                mask = (zbin[0] == i)
-                mask_1p = (zbin[1] == i)
-                mask_1m = (zbin[2] == i)
-                mask_2p = (zbin[3] == i)
-                mask_2m = (zbin[4] == i)
-
-                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-
-            else:
-                mask = (zbin == i)
-                m1 = cat['m1']
-                m2 = cat['m2']
-
-            mask = mask & self.mask
-            print i,np.sum(mask)
-
-            if self.params['has_sheared']:
-                e1  = cat['e1'][mask]
-                e2  = cat['e2'][mask]
-                w   = cat['weight'][mask]
-                s   = R
-                var = cat['cov00'][mask] + cat['cov11'][mask]
-                var[var>2] = 2.
-            else:
-                e1  = cat['e1'][mask]
-                e2  = cat['e2'][mask]
-                w   = cat['weight'][mask]
-                s = (m1[mask]+m2[mask])/2.
-                snvar = 0.24#np.sqrt((cat['e1'][mask][cat['snr'][mask]>100].var()+cat['e2'][mask][cat['snr'][mask]>100].var())/2.)
-                var = 1./w - snvar**2
-                var[var < 0.] = 0.
-                w[w > snvar**-2] = snvar**-2
-
-            a    = np.sum(w)**2
-            b    = np.sum(w**2)
-            c    = self.area * 60. * 60.
-
-            self.neff.append( a/b/c )
-            self.neffc.append( ((self.sigma_ec[i]**2 * np.sum(w * s)**2) / np.sum(w**2 * (s**2 * self.sigma_ec[i]**2 + var/2.))) / self.area / 60**2 )
-
-        return
-
     def get_lens_neff(self, zbin, tomobins):
         """
         Calculate neff for catalog.
@@ -694,18 +639,17 @@ class nofz(PipelineStage):
         return
 
 
-    def get_sigma_e(self, zbin, tomobins):
-        """
-        Calculate sigma_e for shape catalog.
-        """
+    def get_sige_neff(self, zbin, tomobins):
 
         if not hasattr(self,'area'):
             self.get_area()
 
-        self.sigma_e = []
-        self.sigma_ec = []
         self.mean_e1 = []
         self.mean_e2 = []
+        e1_  = self.selector_mcal.get_col(self.Dict.shape_dict['e1'],nosheared=True)
+        e2_  = self.selector_mcal.get_col(self.Dict.shape_dict['e2'],nosheared=True)
+        cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)
+        cov11_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov11'],nosheared=True)
         for i in range(tomobins):
             if self.params['has_sheared']:
                 mask = (zbin[0] == i)
@@ -721,14 +665,12 @@ class nofz(PipelineStage):
                 m1 = cat['m1']
                 m2 = cat['m2']
 
-            mask = mask & self.mask
-
             if self.params['has_sheared']:
-                e1  = cat['e1'][mask]
-                e2  = cat['e2'][mask]
-                w   = np.ones(len(cat[mask]))#cat['weight'][mask]
+                e1  = self.selector_mcal.get_masked(e1_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                e2  = self.selector_mcal.get_masked(e2_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 s   = R
-                var = cat['cov00'][mask] + cat['cov11'][mask]
+                var = self.selector_mcal.get_masked(cov00_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                + self.selector_mcal.get_masked(cov11_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 var[var>2] = 2.
             else:
                 e1  = cat['e1'][mask]
@@ -742,20 +684,23 @@ class nofz(PipelineStage):
                 w[w > snvar**-2] = snvar**-2
                 print 'var',var.min(),var.max()
 
-            self.mean_e1.append(np.asscalar(np.average(cat['e1'][mask],weights=cat['weight'][mask])/np.average(m1[mask],weights=cat['weight'][mask])))
-            self.mean_e2.append(np.asscalar(np.average(cat['e2'][mask],weights=cat['weight'][mask])/np.average(m2[mask],weights=cat['weight'][mask])))
+            self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
+            self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
+
             a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
             a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
             b  = np.sum(w**2)
             c  = np.sum(w * s)
-            print len(w),w
             d  = np.sum(w)
-            print i,a1,a2,b,c,d
 
             self.sigma_e.append( np.sqrt( (a1/c**2 + a2/c**2) * (d**2/b) / 2. ) )
             self.sigma_ec.append( np.sqrt( np.sum(w**2 * (e1**2 + e2**2 - var)) / (2.*np.sum(w**2 * s**2)) ) )
 
-        return
+            a    = np.sum(w)**2
+            c    = self.area * 60. * 60.
+
+            self.neff.append( a/b/c )
+            self.neffc.append( ((self.sigma_ec[i]**2 * np.sum(w * s)**2) / np.sum(w**2 * (s**2 * self.sigma_ec[i]**2 + var/2.))) / self.area / 60**2 )
 
     def get_area(self):
 
