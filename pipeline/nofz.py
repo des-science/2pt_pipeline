@@ -195,8 +195,8 @@ class nofz(PipelineStage):
         print '\n\n passed fifth part\n\n '
 
         # Calculate lens n(z)s and write to file
-        lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
-        lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
+        lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])[0]
+        lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])[0]
         lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
                 
         if self.params['lensfile'] != 'None':
@@ -535,7 +535,7 @@ class nofz(PipelineStage):
         if (pdf_type == 'sample') | (pdf_type == 'rm'):
             if pdf_type == 'rm':
                 #stack_col = np.random.normal(stack_col, self.lens_pz['pzerr']*np.ones(len(stack_col)))
-                stack_col = np.random.normal(stack_col, self.selector_lens.get_col(self.Dict.lens_pz_dict['pzerr'])*np.ones(len(stack_col)))
+                stack_col = np.random.normal(stack_col, self.selector_lens.get_col(self.Dict.lens_pz_dict['pzerr'])[0])
             for i in range(zbins):
                 mask        =  (xbins == i)
                 if shape:
