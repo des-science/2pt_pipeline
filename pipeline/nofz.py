@@ -553,7 +553,9 @@ class nofz(PipelineStage):
                     else:
                         m1 = self.shape['m1']
                         m2 = self.shape['m2']
-                        weight *= (m1+m2)/2.
+                        weight_ = weight*(m1+m2)/2.
+                else:
+                    weight_ = lens_weight
                 nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
