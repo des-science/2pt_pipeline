@@ -53,6 +53,13 @@ class nofz(PipelineStage):
         self.calibrator = destest.MetaCalib(params_mcal,self.selector_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
 
+        print 'lens selector'
+        lens_file = 'destest_redmagic.yaml'
+        params_lens = yaml.load(open(lens_file))
+        params_lens['param_file'] = lens_file
+        source_lens = destest.H5Source(params_lens)
+        self.selector_lens = destest.Selector(params_lens,source_lens)
+        
         print 'pz selector'
         #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
         pz_file = 'destest_pz.yaml'
@@ -184,14 +191,18 @@ class nofz(PipelineStage):
         print '\n\n passed fifth part\n\n '
 
         # Calculate lens n(z)s and write to file
+        lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])
+        lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])
+        lens_weight = self.selector_lens.get_col(self.Dict.lens_pz_dict['weight'])
         if self.params['lensfile'] != 'None':
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
                                          self.lens_tomobins,
                                          self.lens_binedges,
-                                         self.lens_pz['pzbin'],
-                                         self.lens_pz['pzstack'],
+                                         lens_pzbin,#self.lens_pz['pzbin'],
+                                         lens_pzstack,#self.lens_pz['pzstack'],
                                          self.params['lens_pdf_type'],
-                                         self.lens['weight'])
+                                         lens_weight)#self.lens['weight'])
+            print '\n\ndoing np.save now\n\n'
             np.save(self.output_path("nz_lens")  , np.vstack((self.Dict.shape_dict['objid'], lens_zbin)).T)
 
             ran_binning = np.digitize(self.randoms['ranbincol'], self.lens_binedges, right=True) - 1

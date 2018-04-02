@@ -51,9 +51,9 @@ pz_stack_dict = {
     }
 
 lens_pz_dict = {
-    'objid'         : 'COADD_OBJECTS_ID',
+    'objid'         : 'coadd_object_id',
     'pzbin'         : 'zredmagic',
-    'pzstack'       : 'ZREDMAGIC',
+    'pzstack'       : 'zredmagic',
     'pzerr'         : 'ZREDMAGIC_E',
     'weight'        : None
     }
