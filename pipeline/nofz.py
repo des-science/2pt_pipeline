@@ -221,7 +221,10 @@ class nofz(PipelineStage):
 
             f.close()
 
-            self.get_lens_neff(lens_zbin,self.lens_tomobins)
+            if np.isscalar(lens_weight):
+                self.get_lens_neff(lens_zbin,self.lens_tomobins,np.ones(len(lens_zbin)))
+            else:
+                self.get_lens_neff(lens_zbin,self.lens_tomobins,lens_weight)
 
     def write(self):
         """
@@ -634,7 +637,7 @@ class nofz(PipelineStage):
 
         return r
 
-    def get_lens_neff(self, zbin, tomobins):
+    def get_lens_neff(self, zbin, tomobins, weight):
         """
         Calculate neff for catalog.
         """
@@ -645,8 +648,8 @@ class nofz(PipelineStage):
         self.lens_neff = []
         for i in range(tomobins):
           mask = (zbin == i)
-          a    = np.sum(cat['weight'][mask])**2
-          b    = np.sum(cat['weight'][mask]**2)
+          a    = np.sum(weight)**2
+          b    = np.sum(weight**2)
           c    = self.area * 60. * 60.
 
           self.lens_neff.append(np.asscalar( a/b/c ))
