@@ -1,5 +1,6 @@
 import numpy as np
 import twopoint
+import healpy
 import fitsio as fio
 import healpy as hp
 from numpy.lib.recfunctions import append_fields, rename_fields
@@ -18,7 +19,7 @@ class nofz(PipelineStage):
     inputs = {}
     outputs = {
         "weight"        : "weight.npy"          ,
-        "nz_source"     : "nz_source_zbin.npy"  ,
+        "nz_source"     : "nz_source_zbin.h5"   ,
         "nz_lens"       : "nz_lens_zbin.npy"    ,
         "nz_source_txt" : "source.nz"           ,
         "nz_lens_txt"   : "lens.nz"             ,
@@ -51,14 +52,6 @@ class nofz(PipelineStage):
         self.selector_mcal = destest.Selector(params_mcal,source_mcal)
         self.calibrator = destest.MetaCalib(params_mcal,self.selector_mcal)
         #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
-
-        print 'gold selector'
-        #gold_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_gold.yaml'
-        gold_file = 'destest_gold.yaml'
-        params_gold = yaml.load(open(gold_file))
-        params_gold['param_file'] = gold_file
-        source_gold = destest.H5Source(params_gold)
-        self.selector_gold = destest.Selector(params_gold,source_gold,inherit=self.selector_mcal)
 
         print 'pz selector'
         #pz_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_pz.yaml'
@@ -145,14 +138,11 @@ class nofz(PipelineStage):
         
         return
 
-        
-
     def run(self):
         
         #print '\n\nGetting to the buggy part:'
         #print "printing self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False).shape\n",len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=False))
         #print "printing self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True).shape\n",len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
-
         
         # Calculate source n(z)s and write to file
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
@@ -185,18 +175,13 @@ class nofz(PipelineStage):
                                self.weight,
                                shape=True)
 
-
         print '\n\n passed fourth part\n\n '
         #pdb.set_trace()
 
         self.get_sige_neff(zbin,self.tomobins)
+        self.zbin = zbin
 
         print '\n\n passed fifth part\n\n '
-        if self.params['has_sheared']:
-            zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m=zbin
-            np.save(self.output_path("nz_source"), np.vstack((self.selector_mcal.get_col(self.Dict.shape_dict['objid']), zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m)).T)
-        else:
-            np.save(self.output_path("nz_source"), np.vstack((self.Dict.shape_dict['objid'], zbin)).T)
 
         # Calculate lens n(z)s and write to file
         if self.params['lensfile'] != 'None':
@@ -219,6 +204,12 @@ class nofz(PipelineStage):
         """
         Write lens and source n(z)s to fits file for tomographic and non-tomographic cases.
         """
+        
+        f = h5py.File( self.output_path("nz_source"), mode='w')
+        for zbin_,zname in tuple(zip(self.zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
+            f.create_dataset( 'nofz/'+zname, maxshape=(len(self.selector_mcal.mask_),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
+            f['nofz/'+zname] = zbin_
+        f.close()
 
         nz_source = twopoint.NumberDensity(
                      NOFZ_NAMES[0],
