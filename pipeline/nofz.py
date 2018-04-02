@@ -61,6 +61,13 @@ class nofz(PipelineStage):
         self.selector_lens = destest.Selector(params_lens,source_lens)
         self.calibrator_lens = destest.NoCalib(params_lens,self.selector_lens)
 
+        print 'random selector'
+        random_file = 'destest_random.yaml'
+        params_random = yaml.load(open(random_file))
+        params_random['param_file'] = random_file
+        source_random = destest.H5Source(params_random)
+        self.selector_random = destest.Selector(params_random,source_random)
+        
         print 'pz selector'
         pz_file = 'destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
@@ -208,13 +215,13 @@ class nofz(PipelineStage):
                                          lens_pzstack,#self.lens_pz['pzstack'],
                                          self.params['lens_pdf_type'],
                                          lens_weight)#self.lens['weight'])
-            print '\n\ndoing np.save now\n\n'
+            print '\n\nsaving...\n\n'
 
-            f = h5py.File( self.output_path("nz_source"), mode='r+')
+            f = h5py.File( self.output_path("nz_lens"), mode='r+')
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=self.lens_zbin.dtype, chunks=(1000000,) )
             f['nofz/lens_zbin'] = lens_zbin
 
-            ran_binning = np.digitize(self.randoms['ranbincol'], self.lens_binedges, right=True) - 1
+            ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol']), self.lens_binedges, right=True) - 1
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
             f['nofz/ran_zbin'] = ran_binning
 

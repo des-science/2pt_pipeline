@@ -1,0 +1,68 @@
+# Tests
+
+# Test settings
+# number of bins for linear (non-2pt) splitting
+linear_bins : 20
+# columns over which to iterate linear splitting
+# reuse cached intermediate results? This will make subsequent runs much faster.
+load_cache  : True
+# output directory
+output      : . 
+# If False, testsuite will terminate if the output directory already exists.
+output_exists : True 
+
+use_mpi       : False
+
+# Tests to run
+# Calculate general statistics for all columns
+#general_stats : ['R11', 'R12', 'R21', 'R22', 'covmat_0_0', 'covmat_0_1', 'covmat_1_1', 'e1', 'e2', 'flux_err_i', 'flux_err_r', 'flux_err_z', 'flux_i', 'flux_r', 'flux_z', 'mask_frac', 'psf_e1', 'psf_e2', 'psf_size', 'size', 'size_err', 'size_ratio', 'snr']
+# Do linear mean value splits by 'x' column list
+split_mean    : ['e1','e2','snr','psf_e1','psf_e2','size','psf_size','size_ratio','mask_frac','flux_i']
+split_x       : ['e1','e2','snr','psf_e1','psf_e2','size','psf_size','size_ratio','mask_frac','flux_i']
+split_by_w    : False
+# Calculte histograms
+# hist_1d       : ['R11', 'R12', 'R21', 'R22', 'covmat_0_0', 'covmat_0_1', 'covmat_1_1', 'e1', 'e2', 'flux_err_i', 'flux_err_r', 'flux_err_z', 'flux_i', 'flux_r', 'flux_z', 'mask_frac', 'psf_e1', 'psf_e2', 'psf_size', 'size', 'size_err', 'size_ratio', 'snr']
+#hist_2d       : ['R11', 'R12', 'R21', 'R22', 'covmat_0_0', 'covmat_0_1', 'covmat_1_1', 'e1', 'e2', 'flux_err_i', 'flux_err_r', 'flux_err_z', 'flux_i', 'flux_r', 'flux_z', 'mask_frac', 'psf_e1', 'psf_e2', 'psf_size', 'size', 'size_err', 'size_ratio', 'snr']
+hist_bins     : 500
+
+plot_only     : False
+plot_log_x    : [] #['covmat_0_0','covmat_0_1','covmat_1_0','covmat_1_1','snr','size','size_ratio','flux_i','flux_r','flux_z','flux_err_i','flux_err_r','flux_err_z','R11','R22','R12','R21']
+
+# Data source #change here for the different catalogs (gold, shape, photoz (either bpz or dnf))
+# calibration type
+cal_type   : 'None'
+# Type of data source. Currently only works for 'hdf5'
+source     : 'hdf5'
+# name of file
+filename   : '/global/cscratch1/sd/troxel/cats_des_y3/Y3_mastercat_v1_2_10_18.h5' #doesn't need to be changed
+# For hdf5, group name
+group      : 'randoms/redmagic' #change HERE! this changes the path inside the HDF5 file
+# if metacalibrating, include array of five tables: unsehared, 1p, 1m, 2p, 2m
+# else if classic calibration, include table name (still as a list of length one)
+table      : ['chi5_bright']
+# shearing factor for metacal
+#dg         : 0.01
+
+# Selection 
+# optional direct path to select flags
+select_path : 'index/select'
+# columns with which to mask the catalog
+select_cols : ['snr','snr','size_ratio','flags']
+# expressions by which to mask (must match 1-1 the list of select_cols)
+# select_exp   : ['5<col','col<500','col>0.25','col==0']
+select_exp   : ['10<col','col<100','col>0.5','col==0']
+
+# Catalog dicts
+# len 2 array with column names for ellipticity
+e           : ['e1','e2'] # Must exist at least as an empty list
+# len 2 array with column names for shear response (or m)
+Rg          : ['R11','R22']
+# len 2 array with column names for c (additive correction)
+# c           : None
+# column name for weight
+# w           : None
+
+
+# Pretty name dicts
+
+# 

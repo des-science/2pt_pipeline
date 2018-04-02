@@ -68,7 +68,7 @@ lens_dict = {
 ran_dict = {
     'ra'            : 'RA',
     'dec'           : 'DEC',
-    'ranbincol'     : 'Z'
+    'ranbincol'     : 'z'
     }    
 
 index_dict = {
