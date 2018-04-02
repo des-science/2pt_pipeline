@@ -185,7 +185,12 @@ class nofz(PipelineStage):
 #        print '\n\n passed fourth part\n\n '
 
 #        self.get_sige_neff(zbin,self.tomobins)
-#        self.zbin = zbin
+
+        # f = h5py.File( self.output_path("nz_source"), mode='w')
+        # for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
+        #     f.create_dataset( 'nofz/'+zname, maxshape=(len(self.selector_mcal.mask_),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
+        #     f['nofz/'+zname] = zbin_
+        # f.close()
 
         print '\n\n passed fifth part\n\n '
 
@@ -204,24 +209,23 @@ class nofz(PipelineStage):
                                          self.params['lens_pdf_type'],
                                          lens_weight)#self.lens['weight'])
             print '\n\ndoing np.save now\n\n'
-            np.save(self.output_path("nz_lens")  , np.vstack((self.Dict.shape_dict['objid'], lens_zbin)).T)
+
+            f = h5py.File( self.output_path("nz_source"), mode='r+')
+            f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=self.lens_zbin.dtype, chunks=(1000000,) )
+            f['nofz/lens_zbin'] = lens_zbin
 
             ran_binning = np.digitize(self.randoms['ranbincol'], self.lens_binedges, right=True) - 1
-            np.save(self.output_path("randoms"), ran_binning)
+            f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
+            f['nofz/ran_zbin'] = ran_binning
+
+            f.close()
 
             self.get_lens_neff(lens_zbin,self.lens_tomobins)
-
 
     def write(self):
         """
         Write lens and source n(z)s to fits file for tomographic and non-tomographic cases.
         """
-        
-        f = h5py.File( self.output_path("nz_source"), mode='w')
-        for zbin_,zname in tuple(zip(self.zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
-            f.create_dataset( 'nofz/'+zname, maxshape=(len(self.selector_mcal.mask_),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
-            f['nofz/'+zname] = zbin_
-        f.close()
 
         nz_source = twopoint.NumberDensity(
                      NOFZ_NAMES[0],
