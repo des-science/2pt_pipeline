@@ -194,9 +194,9 @@ class nofz(PipelineStage):
         print '\n\n passed fifth part\n\n '
         if self.params['has_sheared']:
             zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m=zbin
-            np.save(self.output_path("nz_source"), np.vstack((self.gold['objid'], zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m)).T)
+            np.save(self.output_path("nz_source"), np.vstack((self.selector_mcal.get_col(self.Dict.shape_dict['objid']), zbin,zbin_1p,zbin_1m,zbin_2p,zbin_2m)).T)
         else:
-            np.save(self.output_path("nz_source"), np.vstack((self.gold['objid'], zbin)).T)
+            np.save(self.output_path("nz_source"), np.vstack((self.Dict.shape_dict['objid'], zbin)).T)
 
         # Calculate lens n(z)s and write to file
         if self.params['lensfile'] != 'None':
@@ -207,7 +207,7 @@ class nofz(PipelineStage):
                                          self.lens_pz['pzstack'],
                                          self.params['lens_pdf_type'],
                                          self.lens['weight'])
-            np.save(self.output_path("nz_lens")  , np.vstack((self.lens['objid'], lens_zbin)).T)
+            np.save(self.output_path("nz_lens")  , np.vstack((self.Dict.shape_dict['objid'], lens_zbin)).T)
 
             ran_binning = np.digitize(self.randoms['ranbincol'], self.lens_binedges, right=True) - 1
             np.save(self.output_path("randoms"), ran_binning)
