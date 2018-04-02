@@ -656,7 +656,7 @@ class nofz(PipelineStage):
         for i in range(tomobins):
             if self.params['has_sheared']:
                 mask = (zbin[0] == i)
-                print 'mask',len(mask)
+                print 'mask',len(mask),len(zbin[0])
                 mask_1p = (zbin[1] == i)
                 mask_1m = (zbin[2] == i)
                 mask_2p = (zbin[3] == i)
@@ -670,7 +670,7 @@ class nofz(PipelineStage):
                 m2 = cat['m2']
 
             if self.params['has_sheared']:
-                print 'e1',len(e1_)
+                print 'e1',len(e1_[0])
                 e1  = self.selector_mcal.get_masked(e1_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 e2  = self.selector_mcal.get_masked(e2_,mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 s   = R
