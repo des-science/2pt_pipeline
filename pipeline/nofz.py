@@ -211,7 +211,7 @@ class nofz(PipelineStage):
 
             f = h5py.File( self.output_path("nz_source"), mode='r+')
             print 'lens_zbin=',lens_zbin
-            f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(1000000,) )
+            f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(100000,) )
             f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol']), self.lens_binedges, right=True) - 1
