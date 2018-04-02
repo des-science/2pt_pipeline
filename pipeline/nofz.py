@@ -188,7 +188,7 @@ class nofz(PipelineStage):
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
             print 'zbin_,zname=',zbin_,zname
-            f.create_dataset( 'nofz/'+zname, maxshape=(len(2*len(zbin)),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
+            f.create_dataset( 'nofz/'+zname, maxshape=(len(2*len(zbin_)),), shape=(len(zbin_),), dtype=zbin.dtype, chunks=(1000000,) )
             f['nofz/'+zname] = zbin_
         f.close()
 
