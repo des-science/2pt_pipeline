@@ -131,7 +131,7 @@ class nofz(PipelineStage):
                 #self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) #Lucas: original
                 self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
                 #deal with lenses later
-        print '\nBinning was set up'
+        print 'Binning was set up'
         
         return
 
@@ -169,12 +169,11 @@ class nofz(PipelineStage):
 
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
-            print 'zbin_,zname=',zbin_,zname
             f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(1000000,) )
             f['nofz/'+zname][:] = zbin_
         f.close()
 
-        print '\nCalculated sigma_e and Neff for sources.\nNow calculating lens n(z)'
+        print 'Calculated sigma_e and Neff for sources.\nCalculating lens n(z)'
 
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])[0]
@@ -189,15 +188,13 @@ class nofz(PipelineStage):
                                          lens_pzstack,
                                          self.params['lens_pdf_type'],
                                          lens_weight)
-            print '\n\nsaving...\n\n'
+            print 'Saving lens n(z)'
 
             f = h5py.File( self.output_path("nz_source"), mode='r+')
-            print 'lens_zbin=',lens_zbin
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(100000,) )
             f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol'])[0], self.lens_binedges, right=True) - 1
-            print 'ran_binning=',ran_binning
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
             f['nofz/ran_zbin'][:] = ran_binning
 
@@ -409,12 +406,22 @@ class nofz(PipelineStage):
 
         self.lens_neff = []
         for i in range(tomobins):
-          mask = (zbin == i)
-          a    = np.sum(weight)**2
-          b    = np.sum(weight**2)
-          c    = self.area * 60. * 60.
+            print '\nDoing lens zbin',i
+            
 
-          self.lens_neff.append(np.asscalar( a/b/c ))
+            mask = (zbin == i)
+            a    = np.sum(weight[mask])**2
+            b    = np.sum(weight[mask]**2)
+            c    = self.area * 60. * 60.
+            #print 'mask=',mask
+            print np.sum(weight[mask]),'objects found in this bin'
+            #print 'np.sum(weight)=',np.sum(weight)
+            #print 'self.area=',self.area
+            #print 'a=',a
+            #print 'b=',b
+            #print 'c=',c
+            
+            self.lens_neff.append(np.asscalar( a/b/c ))
 
         return
 
@@ -435,6 +442,7 @@ class nofz(PipelineStage):
         cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)[0]
         cov11_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov11'],nosheared=True)[0]
         for i in range(tomobins):
+            print '\nDoing source zbin',i
             if self.params['has_sheared']:
                 mask = (zbin[0] == i)
                 mask_1p = (zbin[1] == i)
@@ -446,9 +454,10 @@ class nofz(PipelineStage):
                 if type(w) is list:
                     w = w[0]
                 if np.isscalar(w):
-                    print '\nRe-defining w as np.ones(np.sum(mask))'
+                    print 'Re-defining w as np.ones(np.sum(mask))'
                     w = np.ones(np.sum(mask))
 
+                print np.sum(mask),'objects found in this bin'
                 e1  = e1_[mask]
                 e2  = e2_[mask]
                 s   = R
@@ -473,33 +482,20 @@ class nofz(PipelineStage):
 
             self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
             self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
-
-            print '\nDebugging get_sige_neff:\n'
-            print '\n mean_e1 = ',self.mean_e1,'np.mean(e1)=',np.mean(e1)
-            print '\n mean_e2 = ',self.mean_e2,'np.mean(e2)=',np.mean(e2)
+            
             a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
             a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
             b  = np.sum(w**2)
             c  = np.sum(w * s)
             d  = np.sum(w)
-            print '\n w=',w
-            print '\n a1=',a1
-            print '\n a2=',a1
-            print '\n b=',a2
-            print '\n c=',c
-            print '\n d=',d
-
+            
             self.sigma_e.append( np.sqrt( (a1/c**2 + a2/c**2) * (d**2/b) / 2. ) )
             self.sigma_ec.append( np.sqrt( np.sum(w**2 * (e1**2 + e2**2 - var)) / (2.*np.sum(w**2 * s**2)) ) )
 
-            print '\n self.sigma_e=',self.sigma_e
-            print '\n self.sigma_ec=',self.sigma_ec
-
+            
             a    = np.sum(w)**2
             c    = self.area * 60. * 60.
 
-            print '\n a=',a
-            print '\n c=',c
             self.neff.append( a/b/c )
             self.neffc.append( ((self.sigma_ec[i]**2 * np.sum(w * s)**2) / np.sum(w**2 * (s**2 * self.sigma_ec[i]**2 + var/2.))) / self.area / 60**2 )
 
