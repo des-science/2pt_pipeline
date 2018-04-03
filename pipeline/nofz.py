@@ -163,13 +163,12 @@ class nofz(PipelineStage):
                                self.weight,
                                shape=True)
 
-        print 'Calculated source n(z), now getting sigma_e and Neff '
+        print '\nCalculated source n(z), now getting sigma_e and Neff '
 
         self.get_sige_neff(zbin,self.tomobins)
 
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
-            print 'zbin_,zname=',zbin_,zname
             f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(1000000,) )
             f['nofz/'+zname][:] = zbin_
         f.close()
@@ -192,12 +191,10 @@ class nofz(PipelineStage):
             print 'Saving lens n(z)'
 
             f = h5py.File( self.output_path("nz_source"), mode='r+')
-            print 'lens_zbin=',lens_zbin
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(100000,) )
             f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol'])[0], self.lens_binedges, right=True) - 1
-            print 'ran_binning=',ran_binning
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
             f['nofz/ran_zbin'][:] = ran_binning
 
@@ -417,7 +414,7 @@ class nofz(PipelineStage):
             b    = np.sum(weight[mask]**2)
             c    = self.area * 60. * 60.
             #print 'mask=',mask
-            print weight[mask],'objects found in this bin'
+            print np.sum(weight[mask]),'objects found in this bin'
             #print 'np.sum(weight)=',np.sum(weight)
             #print 'self.area=',self.area
             #print 'a=',a
@@ -485,7 +482,13 @@ class nofz(PipelineStage):
 
             self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
             self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
-
+            
+            a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
+            a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
+            b  = np.sum(w**2)
+            c  = np.sum(w * s)
+            d  = np.sum(w)
+            
             self.sigma_e.append( np.sqrt( (a1/c**2 + a2/c**2) * (d**2/b) / 2. ) )
             self.sigma_ec.append( np.sqrt( np.sum(w**2 * (e1**2 + e2**2 - var)) / (2.*np.sum(w**2 * s**2)) ) )
 
