@@ -471,12 +471,8 @@ class nofz(PipelineStage):
                 w[w > snvar**-2] = snvar**-2
                 print 'var',var.min(),var.max()
 
-            if np.isscalar(w):
-                self.mean_e1.append(np.asscalar(np.mean(e1))) # this is without calibration factor!
-                self.mean_e2.append(np.asscalar(np.mean(e2)))
-            else:
-                self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
-                self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
+            self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
+            self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
 
             print '\nDebugging get_sige_neff:\n'
             print '\n mean_e1 = ',self.mean_e1,'np.mean(e1)=',np.mean(e1)
