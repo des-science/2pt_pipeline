@@ -508,11 +508,11 @@ def get_covname_for2pttype(type1,type2):
         raise ValueError("Spectra type {0:s} - {1:s} not recognized in get_covname_for2pttype.".format(type1,type2))
 
 def get_dictkey_for_2pttype(type1,type2):
-     """
+    """
      Convert strings used in fits file to label spectra type in fits file to
      dictionary keys expected by this script's functions.
      (fits file 2pt table naming -> this script's naming)
-     """
+    """
 
     galaxy_position_fourier = "GPF"
     galaxy_shear_emode_fourier = "GEF"
