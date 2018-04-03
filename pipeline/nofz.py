@@ -97,24 +97,7 @@ class nofz(PipelineStage):
         #print S
         self.weight = np.ones(S)
         #print '\nweights done\n'
-        ''' 
-        if 'pzbin_col' in self.gold.dtype.names:
-            print 'ignoring any specified bins, since a bin column has been supplied in gold file'
-
-        self.weight = np.sqrt(self.selector_pz.get_col('weight') * selector_mcal.get_col('weight'))
-        # Construct new weight and cache - move to catalog
-        if 'weight' in self.pz.dtype.names:
-            print 'I will try to access the HDF5 cat using selector.get_col() right now\n\n'
-            self.weight = np.sqrt(selector_pz.get_col('weight') * selector_mcal.get_col('weight')) #my modification
-            #self.weight = np.sqrt(self.pz['weight'] * self.shape['weight']) #Lucas: every access to self.pz or shape columns should be replaced by an access of the hdf5 cat itself. Use functions from destest. So this should be switched by selector.get_col(column_name)
-        else:
-            self.weight = self.shape['weight']
-        
-        filename = self.output_path("weight")
-        np.save(filename, np.vstack((self.gold['objid'], self.weight)).T)
-        # deal with photo-z weights for lenses later...
-        '''
-
+ 
         
         # Setup binning
         if self.params['pdf_type']!='pdf': 
@@ -128,7 +111,7 @@ class nofz(PipelineStage):
             self.z       = (self.binlow+self.binhigh)/2.
             self.dz      = self.binlow[1]-self.binlow[0]
 
-        print '\n\npassed first part\n\n'
+        #print 'passed first part\n\n'
 
         if hasattr(self.params['zbins'], "__len__"):
             self.tomobins = len(self.params['zbins']) - 1
@@ -148,7 +131,7 @@ class nofz(PipelineStage):
                 #self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) #Lucas: original
                 self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
                 #deal with lenses later
-        print 'passed second part\n\n'
+        print '\nBinning was set up'
         
         return
 
@@ -156,18 +139,17 @@ class nofz(PipelineStage):
         
         # Calculate source n(z)s and write to file
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'passed third part\n\n'
-        
-        if self.params['pdf_type']!='pdf': #look at function build_nofz_bins        
+                
+        if self.params['pdf_type']!='pdf': 
             zbin, self.nofz = self.build_nofz_bins(
-                self.tomobins,#created in init
-                self.binedges,#same
+                self.tomobins,
+                self.binedges,
                 pzbin,
                 self.selector_pz.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']],
                 self.params['pdf_type'],
                 self.weight,
                 shape=True)
-        else: #I don't know what happens if you fall here. Certainly the pipeline will fail
+        else: 
             print '\nThe pipeline will certainly fail now...\n'
             pdfs = np.zeros((len(self.pz),len(self.z)))
             for i in range(len(self.z)):
@@ -181,7 +163,7 @@ class nofz(PipelineStage):
                                self.weight,
                                shape=True)
 
-        print '\n\n passed fourth part\n\n '
+        print '\nCalculated source n(z), now getting sigma_e and Neff '
 
         self.get_sige_neff(zbin,self.tomobins)
 
@@ -192,7 +174,7 @@ class nofz(PipelineStage):
             f['nofz/'+zname][:] = zbin_
         f.close()
 
-        print '\n\n passed fifth part\n\n '
+        print '\nCalculated sigma_e and Neff for sources.\nNow calculating lens n(z)'
 
         # Calculate lens n(z)s and write to file
         lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])[0]
@@ -290,226 +272,6 @@ class nofz(PipelineStage):
         filename = self.output_path('metadata')
         open(filename, 'w').write(yaml.dump(data))
 
-
-    # def load_array(self,d,file):
-
-
-    #     if self.params['has_sheared'] & (file=='shapefile'):
-    #         d['flags_1p'] = 'flags_select_1p'
-    #         d['flags_1m'] = 'flags_select_1m'
-    #         d['flags_2p'] = 'flags_select_2p'
-    #         d['flags_2m'] = 'flags_select_2m'
-
-    #     if self.params['pdf_type']=='pdf':
-    #         keys = [key for key in d.keys() if (d[key] is not None)&(key is not 'pzstack')]
-    #     else:
-    #         keys = [key for key in d.keys() if (d[key] is not None)]
-
-    #     if 'objid' in keys:
-    #         dtypes = [('objid','i8')]
-    #     else:
-    #         raise ValueError('missing object id in '+file)
-    #     dtypes += [(key,'f8') for key in keys if (key is not 'objid')]
-    #     if self.params['pdf_type']=='pdf':
-    #         dtypes  += [('pzstack_'+str(i),'f8') for i in range(len(self.params['pdf_z']))]
-
-    #     fits = fio.FITS(self.params[file])[-1]
-    #     array = fits.read(columns=[d[key] for key in keys]) #Lucas: somewhere around here?
-
-    #     array = rename_fields(array,{v: k for k, v in d.iteritems()})
-
-    #     if ('weight' not in array.dtype.names) & (file=='shapefile'):
-    #         array = append_fields(array, 'weight', np.ones(len(array)), usemask=False)
-
-    #     if self.params['pdf_type']=='pdf':
-    #         for i in range(len(self.params['pdf_z'])):
-    #             array['pzstack'+str(i)]=fits.read(columns=d['pzstack']+str(i))
-
-    #     if np.any(np.diff(array['objid']) < 1):
-    #         raise ValueError('misordered or duplicate ids in '+file) 
-
-    #     return array
-
-    # def load_data(self): #Lucas: modify here to read hdf5 files, modify also measure2pt.py
-    #     """
-    #     Load data files.
-    #     """
-
-    #     import time
-    #     import importlib
-    #     col = importlib.import_module('.'+self.params['dict_file'],'pipeline')
-
-    #     # def lowercase_array(arr):
-    #     #     old_names = arr.dtype.names
-    #     #     new_names = [name.lower() for name in old_names]
-    #     #     renames   = dict(zip(old_names, new_names))
-    #     #     return rename_fields(arr, renames)
-    #     t0 = time.time()
-        
-        
-    #     self.gold      = self.load_array(col.gold_dict, 'goldfile')
-    #     print 'Done goldfile',time.time()-t0,self.gold.dtype.names
-        
-    #     #print self.gold #Lucas: test
-    #     #print destest.Selector.get_col('goldfile') #Lucas: test
-
-    #     self.shape     = self.load_array(col.shape_dict, 'shapefile')
-    #     print 'Done shapefile',time.time()-t0,self.shape.dtype.names
-    #     self.pz        = self.load_array(col.pz_bin_dict, 'photozfile')
-    #     print 'Done pzfile',time.time()-t0,self.pz.dtype.names
-    #     if self.params['has_sheared']:
-    #         self.pz_1p = self.load_array(col.pz_bin_dict, 'photozfile_1p')
-    #         print 'Done pz1pfile',time.time()-t0,self.pz_1p.dtype.names
-    #         self.pz_1m = self.load_array(col.pz_bin_dict, 'photozfile_1m')
-    #         print 'Done pz1mfile',time.time()-t0,self.pz_1m.dtype.names
-    #         self.pz_2p = self.load_array(col.pz_bin_dict, 'photozfile_2p')
-    #         print 'Done pz2pfile',time.time()-t0,self.pz_2p.dtype.names
-    #         self.pz_2m = self.load_array(col.pz_bin_dict, 'photozfile_2m')
-    #         print 'Done pz2mfile',time.time()-t0,self.pz_2m.dtype.names
-    #     self.pz_nofz   = self.load_array(col.pz_stack_dict, 'photozfile_nz')
-    #     print 'Done pznofzfile',time.time()-t0,self.pz_nofz.dtype.names
-    #     if self.params['lensfile'] != 'None':
-    #         self.lens      = self.load_array(col.lens_dict, 'lensfile')
-    #         print 'Done lensfile',time.time()-t0,self.lens.dtype.names
-    #         self.lens_pz   = self.load_array(col.lens_pz_dict, 'lensfile')
-    #         print 'Done lens_pzfile',time.time()-t0,self.lens_pz.dtype.names
-
-    #     if 'm1' not in self.shape.dtype.names:
-    #         self.shape = append_fields(self.shape, 'm1', self.shape['m2'], usemask=False)
-    #     if 'm2' not in self.shape.dtype.names:
-    #         self.shape = append_fields(self.shape, 'm2', self.shape['m1'], usemask=False)
-    #     if self.params['oneplusm']==False:
-    #         print 'converting m to 1+m'
-    #         self.shape['m1'] = np.copy(self.shape['m1'])+1.
-    #         self.shape['m2'] = np.copy(self.shape['m2'])+1.
-    #     if 'c1' in self.shape.dtype.names:
-    #         self.shape['e1'] -= self.shape['c1']
-    #         self.shape['e2'] -= self.shape['c2']
-    #         self.shape['c1'] = None
-    #         self.shape['c2'] = None
-    #     if self.params['flip_e2']==True:
-    #         print 'flipping e2'
-    #         self.shape['e2']*=-1
-    #     if 'pzbin' not in self.lens_pz.dtype.names:
-    #         self.lens_pz = append_fields(self.lens_pz, 'pzbin', self.lens_pz['pzstack'], usemask=False)
-    #     if 'pzstack' not in self.lens_pz.dtype.names:
-    #         self.lens_pz = append_fields(self.lens_pz, 'pzstack', self.lens_pz['pzbin'], usemask=False)
-
-    #     if not ((len(self.gold)==len(self.shape))
-    #         & (len(self.gold)==len(self.pz))
-    #         & (len(self.gold)==len(self.pz_nofz))):
-    #         raise ValueError('shape, gold, or photoz length mismatch')
-    #     if self.params['has_sheared']:
-    #         if not ((len(self.gold)==len(self.pz_1p))
-    #             & (len(self.gold)==len(self.pz_1m))
-    #             & (len(self.gold)==len(self.pz_2p))
-    #             & (len(self.gold)==len(self.pz_2m))):
-    #             raise ValueError('shape, gold, or photoz length mismatch')        
-    #     if self.params['lensfile'] != 'None':
-    #         if (len(self.lens)!=len(self.lens_pz)):
-    #             raise ValueError('lens and lens_pz length mismatch') 
-
-    #     if self.params['lensfile'] != 'None':
-    #         keys = [key for key in col.ran_dict.keys() if (col.ran_dict[key] is not None)]
-    #         fits = fio.FITS(self.params['randomfile'])[-1]
-
-    #         dtypes=[(key,'f8') for key in keys]
-    #         self.randoms = np.empty(fits.read_header()['NAXIS2'], dtype = dtypes)
-    #         for key in keys:
-    #             self.randoms[key]=fits.read(columns=[col.ran_dict[key]])
-
-    #     if self.params['test_run']==True:
-    #         idx = np.random.choice(np.arange(len(self.gold)),100000,replace=False)
-    #         np.save(self.output_path("gold_idx"), idx)
-    #         self.gold    = self.gold[idx]
-    #         self.shape   = self.shape[idx]
-    #         self.pz      = self.pz[idx]
-    #         self.pz_nofz = self.pz_nofz[idx]
-    #         if self.params['has_sheared']:
-    #             self.pz_1p   = self.pz_1p[idx]
-    #             self.pz_1m   = self.pz_1m[idx]
-    #             self.pz_2p   = self.pz_2p[idx]
-    #             self.pz_2m   = self.pz_2m[idx]
-    #         if self.params['lensfile'] != 'None':
-    #             idx = np.random.choice(np.arange(len(self.lens)),100000,replace=False)
-    #             np.save(self.output_path("lens_idx"), idx)
-    #             self.lens    = self.lens[idx]
-    #             self.lens_pz = self.lens_pz[idx]
-    #             idx = np.random.choice(np.arange(len(self.randoms)),100000,replace=False)
-    #             np.save(self.output_path("ran_idx"), idx)
-    #             self.randoms = self.randoms[idx]
-
-    #     if 'pzbin_col' in self.gold.dtype.names:
-    #         mask = (self.gold['pzbin_col'] >= 0)
-    #     else:
-    #         mask = (self.pz['pzbin'] > self.params['zlims'][0]) & (self.pz['pzbin'] <= self.params['zlims'][1])
-    #         if self.params['has_sheared']:
-    #             mask_1p = (self.pz_1p['pzbin'] > self.params['zlims'][0]) & (self.pz_1p['pzbin'] <= self.params['zlims'][1])
-    #             mask_1m = (self.pz_1m['pzbin'] > self.params['zlims'][0]) & (self.pz_1m['pzbin'] <= self.params['zlims'][1])
-    #             mask_2p = (self.pz_2p['pzbin'] > self.params['zlims'][0]) & (self.pz_2p['pzbin'] <= self.params['zlims'][1])
-    #             mask_2m = (self.pz_2m['pzbin'] > self.params['zlims'][0]) & (self.pz_2m['pzbin'] <= self.params['zlims'][1])
-
-    #     print 'ngal',np.sum(mask),np.sum(mask_1p),np.sum(mask_1m),np.sum(mask_2p),np.sum(mask_2m)
-    #     if 'flags' in self.shape.dtype.names:
-    #         mask = mask & (self.shape['flags']==0)
-    #         if self.params['has_sheared']:
-    #             mask_1p = mask_1p & (self.shape['flags_1p']==0)
-    #             mask_1m = mask_1m & (self.shape['flags_1m']==0)
-    #             mask_2p = mask_2p & (self.shape['flags_2p']==0)
-    #             mask_2m = mask_2m & (self.shape['flags_2m']==0)
-    #     print 'ngal',np.sum(mask),np.sum(mask_1p),np.sum(mask_1m),np.sum(mask_2p),np.sum(mask_2m)
-    #     if 'flags' in self.pz.dtype.names:
-    #         mask = mask & (self.pz['flags']==0)
-    #         if self.params['has_sheared']:
-    #             mask_1p = mask_1p & (self.pz_1p['flags']==0)
-    #             mask_1m = mask_1m & (self.pz_1m['flags']==0)
-    #             mask_2p = mask_2p & (self.pz_2p['flags']==0)
-    #             mask_2m = mask_2m & (self.pz_2m['flags']==0)
-
-    #     print 'hardcoded spt region cut'
-    #     mask = mask & (self.shape['dec']<-35)
-    #     if self.params['has_sheared']:
-    #         mask_1p = mask_1p & (self.shape['dec']<-35)
-    #         mask_1m = mask_1m & (self.shape['dec']<-35)
-    #         mask_2p = mask_2p & (self.shape['dec']<-35)
-    #         mask_2m = mask_2m & (self.shape['dec']<-35)
-
-    #     np.save('radec.npy',np.vstack((self.shape['ra'],self.shape['dec'])).T[mask])
-
-    #     print np.sum(mask)
-    #     if 'footprintfile' in self.params.keys():
-    #         print 'cutting catalog to footprintfile'
-    #         footmask = np.in1d(hp.ang2pix(4096, np.pi/2.-np.radians(self.shape['dec']),np.radians(self.shape['ra']), nest=False),
-    #                            fio.FITS(self.params['footprintfile'])[-1].read()['HPIX'],assume_unique=False)
-    #         mask = mask & footmask
-    #         if self.params['has_sheared']:
-    #             mask_1p = mask_1p & footmask
-    #             mask_1m = mask_1m & footmask
-    #             mask_2p = mask_2p & footmask
-    #             mask_2m = mask_2m & footmask
-
-    #     print 'ngal final',np.sum(mask),np.sum(mask & mask_1p & mask_1m & mask_2p & mask_2m)
-
-    #     if self.params['has_sheared']:
-    #         full_mask     = mask | mask_1p | mask_1m | mask_2p | mask_2m
-    #         self.pz_1p    = self.pz_1p[full_mask]
-    #         self.pz_1m    = self.pz_1m[full_mask]
-    #         self.pz_2p    = self.pz_2p[full_mask]
-    #         self.pz_2m    = self.pz_2m[full_mask]
-    #         self.mask     = mask[full_mask]
-    #         self.mask_1p  = mask_1p[full_mask]
-    #         self.mask_1m  = mask_1m[full_mask]
-    #         self.mask_2p  = mask_2p[full_mask]
-    #         self.mask_2m  = mask_2m[full_mask]
-    #     else:
-    #         full_mask  = mask
-    #         self.mask  = mask[full_mask]
-    #     self.gold      = self.gold[full_mask]
-    #     self.shape     = self.shape[full_mask]
-    #     self.pz        = self.pz[full_mask]
-    #     self.pz_nofz   = self.pz_nofz[full_mask]
-
-    #     return 
 
     def build_nofz_bins(self, zbins, edge, bin_col, stack_col, pdf_type, weight,shape=False):
         """
@@ -681,19 +443,21 @@ class nofz(PipelineStage):
                 mask_2m = (zbin[4] == i)
 
                 R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Added by Troxel. Lucas: R will be the final mean response
-
-            else:
-                mask = (zbin == i)
-                m1 = cat['m1']
-                m2 = cat['m2']
-
-            if self.params['has_sheared']:
+                if np.isscalar(w):
+                    print '\nRe-defining w as np.ones(np.sum(mask))'
+                    w = np.ones(np.sum(mask))
+                
                 e1  = e1_[mask]
                 e2  = e2_[mask]
                 s   = R
                 var = cov00_[mask]+cov11_[mask]
                 var[var>2] = 2.
+            
+
             else:
+                mask = (zbin == i)
+                m1 = cat['m1']
+                m2 = cat['m2']
                 e1  = cat['e1'][mask]
                 e2  = cat['e2'][mask]
                 w   = cat['weight'][mask]
@@ -712,18 +476,32 @@ class nofz(PipelineStage):
                 self.mean_e1.append(np.asscalar(np.average(e1,weights=w[0]))) # this is without calibration factor!
                 self.mean_e2.append(np.asscalar(np.average(e2,weights=w[0])))
 
+            print '\nDebugging get_sige_neff:\n'
+            print '\n mean_e1 = ',self.mean_e1,'np.mean(e1)=',np.mean(e1)
+            print '\n mean_e2 = ',self.mean_e2,'np.mean(e2)=',np.mean(e2)
             a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
             a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
             b  = np.sum(w**2)
             c  = np.sum(w * s)
             d  = np.sum(w)
+            print '\n w=',w
+            print '\n a1=',a1
+            print '\n a2=',a1
+            print '\n b=',a2
+            print '\n c=',c
+            print '\n d=',d
 
             self.sigma_e.append( np.sqrt( (a1/c**2 + a2/c**2) * (d**2/b) / 2. ) )
             self.sigma_ec.append( np.sqrt( np.sum(w**2 * (e1**2 + e2**2 - var)) / (2.*np.sum(w**2 * s**2)) ) )
 
+            print '\n self.sigma_e=',self.sigma_e
+            print '\n self.sigma_ec=',self.sigma_ec
+
             a    = np.sum(w)**2
             c    = self.area * 60. * 60.
 
+            print '\n a=',a
+            print '\n c=',c
             self.neff.append( a/b/c )
             self.neffc.append( ((self.sigma_ec[i]**2 * np.sum(w * s)**2) / np.sum(w**2 * (s**2 * self.sigma_ec[i]**2 + var/2.))) / self.area / 60**2 )
 
