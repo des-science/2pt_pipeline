@@ -443,10 +443,12 @@ class nofz(PipelineStage):
                 mask_2m = (zbin[4] == i)
 
                 R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Added by Troxel. Lucas: R will be the final mean response
+                if type(w) is list:
+                    w = w[0]
                 if np.isscalar(w):
                     print '\nRe-defining w as np.ones(np.sum(mask))'
                     w = np.ones(np.sum(mask))
-                
+
                 e1  = e1_[mask]
                 e2  = e2_[mask]
                 s   = R
@@ -473,8 +475,8 @@ class nofz(PipelineStage):
                 self.mean_e1.append(np.asscalar(np.mean(e1))) # this is without calibration factor!
                 self.mean_e2.append(np.asscalar(np.mean(e2)))
             else:
-                self.mean_e1.append(np.asscalar(np.average(e1,weights=w[0]))) # this is without calibration factor!
-                self.mean_e2.append(np.asscalar(np.average(e2,weights=w[0])))
+                self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
+                self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
 
             print '\nDebugging get_sige_neff:\n'
             print '\n mean_e1 = ',self.mean_e1,'np.mean(e1)=',np.mean(e1)
