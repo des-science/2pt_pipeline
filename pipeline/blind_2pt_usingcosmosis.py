@@ -256,7 +256,6 @@ def get_twoptdict_from_pipelinedata(data):
         types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
         xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
         x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'ximinus_{0}_{1}')
-        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'ximinus_{0}_{1}')
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
@@ -317,11 +316,12 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
         for j in xrange(jmax):
             #Load and interpolate from the block
             cl = block[section_name, bin_format.format(i+1,j+1)]
+
             bin1.append(np.repeat(i + 1, n_angle))
             bin2.append(np.repeat(j + 1, n_angle))
             angles.append(theory_angle)
             value.append(cl)
-            
+
             if is_auto and i!=j: #also store under flipped z bin labels
                 # this allows the script to work w fits files uing either convention
                 bin1.append(np.repeat(j + 1, n_angle))
@@ -407,16 +407,19 @@ def get_factordict(refdict,shiftdict,bftype='add'):
     #print bftype,'in get_factordict'
     factordict = {}
     for key in refdict:
+
         end = key[key.rfind('_')+1:]
+        print key,end
         # don't take ratios or differences of angle/multipole info
         if end in ['ell','l','theta','bins','angbins']:
+            #print '    no change'
             factordict[key] = refdict[key]
         else: 
             if bftype=='mult' or bftype=='multNOCS':
-                #print 'dividing!'
+                #print '    dividing!'
                 factordict[key] = shiftdict[key]/refdict[key]
             elif bftype=='add':
-                #print 'adding'
+                #print '    adding'
                 factordict[key] = shiftdict[key] - refdict[key]
             else:
                 raise ValueError('In get_factordict: blinding factor type not recognized')
@@ -544,9 +547,12 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
     xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
+
     if 'theta' in xkey: #if realspace, put angle data into arcmin
-        xfromdict *= 60.*180./np.pi #now in arcmin
-        
+        xmult = 60.*180./np.pi # change to arcmin
+    else:
+        xmult = 1. #fourier space
+
     yfromdict = datadict[ykey]
     binsdict = datadict[ykey+'_bins']
     b1dict = binsdict[0]
@@ -568,7 +574,7 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
         if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
             #get x and y data for this bin combo, 
             whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
-            tempx = xfromdict[whichinds]
+            tempx = xfromdict[whichinds]*xmult
             tempy = yfromdict[whichinds]
             #set up interpolator
             yinterp = SpectrumInterp(tempx,tempy)
@@ -661,6 +667,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
         for table in hdulist: #look all tables
             if table.header.get('2PTDATA'):
                 factor = get_dictdat_tomatch_fitsdat(table, factordict)
+
                 if bftype=='mult' or bftype=='multNOCS':
                     #print 'multiplying!'
                     table.data['value'] *= factor
