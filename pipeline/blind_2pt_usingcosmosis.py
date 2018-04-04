@@ -147,10 +147,6 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini'):
     
     Note that you'll need to source the cosmosis setup file before running this.
     """
-    # # THINGS TO TEST
-    # #  - does it matter if ini file is on test sampler or multinest? No
-    # #  - check that blinding factor is applied as expected
-    
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
     from cosmosis.datablock.cosmosis_py import block
@@ -210,23 +206,15 @@ def get_twoptdict_from_pipelinedata(data):
     get twopt data in a dictionary in the format expected by other functions
     in this script.
 
-    (An earlier version of this script used the save_2pt module to save 
-    temporary fits files, read in the data using get_twoptdict_fromfits_1darrays,
-    and then delete them. It has since been edited to just get the 2pt data 
-    directly from cosmosis.)
-    """
-    # this theta handling is pulled from save_2pt.py
-    # hard coding this isn't ideal, but it'll work for now
-    theta_min = 2.5
-    theta_max = 250.
-    n_theta = 20
-    theta = np.logspace(np.log10(theta_min), np.log10(theta_max), n_theta+1, endpoint=True)
-    a = theta[:-1]
-    b = theta[1:]
-    theta = 2./3. * (b**3-a**3)/(b**2-a**2)
-    # ^ see Krause et al. methods paper for where this comes from
-    #print "Computing factors for theta=",theta
+    For auto spectra where z bin label order doesn't matter, both orders
+    will be stored. (e.g. the same data will be there for bins 1-2 and 2-1).
 
+    The angular data will be returned in a format where all theory theta
+    values will be stored, so the arrays will be big. We'll interpolate these
+    to match the unblinded fits file's theta values when we apply the blinding
+    factors. 
+    (previously had hardcoded angle bins, change made for more flexibility)
+    """
     #these are the types
     galaxy_position_fourier = "GPF"
     galaxy_shear_emode_fourier = "GEF"
@@ -245,45 +233,45 @@ def get_twoptdict_from_pipelinedata(data):
     if data.has_section('galaxy_xi'):
         types = (galaxy_position_real,galaxy_position_real)
         xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins,angbins = spectrum_array_from_block(data,'galaxy_xi',types,theta,True)
+        x,y,bins = spectrum_array_from_block(data,'galaxy_xi',types,True)
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
-        outdict[ykey+'_angbins'] = angbins
     if data.has_section('galaxy_shear_xi'):
         types = (galaxy_position_real,galaxy_shear_plus_real)
         xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins,angbins = spectrum_array_from_block(data,'galaxy_shear_xi',types,theta,True)
+        x,y,bins = spectrum_array_from_block(data,'galaxy_shear_xi',types,True)
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
-        outdict[ykey+'_angbins'] = angbins
     if data.has_section('shear_xi'):
         #xip
         types = (galaxy_shear_plus_real,galaxy_shear_plus_real)
         xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins,angbins = spectrum_array_from_block(data,'shear_xi',types,theta,True,bin_format = 'xiplus_{0}_{1}')
+        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'xiplus_{0}_{1}')
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
-        outdict[ykey+'_angbins'] = angbins
         #xim
         types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
         xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins,angbins = spectrum_array_from_block(data,'shear_xi',types,theta,True,bin_format = 'ximinus_{0}_{1}')
+        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'ximinus_{0}_{1}')
+        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'ximinus_{0}_{1}')
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
-        outdict[ykey+'_angbins'] = angbins
             
     return outdict
 
 #-----------------------------------------------            
-def spectrum_array_from_block(block, section_name, types,  angle_sample, real_space, bin_format = 'bin_{0}_{1}'):
+def spectrum_array_from_block(block, section_name, types, real_space, bin_format = 'bin_{0}_{1}'):
     """
-    Adapting this from save_2pt.py's spectrum_measurement_from_block
+    Adapting this from save_2pt.py's spectrum_measurement_from_block.
+    (adaptations included removing interpolation step, symmetrizing
+    bin labels for is_auto=True)
 
-    No scale cutting implemented; that will be handled later. Since we 
+    No scale cutting implemented or angular sampling; 
+    that will be handled later. Since we 
     track bin numbers and angle values, which will be checked against 
     the unblinded fits file in get_dictdat_tomatch_fitsdat. 
     """
@@ -298,28 +286,27 @@ def spectrum_array_from_block(block, section_name, types,  angle_sample, real_sp
         nbin_b = block[section_name, "nbin_b"]
 
 
-    #This is the ell values that have been calculated by cosmosis, not to
-    #be confused with the ell values at which we want to save the results
-    #(which is ell_sample)
+    #This is the ell/theta values that have been calculated by cosmosis,
+    # so will generally be more densely sampled than values in fits files.
     if real_space:
         # This is in radians
         theory_angle = block[section_name, "theta"]
-        angle_sample_radians = np.radians(angle_sample/60.)
     else:
         theory_angle = block[section_name, "ell"]
-        angle_sample_radians = angle_sample
 
-    #This is the length of the sample values
-    n_angle_sample = len(angle_sample)
+    #This is the length of the angle array
+    n_angle = len(theory_angle) #whatevers in the block
+    
     
     #The fits format stores all the measurements
     #as one long vector.  So we build that up here from the various
     #bins that we will load in.  These are the different columns
     value = []
-    angle = []
+    #angle = []
     bin1 = []
     bin2 = []
-    angular_bin = []
+    #angular_bin = []
+    angles = []
         
     #Bin pairs. Varies depending on auto-correlation
     for i in xrange(nbin_a):
@@ -330,32 +317,26 @@ def spectrum_array_from_block(block, section_name, types,  angle_sample, real_sp
         for j in xrange(jmax):
             #Load and interpolate from the block
             cl = block[section_name, bin_format.format(i+1,j+1)]
-            #Convert arcmin to radians for the interpolation
-            cl_interp = SpectrumInterp(theory_angle, cl)
-            cl_sample = cl_interp(angle_sample_radians)
-            bin1.append(np.repeat(i + 1, n_angle_sample))
-            bin2.append(np.repeat(j + 1, n_angle_sample))
-            angular_bin.append(np.arange(n_angle_sample))
-            #Build up on the various vectors that we need
-            value.append(cl_sample)
-            angle.append(angle_sample)
+            bin1.append(np.repeat(i + 1, n_angle))
+            bin2.append(np.repeat(j + 1, n_angle))
+            angles.append(theory_angle)
+            value.append(cl)
+            
             if is_auto and i!=j: #also store under flipped z bin labels
                 # this allows the script to work w fits files uing either convention
-                bin1.append(np.repeat(j + 1, n_angle_sample))
-                bin2.append(np.repeat(i + 1, n_angle_sample))
-                angular_bin.append(np.arange(n_angle_sample))
-                value.append(cl_sample)
-                angle.append(angle_sample)
+                bin1.append(np.repeat(j + 1, n_angle))
+                bin2.append(np.repeat(i + 1, n_angle))
+                value.append(cl)
+                angles.append(theory_angle)
 
     #Convert all the lists of vectors into long single vectors
     value = np.concatenate(value)
-    angle = np.concatenate(angle)
     bin1 = np.concatenate(bin1)
     bin2 = np.concatenate(bin2)
     bins = (bin1,bin2)
-    angularbin = np.concatenate(angular_bin)
+    angles = np.concatenate(angles)
 
-    return angle, value, bins, angularbin
+    return angles, value, bins
 
 #-----------------------------------------------        
 class SpectrumInterp(object):
@@ -410,7 +391,7 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             outdict[xkey] = xgrid
             outdict[ykey] = ygrid
             outdict[ykey+'_bins'] = (bin1,bin2)
-            outdict[ykey+'_angbins'] = angbins
+            #outdict[ykey+'_angbins'] = angbins
     h.close()
     return outdict 
 #============================================================
@@ -554,7 +535,7 @@ def get_dictkey_for_2pttype(type1,type2):
         raise ValueError("Spectra type {0:s} - {1:s} not recognized.".format(type1,type2))
     return xkey,ykey
 #---------------------------------------     
-def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,angbfits,datadict):
+def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict):
     """ 
     Given info about 2pt data in a fits file (spectra type, z bin numbers,
     and angular bin numbers, extracts 2pt data from a dictionary of 
@@ -562,31 +543,42 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,angbfits,datadi
     as the fits file data. 
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-    xfromdict = datadict[xkey]
+    xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
+    if 'theta' in xkey: #if realspace, put angle data into arcmin
+        xfromdict *= 60.*180./np.pi #now in arcmin
+        
     yfromdict = datadict[ykey]
     binsdict = datadict[ykey+'_bins']
     b1dict = binsdict[0]
     b2dict = binsdict[1]
-    angbdict = datadict[ykey+'_angbins']
 
     Nentries = bin1fits.size
-    xout = np.zeros(Nentries)
     yout = np.zeros(Nentries)
-    # print ykey
-    # for i in xrange(b1dict.size):
-    #     print b1dict[i],b2dict[i],angbdict[i]
+
+    #this structure will store interp functions for b1-b2 combos
+    # so we don't have to keep recreating them
+    Nb1fits = max(bin1fits)
+    Nb2fits = max(bin2fits)
+    interpfuncs = [[None for b2f in xrange(Nb2fits)]\
+                   for b1f in xrange(Nb1fits)]
+    
     for i in xrange(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
-        ab = angbfits[i]
-        whichind = (b1==b1dict)*(b2==b2dict)*(ab==angbdict)
-        print b1,b2,ab,xfromdict[whichind]
-        xout[i] = xfromdict[whichind]
-        yout[i] = yfromdict[whichind]
-
-    #we want to return a subset of the 'fromdict' arrays
-    # for which the angular and z bins match the fits versions
-    return xout,yout
+        if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
+            #get x and y data for this bin combo, 
+            whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
+            tempx = xfromdict[whichinds]
+            tempy = yfromdict[whichinds]
+            #set up interpolator
+            yinterp = SpectrumInterp(tempx,tempy)
+            interpfuncs[b1-1][b2-1] = yinterp
+        else:
+            yinterp = interpfuncs[b1-1][b2-1]
+        yout[i] =  yinterp(xfits[i])
+    # We're returning the y data from the dictionary's array
+    # interpolated to match the theta values in the fits file.
+    return yout 
 
 #---------------------------------------
 def get_dictdat_tomatch_fitsdat(table,dictdata):
@@ -606,17 +598,10 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
 
     bin1 = table.data['BIN1'] #which bin is quant1 from?
     bin2 = table.data['BIN2'] #which bin is quant2 from?
-    angbin = table.data['ANGBIN'] #which angular bin is data from
-    xfromfits = table.data['ANG']
-    xfromdict,yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,angbin,dictdata)
 
-    if np.all(xfromdict==xfromfits):
-        print "Passed check: blinding factor and fits file have same angle values."
-    else:
-        print "FAILED CHECK: blinding factor and fits file DO NOT have same angle values."
-        print '        fits file angles:',xfromfits
-        print '  blinding factor angles:',xfromdict
-        
+    xfromfits = table.data['ANG']
+
+    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata)    
     return yfromdict
 
 #############################################################################
