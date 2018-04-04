@@ -339,6 +339,13 @@ def spectrum_array_from_block(block, section_name, types,  angle_sample, real_sp
             #Build up on the various vectors that we need
             value.append(cl_sample)
             angle.append(angle_sample)
+            if is_auto and i!=j: #also store under flipped z bin labels
+                # this allows the script to work w fits files uing either convention
+                bin1.append(np.repeat(j + 1, n_angle_sample))
+                bin2.append(np.repeat(i + 1, n_angle_sample))
+                angular_bin.append(np.arange(n_angle_sample))
+                value.append(cl_sample)
+                angle.append(angle_sample)
 
     #Convert all the lists of vectors into long single vectors
     value = np.concatenate(value)
@@ -565,12 +572,9 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,angbfits,datadi
     Nentries = bin1fits.size
     xout = np.zeros(Nentries)
     yout = np.zeros(Nentries)
-    print ykey
-    print 'b1',b1dict
-    print 'b2',b2dict
-    print 'ab',angbdict
-    for i in xrange(b1dict.size):
-        print b1dict[i],b2dict[i],angbdict[i]
+    # print ykey
+    # for i in xrange(b1dict.size):
+    #     print b1dict[i],b2dict[i],angbdict[i]
     for i in xrange(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
