@@ -565,11 +565,18 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,angbfits,datadi
     Nentries = bin1fits.size
     xout = np.zeros(Nentries)
     yout = np.zeros(Nentries)
+    print ykey
+    print 'b1',b1dict
+    print 'b2',b2dict
+    print 'ab',angbdict
+    for i in xrange(b1dict.size):
+        print b1dict[i],b2dict[i],angbdict[i]
     for i in xrange(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
         ab = angbfits[i]
         whichind = (b1==b1dict)*(b2==b2dict)*(ab==angbdict)
+        print b1,b2,ab,xfromdict[whichind]
         xout[i] = xfromdict[whichind]
         yout[i] = yfromdict[whichind]
 
