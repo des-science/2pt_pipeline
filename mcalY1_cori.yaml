@@ -43,7 +43,7 @@ flip_e2     : False
 
 cov_source_dir : /global/cscratch1/sd/troxel/cosmolike/top-level/des_mpp/multi_covariances_real_mpp
 ng          : False
-area        : 1321.
+area        : 5000.
 ggl_overlap_cut : 0.1
 lens_gbias : [1.54, 1.64, 1.75, 2.17, 2.05]
 
