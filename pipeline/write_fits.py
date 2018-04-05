@@ -4,6 +4,7 @@ import fitsio as fio
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 import glob
 import collections
+import os
 
 class WriteFits(PipelineStage):
     name = "2pt_fits"
@@ -55,7 +56,10 @@ class WriteFits(PipelineStage):
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
+        print 'BLINDING GOES HERE! '
+        os.system('source ~/cosmosis/LOAD_STUFF') #change to a more general location
         
+
         return
 
     def strip_wtheta(self, fits):
