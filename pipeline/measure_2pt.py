@@ -233,7 +233,7 @@ class Measure2Point(PipelineStage):
 
         f = h5py.File( self.input_path("nz_source"), mode='r+')
         source_binning = []
-        for zbin_ in f['nofz'].keys()
+        for zbin_ in f['nofz'].keys():
             source_binning.append(f['nofz'][zbin_][:])
 
         if self.params['has_sheared']:

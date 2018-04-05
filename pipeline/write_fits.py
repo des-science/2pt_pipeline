@@ -56,7 +56,7 @@ class WriteFits(PipelineStage):
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
         
-        
+        return
 
     def strip_wtheta(self, fits):
 #        if self.params['cross_clustering']:
