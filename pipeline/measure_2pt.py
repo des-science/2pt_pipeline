@@ -27,7 +27,6 @@ class Measure2Point(PipelineStage):
         "lens_idx"      : ("nofz", "lens_idx.npy")        ,
         "ran_idx"       : ("nofz", "ran_idx.npy")         ,
         "nofz_meta"     : ("nofz", "metadata.yaml")       ,
-
     }
     outputs = {
         "xip"    : "{rank}_xip.txt",
@@ -85,18 +84,31 @@ class Measure2Point(PipelineStage):
         params_mcal = yaml.load(open(mcal_file))
         params_mcal['param_file'] = mcal_file
         source_mcal = destest.H5Source(params_mcal)
-        self.selector_mcal = destest.Selector(params_mcal,source_mcal)
-        self.calibrator = destest.MetaCalib(params_mcal,self.selector_mcal)
+        self.source_selector = destest.Selector(params_mcal,source_mcal)
+        self.source_calibrator = destest.MetaCalib(params_mcal,self.source_selector)
 
         gold_file = 'destest_gold.yaml'
         params_gold = yaml.load(open(gold_file))
         params_gold['param_file'] = gold_file
         source_gold = destest.H5Source(params_gold)
-        self.selector_gold = destest.Selector(params_gold,source_gold,inherit=self.selector_mcal)
+        self.gold_selector = destest.Selector(params_gold,source_gold,inherit=self.source_selector)
 
-        if self.params['flip_e2']==True:
-            print 'flipping e2'
-            self.shape['e2']*=-1
+        lens_file = 'destest_redmagic.yaml'
+        params_lens = yaml.load(open(lens_file))
+        params_lens['param_file'] = lens_file
+        source_lens = destest.H5Source(params_lens)
+        self.lens_selector = destest.Selector(params_lens,source_lens)
+        self.lens_calibrator = destest.NoCalib(params_lens,self.lens_selector)
+
+        random_file = 'destest_random.yaml'
+        params_random = yaml.load(open(random_file))
+        params_random['param_file'] = random_file
+        source_random = destest.H5Source(params_random)
+        self.ran_selector = destest.Selector(params_random,source_random)
+
+        # if self.params['flip_e2']==True:
+        #     print 'flipping e2'
+        #     self.shape['e2']*=-1
 
         self.weight         = load_bin_weight_files("weight",self.gold['objid'])
         if self.params['lensfile'] != 'None':
@@ -109,14 +121,18 @@ class Measure2Point(PipelineStage):
         global global_measure_2_point
         global_measure_2_point = self
 
-    def get_hpix(self):
-
+    def get_nside(self):
         for nside in range(1,20):
             if self.params['tbounds'][1]>hp.nside2resol(nside,arcmin=True):
                 nside -=1
                 break
+        return nside
 
-        return nside, self.selector_gold.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
+    def get_hpix(self,pix=None):
+        if pix = None
+            return self.selector_gold.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
+        else:
+            return pix // ( self.params['hpix_nside'] // nside )
 
     def setup_jobs(self):
 
@@ -138,7 +154,7 @@ class Measure2Point(PipelineStage):
 
         all_calcs = [(i,j) for i in xrange(nbin) for j in xrange(nbin)]
 
-        nside,pix = self.get_hpix()
+        pix = self.get_hpix()
         pix = np.unique(pix)
 
         calcs=[]
@@ -198,9 +214,6 @@ class Measure2Point(PipelineStage):
         # Cori value
         num_threads=CORES_PER_TASK
 
-        # if k!=1:
-        #     return 0
-
         if (k==0): # xi+-
             theta,xi,xi2,xierr,xi2err,npairs,weight = self.calc_shear_shear(i,j,pix,verbose,num_threads)
             self.xi.append([xi,xi2,None,None])
@@ -229,150 +242,165 @@ class Measure2Point(PipelineStage):
 
         return 0
 
-    def get_zbins_R(self,i):
+    def get_zbins_R(self,i,cal):
 
-        f = h5py.File( self.input_path("nz_source"), mode='r+')
+        f = h5py.File( self.input_path("nz_source"), mode='r')
         source_binning = []
         for zbin_ in f['nofz'].keys()
             source_binning.append(f['nofz'][zbin_][:])
 
-        if self.params['has_sheared']:
-            mask = (source_binning[0] == i)
-            mask_1p = (source_binning[1] == i)
-            mask_1m = (source_binning[2] == i)
-            mask_2p = (source_binning[3] == i)
-            mask_2m = (source_binning[4] == i)
+        mask = []
+        for s in source_binning:
+            mask.append( s == i )
 
-            R1,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-            R2,c,w = self.calibrator.calibrate('e2',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+        R1,c,w = cal.calibrate('e1',mask=mask)
+        R2,c,w = cal.calibrate('e2',mask=mask)
+
+        if type(cal)==destest.NoCalib: # lens catalog so get random mask
+            f = h5py.File( self.input_path("randoms"), mode='r')
+            rmask = f['nofz']['zbin'][:] == i
+            return R1, R2, mask[0], w, rmask
         else:
-            mask = (self.source_binning == i)
-            R1 = self.shape['m1']
-            R2 = self.shape['m2']
+            return R1, R2, mask[0], w
 
-        return R1, R2, mask, w
+    def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False,rpix=None):
 
-    def build_source_catalog(self,i,ipix,pix):
+        def get_pix_subset(ipix,pix_,return_neighbor):
 
-        R1,R2,mask,w = self.get_zbins_R(i)
-        s = np.argsort(pix[mask])
+            theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
+            jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
+            jpix = np.append(ipix,jpix)
 
-        g1=(self.selector_mcal.get_col(self.Dict.mcal_dict['e1'])-self.mean_e1[i])/R1
-        g2=(self.selector_mcal.get_col(self.Dict.mcal_dict['e1'])-self.mean_e2[i])/R2
-        ra=self.selector_gold.get_col(self.Dict.gold_dict['ra'])
-        dec=self.selector_gold.get_col(self.Dict.gold_dict['dec'])
+            s = np.argsort(pix_)
+            pix_ = pix_[s]
+            if return_neighbor:
+                pixrange = []
+                pixrange2 = [0]
+                for x,jp in enumerate(jpix):
+                    pixrange = np.append((pixrange,np.r_[np.searchsorted(pix_, jp) : np.searchsorted(pix_, jp, side='right')]))
+                    pixrange2.append( np.s_( pixrange2[-1] : pixrange2[-1] + np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp) ) )
+            else:
+                pixrange = np.r_[np.searchsorted(pix_, ipix) : np.searchsorted(pix_, ipix, side='right')]
+                pixrange2 = None
 
-        if np.isscalar(w):
-            cat = treecorr.Catalog(g1=g1[mask][s], g2=g2[mask][s], ra=ra[mask][s], dec=dec[mask][s], ra_units='deg', dec_units='deg')
-        else:
-            cat = treecorr.Catalog(g1=g1[mask][s], g2=g2[mask][s], w=w[mask][s], ra=ra[mask][s], dec=dec[mask][s], ra_units='deg', dec_units='deg')
+            return s,pixrange,pixrange2
 
-        return cat,pix[mask][s]
+        ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])
+        dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])
+
+        if type(cal)==destest.NoCalib: # lens catalog
+
+            R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
+            s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
+
+            gmask = cal.selector.get_match()
+            cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
+                                    ra_units='deg', dec_units='deg')
+
+            ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[rmask]
+            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[rmask]
+            pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
+            s,pixrange,rpixrange2 = get_pix_subset(ipix,pix[rmask],return_neighbor)
+            rcat = treecorr.Catalog(ra=ra[s][pixrange], 
+                                    dec=dec[s][pixrange], 
+                                    ra_units='deg', dec_units='deg')
+
+        else: # shape catalog
+
+            R1,R2,mask,w = self.get_zbins_R(i,cal)
+            s,pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
+
+            g1=cal.selector.get_col(self.Dict.mcal_dict['e1'])[mask][s][pixrange]
+            g1 = (g1-self.mean_e1[i])/R1
+            g2=cal.selector.get_col(self.Dict.mcal_dict['e2'])[mask][s][pixrange]
+            g2 = (g2-self.mean_e2[i])/R2
+            cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], dec=dec[mask][s][pixrange], 
+                                    ra_units='deg', dec_units='deg')
+
+        if not np.isscalar(w):
+            cat.w = w
+
+        if type(cal)==destest.NoCalib:
+            return cat,rcat,pixrange2,rpixrange2
+
+        return cat,pixrange2
 
     def calc_shear_shear(self,i,j,ipix,verbose,num_threads):
 
-        nside,pix = self.get_hpix()
-        cat_i,pix = self.build_source_catalog(i,ipix,pix)
+        pix = self.get_hpix()
+        icat,pixrange = self.build_catalogs(source_calibrator,i,ipix,pix)
+        jcat,pixrange = self.build_catalogs(source_calibrator,j,ipix,pix,return_neighbor=True)
 
-        print mask,len(mask)
-        if self.params['has_sheared']:
-            cat_i = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[i])/m1[mask], g2=(self.shape['e2'][mask]-self.mean_e2[i])/m2[mask], w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-        else:
-            cat_i = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[i]), g2=(self.shape['e2'][mask]-self.mean_e2[i]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-            biascat_i = treecorr.Catalog(k=np.sqrt(self.shape['m1'][mask]*self.shape['m2'][mask]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
+        out = np.zeros((len(pixrange),7))
+        for x in range(len(pixrange)):
+            jcat.wpos[:]=0.
+            jcat.wpos[pixrange[x]] = 1.
+            gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            gg.process(icat,jcat)
+            out[x,0] = gg.meanlogr
+            out[x,1] = gg.xip
+            out[x,2] = gg.xim
+            out[x,3] = gg.npairs
+            out[x,4] = gg.weight
 
-        m1,m2,mask = self.get_m(j)
-        if self.params['has_sheared']:
-            cat_j = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[j])/m1[mask], g2=(self.shape['e2'][mask]-self.mean_e2[j])/m2[mask], w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-        else:
-            cat_j = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[j]), g2=(self.shape['e2'][mask]-self.mean_e2[j]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-            biascat_j = treecorr.Catalog(k=np.sqrt(self.shape['m1'][mask]*self.shape['m2'][mask]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-
-        gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        gg.process(cat_i,cat_j)
-        if self.params['has_sheared']:
-            norm = 1.
-        else:
-            kk = treecorr.KKCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            kk.process(biascat_i,biascat_j)
-            norm = kk.xi
-
-        theta=np.exp(gg.meanlogr)
-        xip = gg.xip/norm
-        xim = gg.xim/norm
-        xiperr = ximerr = np.sqrt(gg.varxi)/norm
-
-        return theta, xip, xim, xiperr, ximerr, gg.npairs, gg.weight
+        return out
 
     def calc_pos_shear(self,i,j,pix,verbose,num_threads):
 
-        mask = self.lens_binning==i
-        lenscat_i = treecorr.Catalog(w=self.lensweight[mask], ra=self.lens['ra'][mask], dec=self.lens['dec'][mask], ra_units='deg', dec_units='deg')
+        pix = self.get_hpix()
+        rpix = self.get_rhpix()
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(source_calibrator,i,ipix,pix,rpix=rpix)
+        jcat,pixrange = self.build_catalogs(lens_calibrator,j,ipix,pix,return_neighbor=True)
 
-        mask = self.ran_binning==i
-        rancat_i  = treecorr.Catalog(w=np.ones(np.sum(mask)), ra=self.randoms['ra'][mask], dec=self.randoms['dec'][mask], ra_units='deg', dec_units='deg')
+        out = np.zeros((len(pixrange),7))
+        for x in range(len(pixrange)):
+            jcat.wpos[:]=0.
+            jcat.wpos[pixrange[x]] = 1.
 
-        m1,m2,mask = self.get_zbins_R(j)
-        print mask,len(mask)
-        if self.params['has_sheared']:
-            cat_j = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[j])/m1[mask], g2=(self.shape['e2'][mask]-self.mean_e2[j])/m2[mask], w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-        else:
-            print 'e1',self.shape['e1'][mask]
-            print 'me1',j,self.mean_e1[j],j
-            print 'weight',self.weight[mask]
-            print 'm1',self.shape['m1'][mask]
-            cat_j = treecorr.Catalog(g1=(self.shape['e1'][mask]-self.mean_e1[j]), g2=(self.shape['e2'][mask]-self.mean_e2[j]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
-            biascat_j = treecorr.Catalog(k=np.sqrt(self.shape['m1'][mask]*self.shape['m2'][mask]), w=self.weight[mask], ra=self.shape['ra'][mask], dec=self.shape['dec'][mask], ra_units='deg', dec_units='deg')
+            ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            ng.process(icat,jcat)
+            rg.process(ircat,jcat)
+            gammat,gammat_im,gammaterr=ng.calculateXi(rg)
+            out[x,0] = ng.meanlogr
+            out[x,1] = gammat
+            out[x,2] = gammat_im
+            out[x,3] = gg.npairs
+            out[x,4] = gg.weight
 
-        ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        if self.params['has_sheared']:
-            norm = 1.
-        else:
-            nk = treecorr.NKCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            nk.process(lenscat_i,biascat_j)
-            norm,tmp=nk.calculateXi()
-        ng.process(lenscat_i,cat_j)
-        rg.process(rancat_i,cat_j)
-        gammat,gammat_im,gammaterr=ng.calculateXi(rg)
-
-        theta=np.exp(ng.meanlogr)
-        if np.sum(norm)==0:
-          norm=1.
-        gammat/=norm
-        gammat_im/=norm
-        gammaterr=np.sqrt(gammaterr/norm)
-
-        return theta, gammat, gammaterr, ng.npairs, ng.weight
+        return out
 
     def calc_pos_pos(self,i,j,pix,verbose,num_threads):
 
-        mask = self.lens_binning==i
-        lenscat_i = treecorr.Catalog(w=self.lensweight[mask], ra=self.lens['ra'][mask], dec=self.lens['dec'][mask], ra_units='deg', dec_units='deg')
+        pix = self.get_hpix()
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(lens_calibrator,i,ipix,pix,rpix=rpix)
+        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
 
-        mask = self.ran_binning==i
-        rancat_i  = treecorr.Catalog(w=np.ones(np.sum(mask)), ra=self.randoms['ra'][mask], dec=self.randoms['dec'][mask], ra_units='deg', dec_units='deg')
+        out = np.zeros((len(pixrange),7))
+        for x in range(len(pixrange)):
+            jcat.wpos[:]=0.
+            jcat.wpos[pixrange[x]] = 1.
 
-        mask = self.lens_binning==j
-        lenscat_j = treecorr.Catalog(w=self.lensweight[mask], ra=self.lens['ra'][mask], dec=self.lens['dec'][mask], ra_units='deg', dec_units='deg')
+            nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
 
-        mask = self.ran_binning==j
-        rancat_j  = treecorr.Catalog(w=np.ones(np.sum(mask)), ra=self.randoms['ra'][mask], dec=self.randoms['dec'][mask], ra_units='deg', dec_units='deg')
+            nn.process(icat,jcat)
+            rn.process(ircat,jcat)
+            nr.process(icat,jrcat)
+            rr.process(ircat,jrcat)
 
-        nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        rn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-        nn.process(lenscat_i,lenscat_j)
-        rn.process(rancat_i,lenscat_j)
-        nr.process(lenscat_i,rancat_j)
-        rr.process(rancat_i,rancat_j)
+            wtheta,wthetaerr=nn.calculateXi(rr,dr=nr,rd=rn)
+            wthetaerr=np.sqrt(wthetaerr)
+            out[x,0] = ng.meanlogr
+            out[x,1] = wtheta
+            out[x,3] = nn.npairs
+            out[x,4] = nn.weight
+            out[x,5] = rr.npairs
+            out[x,6] = rr.weight
 
-        theta=np.exp(nn.meanlogr)
-        wtheta,wthetaerr=nn.calculateXi(rr,dr=nr,rd=rn)
-        wthetaerr=np.sqrt(wthetaerr)
-
-        return theta, wtheta, wthetaerr, nn.npairs, nn.weight
+        return out
 
     def write(self):
         """
