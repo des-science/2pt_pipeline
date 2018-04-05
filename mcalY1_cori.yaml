@@ -4,6 +4,7 @@ prefix        : y1_mcal
 cosmo_code    : cosmosis #cosmolike 
 run_directory : y1_mcal
 test_run      : True #False
+cosmosis_setup: ~/cosmosis/LOAD_STUFF
 
 # catalog files
 
