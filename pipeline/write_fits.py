@@ -5,6 +5,7 @@ from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 import glob
 import collections
 import os
+import blind_2pt_usingcosmosis as blind
 
 class WriteFits(PipelineStage):
     name = "2pt_fits"
@@ -30,7 +31,7 @@ class WriteFits(PipelineStage):
         Initialise object.
         """
         super(WriteFits,self).__init__(param_file)
-
+        
     def run(self):
 
         # Initialise twopoint spectrum classes
@@ -47,7 +48,7 @@ class WriteFits(PipelineStage):
             print '\nBlinding will be applied to the file being written\nThis is hard-coded.' 
             print 'To unblind, set do_Blinding=False in write_fits.py'
             self.blind()
-        
+            
         return
 
     def blind(self):
@@ -56,20 +57,32 @@ class WriteFits(PipelineStage):
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
-        print 'BLINDING GOES HERE! '
-        source_command = 'source '+self.params['cosmosis_setup']
-        os.system(source_command) #change to a more general location
+        #ini_name = self.params['ini']
+        #seed_name = self.params['seed']
+        #btype_name = ' -b '+self.params['btype']
+        #label_name = ' -t '+self.params['label']
+
         unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
-        print unblinded_name
-        blinding_command = 'python blind_2pt_usingcosmosis.py -s '+self.params['seed']+' -b '+self.params['btype']+' -t '+self.params['label']+' -u '+unblinded_name
-        print blinding_command
-        run_cosmosis_command = os.system(blinding_command)
+        source_command = 'source '+self.params['cosmosis_setup']
+        #os.system(source_command)
+        blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)
+        
+
+        #unblinded_name =' -u '+self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
+        #print unblinded_name
+        #ini_name = ' -i '+self.params['ini']
+        #seed_name = ' -s '+self.params['seed']
+        #btype_name = ' -b '+self.params['btype']
+        #label_name = ' -t '+self.params['label']
+        #blinding_command = 'python pipeline/blind_2pt_usingcosmosis.py '+ seed_name + ini_name + btype_name + label_name + unblinded_name
+        #print source_command+'\n'+blinding_command
+        #run_cosmosis_command = os.system(source_command+' \n '+blinding_command)
         
         return
 
     def strip_wtheta(self, fits):
 #        if self.params['cross_clustering']:
-#            return
+        return
 
         wtheta = fits.get_spectrum(TWO_POINT_NAMES[3])
         mask = wtheta.bin1==wtheta.bin2

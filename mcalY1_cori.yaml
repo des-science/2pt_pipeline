@@ -12,6 +12,7 @@ cosmosis_setup: /global/homes/s/seccolf/cosmosis/LOAD_STUFF #a setup file to be 
 btype: add #choose between [add, mult], regarding how the blinding factor will be applied
 seed: avocado #any string to be used as random generator seed 
 label: TEST #an output file label
+ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding pipeline 
 
 # catalog files
 
