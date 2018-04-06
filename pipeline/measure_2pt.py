@@ -129,7 +129,7 @@ class Measure2Point(PipelineStage):
         return nside
 
     def get_hpix(self,pix=None):
-        if pix = None
+        if pix == None:
             return self.selector_gold.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
         else:
             return pix // ( self.params['hpix_nside'] // nside )
@@ -278,7 +278,7 @@ class Measure2Point(PipelineStage):
                 pixrange2 = [0]
                 for x,jp in enumerate(jpix):
                     pixrange = np.append((pixrange,np.r_[np.searchsorted(pix_, jp) : np.searchsorted(pix_, jp, side='right')]))
-                    pixrange2.append( np.s_( pixrange2[-1] : pixrange2[-1] + np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp) ) )
+                    pixrange2.append( np.s_[ pixrange2[-1] : pixrange2[-1] + np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp) ] )
             else:
                 pixrange = np.r_[np.searchsorted(pix_, ipix) : np.searchsorted(pix_, ipix, side='right')]
                 pixrange2 = None

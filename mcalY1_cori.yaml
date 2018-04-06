@@ -5,6 +5,14 @@ cosmo_code    : cosmosis #cosmolike
 run_directory : y1_mcal
 test_run      : True #False
 
+
+# blinding configurations
+
+cosmosis_setup: /global/homes/s/seccolf/cosmosis/LOAD_STUFF #a setup file to be sourced for cosmosis
+btype: add #choose between [add, mult], regarding how the blinding factor will be applied
+seed: avocado #any string to be used as random generator seed 
+label: TEST #an output file label
+
 # catalog files
 
 photozfile     : /global/cscratch1/sd/troxel/finaly1cats/mcal-y1a1-combined-griz-blind-v3-matched_BPZ.fits
@@ -19,6 +27,7 @@ lensfile       : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_high
 randomfile     : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_higherlum_jointmask_0.15-0.9_magauto_mof_combo_removedupes_spt_fwhmi_exptimei_cut_badpix_randoms.fits.gz
 footprintfile  : /global/cscratch1/sd/troxel/finaly1cats/5bins_hidens_hilum_higherlum_jointmask_0.15-0.9_magauto_mof_combo_removedupes_spt_fwhmi_exptimei_cut_badpix_mask.fits.gz
 dict_file      : dict_des_y3_mcal
+
 oneplusm       : True
 has_sheared    : True
 dg             : 0.01

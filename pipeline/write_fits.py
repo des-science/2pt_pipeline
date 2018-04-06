@@ -34,13 +34,13 @@ class WriteFits(PipelineStage):
     def run(self):
 
         # Initialise twopoint spectrum classes
-        self.init_specs()
+        #self.init_specs()
         
         # Load xi data
-        self.load_twopt_data()
+        #self.load_twopt_data()
 
         # Load covariance info
-        self.load_cov()
+        #self.load_cov()
 
         do_Blinding = True
         if do_Blinding:
@@ -57,9 +57,14 @@ class WriteFits(PipelineStage):
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
         print 'BLINDING GOES HERE! '
-        os.system('source ~/cosmosis/LOAD_STUFF') #change to a more general location
+        source_command = 'source '+self.params['cosmosis_setup']
+        os.system(source_command) #change to a more general location
+        unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
+        print unblinded_name
+        blinding_command = 'python blind_2pt_usingcosmosis.py -s '+self.params['seed']+' -b '+self.params['btype']+' -t '+self.params['label']+' -u '+unblinded_name
+        print blinding_command
+        run_cosmosis_command = os.system(blinding_command)
         
-
         return
 
     def strip_wtheta(self, fits):
