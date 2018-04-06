@@ -63,7 +63,7 @@ class WriteFits(PipelineStage):
         print unblinded_name
         blinding_command = 'python blind_2pt_usingcosmosis.py -s '+self.params['seed']+' -b '+self.params['btype']+' -t '+self.params['label']+' -u '+unblinded_name
         print blinding_command
-        run_cosmosis_command = os.system()
+        run_cosmosis_command = os.system(blinding_command)
         
         return
 
