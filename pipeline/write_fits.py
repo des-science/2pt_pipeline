@@ -61,8 +61,10 @@ class WriteFits(PipelineStage):
         os.system(source_command) #change to a more general location
         unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
         print unblinded_name
+        blinding_command = 'python blind_2pt_usingcosmosis.py -s '+self.params['seed']+' -b '+self.params['btype']+' -t '+self.params['label']+' -u '+unblinded_name
+        print blinding_command
         run_cosmosis_command = os.system()
-
+        
         return
 
     def strip_wtheta(self, fits):
