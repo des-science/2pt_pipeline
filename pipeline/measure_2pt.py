@@ -406,6 +406,7 @@ class Measure2Point(PipelineStage):
         """
         Write data to files.
         """
+
         if self.comm is None:
             rank = 0
         else:
