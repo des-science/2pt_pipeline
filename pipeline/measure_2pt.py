@@ -7,6 +7,8 @@ import healpy as hp
 from numpy.lib.recfunctions import append_fields, rename_fields
 from .stage import PipelineStage, TWO_POINT_NAMES
 import os
+import yaml
+import destest
 
 CORES_PER_TASK=20
 
@@ -106,17 +108,20 @@ class Measure2Point(PipelineStage):
         source_random = destest.H5Source(params_random)
         self.ran_selector = destest.Selector(params_random,source_random)
 
+        self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
+        print 'using dictionary: ',self.params['dict_file']
+        
         # if self.params['flip_e2']==True:
         #     print 'flipping e2'
         #     self.shape['e2']*=-1
 
-        self.weight         = load_bin_weight_files("weight",self.gold['objid'])
-        if self.params['lensfile'] != 'None':
-            self.lens_binning   = load_bin_weight_files("nz_lens",self.lens['objid'])
-            self.lensweight     = self.lens['weight']
-            self.ran_binning    = np.load(self.input_path("randoms"))
-            if len(self.ran_binning)!=len(self.randoms):
-                raise ValueError('bad binning or weight in file '+self.input_path("randoms"))
+        #self.weight         = load_bin_weight_files("weight",self.gold['objid'])
+        #if self.params['lensfile'] != 'None':
+        #    self.lens_binning   = load_bin_weight_files("nz_lens",self.lens['objid'])
+        #    self.lensweight     = self.lens['weight']
+        #    self.ran_binning    = np.load(self.input_path("randoms"))
+        #    if len(self.ran_binning)!=len(self.randoms):
+        #        raise ValueError('bad binning or weight in file '+self.input_path("randoms"))
         
         global global_measure_2_point
         global_measure_2_point = self
@@ -130,7 +135,7 @@ class Measure2Point(PipelineStage):
 
     def get_hpix(self,pix=None):
         if pix == None:
-            return self.selector_gold.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
+            return self.gold_selector.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
         else:
             return pix // ( self.params['hpix_nside'] // nside )
 
