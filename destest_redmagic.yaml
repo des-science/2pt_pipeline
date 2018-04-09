@@ -7,7 +7,7 @@ linear_bins : 20
 # reuse cached intermediate results? This will make subsequent runs much faster.
 load_cache  : True
 # output directory
-output      : . 
+output      : /global/cscratch1/sd/seccolf/2pt_pipeline/ 
 # If False, testsuite will terminate if the output directory already exists.
 output_exists : True 
 
@@ -34,7 +34,7 @@ cal_type   : 'None'
 # Type of data source. Currently only works for 'hdf5'
 source     : 'hdf5'
 # name of file
-filename   : '/global/cscratch1/sd/troxel/cats_des_y3/Y3_mastercat_v1_2_10_18.h5' #doesn't need to be changed
+filename   : '/global/cscratch1/sd/troxel/cats_des_y3/Y3_mastercat_v1_4_6_18_subsampled.h5'
 # For hdf5, group name
 group      : 'catalog/redmagic' #change HERE! this changes the path inside the HDF5 file
 # if metacalibrating, include array of five tables: unsehared, 1p, 1m, 2p, 2m

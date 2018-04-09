@@ -35,13 +35,13 @@ class WriteFits(PipelineStage):
     def run(self):
 
         # Initialise twopoint spectrum classes
-        self.init_specs()
+        #self.init_specs()
         
         # Load xi data
-        self.load_twopt_data()
+        #self.load_twopt_data()
 
         # Load covariance info
-        self.load_cov()
+        #self.load_cov()
 
         do_Blinding = True
         if do_Blinding:
@@ -54,7 +54,7 @@ class WriteFits(PipelineStage):
     def blind(self):
         #Requires sourcing a cosmosis-setup file
 
-        os.system('source BASHTEST.sh > BLINDING_LOG.txt')
+        os.system('source pipeline/BASHTEST.sh > BLINDING_LOG.txt')
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies

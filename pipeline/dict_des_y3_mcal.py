@@ -4,8 +4,9 @@ gold_dict = {
     'dec'           : None,
     'flags_gold'    : None,
     'flags_region'  : None,
-    'pzbin_col'     : None
-    }
+    'pzbin_col'     : None,
+    'hpix'          : 'hpix_16384'
+}
 
 shape_dict = {
     'objid'         : 'coadd_object_id',
