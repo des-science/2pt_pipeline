@@ -35,13 +35,13 @@ class WriteFits(PipelineStage):
     def run(self):
 
         # Initialise twopoint spectrum classes
-        #self.init_specs()
+        self.init_specs()
         
         # Load xi data
-        #self.load_twopt_data()
+        self.load_twopt_data()
 
         # Load covariance info
-        #self.load_cov()
+        self.load_cov()
 
         do_Blinding = True
         if do_Blinding:
@@ -54,6 +54,7 @@ class WriteFits(PipelineStage):
     def blind(self):
         #Requires sourcing a cosmosis-setup file
 
+        os.system('source BASHTEST.sh > BLINDING_LOG.txt')
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
@@ -62,10 +63,10 @@ class WriteFits(PipelineStage):
         #btype_name = ' -b '+self.params['btype']
         #label_name = ' -t '+self.params['label']
 
-        unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
-        source_command = 'source '+self.params['cosmosis_setup']
+        #unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
+        #source_command = 'source '+self.params['cosmosis_setup']
         #os.system(source_command)
-        blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)
+        #blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)
         
 
         #unblinded_name =' -u '+self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
@@ -76,7 +77,7 @@ class WriteFits(PipelineStage):
         #label_name = ' -t '+self.params['label']
         #blinding_command = 'python pipeline/blind_2pt_usingcosmosis.py '+ seed_name + ini_name + btype_name + label_name + unblinded_name
         #print source_command+'\n'+blinding_command
-        #run_cosmosis_command = os.system(source_command+' \n '+blinding_command)
+        #os.system(source_command+' \n '+blinding_command)
         
         return
 
