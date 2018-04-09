@@ -281,6 +281,7 @@ class nofz(PipelineStage):
             #    xbins = self.gold['pzbin_col']
             #else:
             xbins0=[]
+            print 'bin_col=',bin_col
             for x in bin_col:
                 xbins0.append(np.digitize(x, edge, right=True) - 1)
             xbins = xbins0[0]
@@ -304,7 +305,7 @@ class nofz(PipelineStage):
                 if shape:
                     #mask = mask&self.mask #Lucas: forget this mask since get_col deals with it
                     if self.params['has_sheared']:
-                        
+                        print xbins0,'I will crash now\n\n'
                         mask_1p = (xbins0[1] == i)
                         mask_1m = (xbins0[2] == i)
                         mask_2p = (xbins0[3] == i)

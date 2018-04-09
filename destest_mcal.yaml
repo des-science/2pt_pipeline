@@ -5,9 +5,9 @@
 linear_bins : 20
 # columns over which to iterate linear splitting
 # reuse cached intermediate results? This will make subsequent runs much faster.
-load_cache  : False
+load_cache  : True
 # output directory
-output      : . 
+output      : /global/cscratch1/sd/seccolf/2pt_pipeline/ 
 # If False, testsuite will terminate if the output directory already exists.
 output_exists : True 
 
