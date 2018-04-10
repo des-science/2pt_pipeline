@@ -138,7 +138,7 @@ class nofz(PipelineStage):
     def run(self):
         
         # Calculate source n(z)s and write to file
-        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])[0] #Lucas: added this zero here
+        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
         print 'In run: pzbin = ',pzbin
 
         if self.params['pdf_type']!='pdf': 
