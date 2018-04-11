@@ -1,8 +1,8 @@
 gold_dict = {
     'objid'         : 'coadd_objects_id',
-    'ra'            : None,
-    'dec'           : None,
-    'flags_gold'    : None,
+    'ra'            : 'ra',
+    'dec'           : 'dec',
+    'flags_gold'    : 'flags_gold',
     'flags_region'  : None,
     'pzbin_col'     : None,
     'hpix'          : 'hpix_16384'

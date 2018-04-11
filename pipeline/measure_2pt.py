@@ -128,16 +128,18 @@ class Measure2Point(PipelineStage):
 
     def get_nside(self):
         for nside in range(1,20):
-            if self.params['tbounds'][1]>hp.nside2resol(nside,arcmin=True):
+            if self.params['tbounds'][1]>hp.nside2resol(2**nside,arcmin=True):
                 nside -=1
                 break
-        return nside
+        return 2**nside
 
+    
     def get_hpix(self,pix=None):
         if pix == None:
-            return self.gold_selector.get_col(self.Dict.gold_dict['hpix']) // ( self.params['hpix_nside'] // nside )
+            print self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0],self.params['hpix_nside'] ,self.get_nside() 
+            return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0] // ( self.params['hpix_nside'] // self.get_nside() )
         else:
-            return pix // ( self.params['hpix_nside'] // nside )
+            return pix // ( self.params['hpix_nside'] // self.get_nside() )
 
     def setup_jobs(self):
 
@@ -158,7 +160,7 @@ class Measure2Point(PipelineStage):
             nbin=self.zbins
 
         all_calcs = [(i,j) for i in xrange(nbin) for j in xrange(nbin)]
-
+        
         pix = self.get_hpix()
         pix = np.unique(pix)
 
@@ -333,8 +335,8 @@ class Measure2Point(PipelineStage):
     def calc_shear_shear(self,i,j,ipix,verbose,num_threads):
 
         pix = self.get_hpix()
-        icat,pixrange = self.build_catalogs(source_calibrator,i,ipix,pix)
-        jcat,pixrange = self.build_catalogs(source_calibrator,j,ipix,pix,return_neighbor=True)
+        icat,pixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
+        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         out = np.zeros((len(pixrange),7))
         for x in range(len(pixrange)):
@@ -354,8 +356,8 @@ class Measure2Point(PipelineStage):
 
         pix = self.get_hpix()
         rpix = self.get_rhpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(source_calibrator,i,ipix,pix,rpix=rpix)
-        jcat,pixrange = self.build_catalogs(lens_calibrator,j,ipix,pix,return_neighbor=True)
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix,rpix=rpix)
+        jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
         out = np.zeros((len(pixrange),7))
         for x in range(len(pixrange)):
@@ -378,8 +380,8 @@ class Measure2Point(PipelineStage):
     def calc_pos_pos(self,i,j,pix,verbose,num_threads):
 
         pix = self.get_hpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(lens_calibrator,i,ipix,pix,rpix=rpix)
-        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
+        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
 
         out = np.zeros((len(pixrange),7))
         for x in range(len(pixrange)):
