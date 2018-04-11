@@ -170,7 +170,7 @@ class nofz(PipelineStage):
 
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
-            f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(1000000,) )
+            f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(len(zbin_)/10,) )
             f['nofz/'+zname][:] = zbin_
         f.close()
 
@@ -192,11 +192,11 @@ class nofz(PipelineStage):
             print 'Saving lens n(z)'
 
             f = h5py.File( self.output_path("nz_source"), mode='r+')
-            f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(100000,) )
+            f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(len(lens_zbin)/10,) )
             f['nofz/lens_zbin'][:] = lens_zbin
 
             ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol'])[0], self.lens_binedges, right=True) - 1
-            f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(1000000,) )
+            f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(len(ran_binning)/10,) )
             f['nofz/ran_zbin'][:] = ran_binning
 
             f.close()
