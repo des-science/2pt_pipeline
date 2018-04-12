@@ -249,13 +249,18 @@ class Measure2Point(PipelineStage):
 
         return 0
 
-    def get_zbins_R(self,i,cal):
+    def get_zbins_R(self,i,cal,shape=True):
 
         print 'in zbins R'
         f = h5py.File( self.input_path("nz_source"), mode='r')
-        source_binning = []
-        for zbin_ in f['nofz'].keys():
-            source_binning.append(f['nofz'][zbin_][:])
+        if type(cal)==destest.NoCalib: # lens catalog so get random mask
+            source_binning = [f['nofz/lens_zbin']]
+        else:
+            source_binning = []
+            for zbin_ in f['nofz'].keys():
+                if ('lens' in zbin_) | ('ran' in zbin_):
+                    continue
+                source_binning.append(f['nofz'][zbin_][:])
 
         print 'source binning',source_binning
         mask = []
@@ -267,8 +272,8 @@ class Measure2Point(PipelineStage):
         R2,c,w = cal.calibrate('e2',mask=mask)
 
         if type(cal)==destest.NoCalib: # lens catalog so get random mask
-            f = h5py.File( self.input_path("randoms"), mode='r')
-            rmask = f['nofz']['zbin'][:] == i
+            f = h5py.File( self.input_path("nz_source"), mode='r')
+            rmask = f['nofz']['ran_zbin'][:] == i
             return R1, R2, mask[0], w, rmask
         else:
             return R1, R2, mask[0], w
@@ -302,7 +307,7 @@ class Measure2Point(PipelineStage):
         if type(cal)==destest.NoCalib: # lens catalog
 
             print 'nocalib'
-            R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
+            R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
             gmask = cal.selector.get_match()
