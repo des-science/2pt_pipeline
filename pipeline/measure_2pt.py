@@ -108,6 +108,9 @@ class Measure2Point(PipelineStage):
         source_random = destest.H5Source(params_random)
         self.ran_selector = destest.Selector(params_random,source_random)
 
+        self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
+        print 'using dictionary: ',self.params['dict_file']
+
         print 'pz selector'
         pz_file = 'destest_pz.yaml'
         params_pz = yaml.load(open(pz_file))
@@ -121,8 +124,6 @@ class Measure2Point(PipelineStage):
         source_pz = destest.H5Source(params_pz)
         self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.selector_mcal)
 
-        self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
-        print 'using dictionary: ',self.params['dict_file']
         
         # if self.params['flip_e2']==True:
         #     print 'flipping e2'
