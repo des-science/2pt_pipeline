@@ -266,7 +266,7 @@ class Measure2Point(PipelineStage):
         mask = []
         for s in source_binning:
             mask.append( s == i )
-            print 'mask length',len(mask[-1]),len(cal.e1),len(cal.Rg1)
+            print 'mask length',len(mask[-1])
 
         R1,c,w = cal.calibrate('e1',mask=mask)
         R2,c,w = cal.calibrate('e2',mask=mask)
