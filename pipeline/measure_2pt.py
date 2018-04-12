@@ -122,7 +122,7 @@ class Measure2Point(PipelineStage):
             print "will use DNF's column names"
             self.Dict.pz_dict = self.Dict.dnf_dict
         source_pz = destest.H5Source(params_pz)
-        self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.selector_mcal)
+        self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.source_selector)
 
         
         # if self.params['flip_e2']==True:
