@@ -251,14 +251,17 @@ class Measure2Point(PipelineStage):
 
     def get_zbins_R(self,i,cal):
 
+        print 'in zbins R'
         f = h5py.File( self.input_path("nz_source"), mode='r')
         source_binning = []
         for zbin_ in f['nofz'].keys():
             source_binning.append(f['nofz'][zbin_][:])
 
+        print 'source binning',source_binning
         mask = []
         for s in source_binning:
             mask.append( s == i )
+            print 'mask length',len(mask[-1]),len(cal.e1),len(cal.Rg1)
 
         R1,c,w = cal.calibrate('e1',mask=mask)
         R2,c,w = cal.calibrate('e2',mask=mask)
