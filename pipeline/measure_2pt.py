@@ -108,6 +108,19 @@ class Measure2Point(PipelineStage):
         source_random = destest.H5Source(params_random)
         self.ran_selector = destest.Selector(params_random,source_random)
 
+        print 'pz selector'
+        pz_file = 'destest_pz.yaml'
+        params_pz = yaml.load(open(pz_file))
+        params_pz['param_file'] = pz_file
+        if params_pz['group'][-3:] == 'bpz':
+            print "will use BPZ's column names"
+            self.Dict.pz_dict = self.Dict.bpz_dict
+        else:
+            print "will use DNF's column names"
+            self.Dict.pz_dict = self.Dict.dnf_dict
+        source_pz = destest.H5Source(params_pz)
+        self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.selector_mcal)
+
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print 'using dictionary: ',self.params['dict_file']
         
@@ -261,6 +274,7 @@ class Measure2Point(PipelineStage):
                 if ('lens' in zbin_) | ('ran' in zbin_):
                     continue
                 source_binning.append(f['nofz'][zbin_][:])
+                print 'souce_binning_length',i,len(source_binning[-1])
 
         print 'source binning',source_binning
         mask = []
