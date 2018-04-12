@@ -292,11 +292,13 @@ class Measure2Point(PipelineStage):
 
             return s,pixrange,pixrange2
 
+        print 'start build',i
         ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])
         dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])
 
         if type(cal)==destest.NoCalib: # lens catalog
 
+            print 'nocalib'
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
@@ -314,8 +316,11 @@ class Measure2Point(PipelineStage):
 
         else: # shape catalog
 
+            print 'calib'
             R1,R2,mask,w = self.get_zbins_R(i,cal)
+            print 'got z bins'
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
+            print 'got pix subset'
 
             g1=cal.selector.get_col(self.Dict.mcal_dict['e1'])[mask][s][pixrange]
             g1 = (g1-self.mean_e1[i])/R1
@@ -334,10 +339,15 @@ class Measure2Point(PipelineStage):
 
     def calc_shear_shear(self,i,j,ipix,verbose,num_threads):
 
+        print 'in shear_shear'
+
         pix = self.get_hpix()
+        print 'before build'
         icat,pixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
+        print 'before build j'
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
+        print 'success build'
         out = np.zeros((len(pixrange),7))
         for x in range(len(pixrange)):
             jcat.wpos[:]=0.
@@ -353,6 +363,7 @@ class Measure2Point(PipelineStage):
         return out
 
     def calc_pos_shear(self,i,j,pix,verbose,num_threads):
+        print 'in pos_shear'
 
         pix = self.get_hpix()
         rpix = self.get_rhpix()
@@ -378,6 +389,8 @@ class Measure2Point(PipelineStage):
         return out
 
     def calc_pos_pos(self,i,j,pix,verbose,num_threads):
+        print 'in pos_pos'
+
 
         pix = self.get_hpix()
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
