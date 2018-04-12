@@ -288,6 +288,7 @@ class nofz(PipelineStage):
             for x in bin_col:
                 #print 'In build_nofz_bins: np.digitize(x, edge, right=True) - 1 = ',np.digitize(x, edge, right=True) - 1
                 xbins0.append(np.digitize(x, edge, right=True) - 1)
+                print np.min(x),np.max(x),np.min(xbins0[-1]),np.max(xbins0[-1])
             xbins = xbins0[0]
         else:
             #if 'pzbin_col' in self.gold.dtype.names:
