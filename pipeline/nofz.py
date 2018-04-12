@@ -139,7 +139,7 @@ class nofz(PipelineStage):
         
         # Calculate source n(z)s and write to file
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'In run: pzbin = ',pzbin
+        print 'In run: pzbin = ',len(pzbin),pzbin
 
         if self.params['pdf_type']!='pdf': 
             zbin, self.nofz = self.build_nofz_bins(
@@ -151,7 +151,6 @@ class nofz(PipelineStage):
                 self.weight,
                 shape=True)
         else: 
-            print '\nThe pipeline will certainly fail now...\n'
             pdfs = np.zeros((len(self.pz),len(self.z)))
             for i in range(len(self.z)):
                 pdfs[:,i] = self.pz['pzstack'+str(i)]
