@@ -350,6 +350,7 @@ class Measure2Point(PipelineStage):
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
             print 'got pix subset'
 
+            print mask,s,pixrange
             g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[mask][s][pixrange]
             g1 = (g1-self.mean_e1[i])/R1
             g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[mask][s][pixrange]
