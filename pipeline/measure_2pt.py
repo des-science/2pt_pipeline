@@ -270,6 +270,7 @@ class Measure2Point(PipelineStage):
 
         R1,c,w = cal.calibrate('e1',mask=mask)
         R2,c,w = cal.calibrate('e2',mask=mask)
+        print 'calibrate done'
 
         if type(cal)==destest.NoCalib: # lens catalog so get random mask
             f = h5py.File( self.input_path("nz_source"), mode='r')
