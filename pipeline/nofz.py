@@ -141,7 +141,7 @@ class nofz(PipelineStage):
         print 'before pzbin ---------------------'
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
         print 'before e1 ---------------------'
-        pzbin = self.selector_mcal.get_col('e1')
+        e1 = self.selector_mcal.get_col('e1')
         print 'In run: pzbin = ',len(pzbin[0]),pzbin
 
         if self.params['pdf_type']!='pdf': 
