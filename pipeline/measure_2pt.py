@@ -271,9 +271,8 @@ class Measure2Point(PipelineStage):
             source_binning = [f['nofz/lens_zbin']]
         else:
             source_binning = []
-            for zbin_ in f['nofz'].keys():
-                if ('lens' in zbin_) | ('ran' in zbin_):
-                    continue
+            print 'fix to be actual number of bins'
+            for zbin_ in ['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m']:
                 source_binning.append(f['nofz'][zbin_][:])
                 print 'souce_binning_length',i,len(source_binning[-1])
 
