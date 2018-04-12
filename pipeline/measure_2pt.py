@@ -22,7 +22,7 @@ class Measure2Point(PipelineStage):
     name = "2pt"
     inputs = {
         "weight"        : ("nofz", "weight.npy")          ,
-        "nz_source"     : ("nofz", "nz_source_zbin.npy")  ,
+        "nz_source"     : ("nofz", "nz_source_zbin.h5")  ,
         "nz_lens"       : ("nofz", "nz_lens_zbin.npy")    ,
         "randoms"       : ("nofz", "randoms_zbin.npy")    ,
         "gold_idx"      : ("nofz", "gold_idx.npy")        ,
@@ -317,9 +317,9 @@ class Measure2Point(PipelineStage):
             R1,R2,mask,w = self.get_zbins_R(i,cal)
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
 
-            g1=cal.selector.get_col(self.Dict.mcal_dict['e1'])[mask][s][pixrange]
+            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[mask][s][pixrange]
             g1 = (g1-self.mean_e1[i])/R1
-            g2=cal.selector.get_col(self.Dict.mcal_dict['e2'])[mask][s][pixrange]
+            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[mask][s][pixrange]
             g2 = (g2-self.mean_e2[i])/R2
             cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], dec=dec[mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
