@@ -286,7 +286,7 @@ class Measure2Point(PipelineStage):
         print 'before pzbin ---------------------'
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
         print 'before e1 ---------------------'
-        pzbin = self.selector_mcal.get_col('e1')
+        pzbin = self.source_selector.get_col('e1')
 
         R1,c,w = cal.calibrate('e1',mask=mask)
         R2,c,w = cal.calibrate('e2',mask=mask)
