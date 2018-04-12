@@ -139,7 +139,7 @@ class nofz(PipelineStage):
         
         # Calculate source n(z)s and write to file
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'In run: pzbin = ',len(pzbin),pzbin
+        print 'In run: pzbin = ',len(pzbin[0]),pzbin
 
         if self.params['pdf_type']!='pdf': 
             zbin, self.nofz = self.build_nofz_bins(
