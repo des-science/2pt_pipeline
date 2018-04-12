@@ -277,7 +277,7 @@ class Measure2Point(PipelineStage):
                 source_binning.append(f['nofz'][zbin_][:])
                 print 'souce_binning_length',i,len(source_binning[-1])
 
-        print 'source binning',source_binning,np.max(surce_binning[0]),np.min(surce_binning[0])
+        print 'source binning',source_binning,np.max(source_binning[0]),np.min(source_binning[0])
         mask = []
         for s in source_binning:
             mask.append( s == i )
