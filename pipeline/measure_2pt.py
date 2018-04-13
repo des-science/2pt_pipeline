@@ -314,10 +314,10 @@ class Measure2Point(PipelineStage):
                 tmp = 0
                 for x,jp in enumerate(jpix):
                     pixrange = np.append(pixrange,np.r_[int(np.searchsorted(pix_, jp)) : int(np.searchsorted(pix_, jp, side='right'))])
-                    print 'this is pixrange',pixrange
                     tmp2 = np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
                     pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] )
                     tmp += tmp2
+                pixrange = pixrange.astype(int)
             else:
                 pixrange = np.r_[int(np.searchsorted(pix_, ipix)) : int(np.searchsorted(pix_, ipix, side='right'))]
                 pixrange2 = None
