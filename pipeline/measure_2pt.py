@@ -236,30 +236,20 @@ class Measure2Point(PipelineStage):
         num_threads=CORES_PER_TASK
 
         if (k==0): # xi+-
-            theta,xi,xi2,xierr,xi2err,npairs,weight = self.calc_shear_shear(i,j,pix,verbose,num_threads)
-            self.xi.append([xi,xi2,None,None])
-            self.xierr.append([xierr,xi2err,None,None])
+            out = self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
-            theta,xi,xierr,npairs,weight = self.calc_pos_shear(i,j,pix,verbose,num_threads)
-            self.xi.append([None,None,xi,None])
-            self.xierr.append([None,None,xierr,None])
+            out = self.calc_pos_shear(i,j,pix,verbose,num_threads)
         if (k==2): # wtheta
-            theta,xi,xierr,npairs,weight = self.calc_pos_pos(i,j,pix,verbose,num_threads)
-            self.xi.append([None,None,None,xi])
-            self.xierr.append([None,None,None,xierr])
+            out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        if i==j:
-            npairs/=2
-            weight/=2
+        # if i==j:
+        #     npairs/=2
+        #     weight/=2
 
-        self.theta.append(theta)
-        self.npairs.append(npairs)
-        self.weight_.append(weight)
-        self.calc.append((i,j,k))
-        if k==0:
-            np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,xi2,npairs,weight)).T)
-        else:
-            np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,npairs,weight)).T)
+        # if k==0:
+        #     np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,xi2,npairs,weight)).T)
+        # else:
+        #     np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,npairs,weight)).T)
 
         return 0
 
