@@ -321,8 +321,8 @@ class Measure2Point(PipelineStage):
             return s,pixrange,pixrange2
 
         print 'start build',i
-        ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])
-        dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])
+        ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[0]
+        dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[0]
 
         if type(cal)==destest.NoCalib: # lens catalog
 
@@ -334,8 +334,8 @@ class Measure2Point(PipelineStage):
             cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
 
-            ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[rmask]
-            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[rmask]
+            ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[0][rmask]
+            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[0][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
             s,pixrange,rpixrange2 = get_pix_subset(ipix,pix[rmask],return_neighbor)
             rcat = treecorr.Catalog(ra=ra[s][pixrange], 
