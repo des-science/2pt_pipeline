@@ -351,9 +351,10 @@ class Measure2Point(PipelineStage):
             print 'got pix subset'
 
             print mask,s,pixrange
-            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[mask][s][pixrange]
+            print len(cal.selector.get_col(self.Dict.shape_dict['e1'])[0]),len(mask),len(s),len(pixrange)
+            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[0][mask][s][pixrange]
             g1 = (g1-self.mean_e1[i])/R1
-            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[mask][s][pixrange]
+            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[0][mask][s][pixrange]
             g2 = (g2-self.mean_e2[i])/R2
             cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], dec=dec[mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
