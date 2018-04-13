@@ -311,11 +311,12 @@ class Measure2Point(PipelineStage):
             if return_neighbor:
                 pixrange = []
                 pixrange2 = [0]
+                tmp = 0
                 for x,jp in enumerate(jpix):
                     pixrange = np.append(pixrange,np.r_[np.searchsorted(pix_, jp) : np.searchsorted(pix_, jp, side='right')])
-                    print pixrange2[-1], np.searchsorted(pix_, jp, side='right'),np.searchsorted(pix_, jp)
-                    tmp = pixrange2[-1] + np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
-                    pixrange2.append( np.s_[ pixrange2[-1] : tmp ] )
+                    print 'this is what is printing',pixrange2[-1], np.searchsorted(pix_, jp, side='right'), np.searchsorted(pix_, jp)
+                    pixrange2.append( np.s_[ tmp : tmp + np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp) ] )
+                    tmp += np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
             else:
                 pixrange = np.r_[np.searchsorted(pix_, ipix) : np.searchsorted(pix_, ipix, side='right')]
                 pixrange2 = None
