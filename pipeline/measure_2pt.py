@@ -313,7 +313,7 @@ class Measure2Point(PipelineStage):
                 pixrange2 = [0]
                 tmp = 0
                 for x,jp in enumerate(jpix):
-                    pixrange = np.append(pixrange,np.r_[np.searchsorted(pix_, jp) : np.searchsorted(pix_, jp, side='right')])
+                    pixrange = np.append(pixrange,np.r_[int(np.searchsorted(pix_, jp)) : int(np.searchsorted(pix_, jp, side='right'))])
                     print 'this is what is printing',pixrange2[-1], np.searchsorted(pix_, jp, side='right'), np.searchsorted(pix_, jp)
                     tmp2 = np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
                     pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] )
