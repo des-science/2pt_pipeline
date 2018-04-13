@@ -382,17 +382,17 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         print 'success build'
-        out = np.zeros((len(pixrange),7))
+        out = np.zeros((len(pixrange),7,self.params['tbins']))
         for x in range(len(pixrange)):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process(icat,jcat)
-            out[x,0] = gg.meanlogr
-            out[x,1] = gg.xip
-            out[x,2] = gg.xim
-            out[x,3] = gg.npairs
-            out[x,4] = gg.weight
+            out[x,0,:] = gg.meanlogr
+            out[x,1,:] = gg.xip
+            out[x,2,:] = gg.xim
+            out[x,3,:] = gg.npairs
+            out[x,4,:] = gg.weight
 
         return out
 
