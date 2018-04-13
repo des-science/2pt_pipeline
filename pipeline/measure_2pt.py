@@ -319,7 +319,7 @@ class Measure2Point(PipelineStage):
                     pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] )
                     tmp += tmp2
             else:
-                pixrange = np.r_[np.searchsorted(pix_, ipix) : np.searchsorted(pix_, ipix, side='right')]
+                pixrange = np.r_[int(np.searchsorted(pix_, ipix)) : int(np.searchsorted(pix_, ipix, side='right'))]
                 pixrange2 = None
 
             return s,pixrange,pixrange2
