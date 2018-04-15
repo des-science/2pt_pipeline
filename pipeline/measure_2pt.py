@@ -193,19 +193,24 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
+        f = h5py.File('2pt.txt',mode='w')
+        for i in pix:
+            for j in range(9):
+                for d in ['meanlogr','d1','d2','npairs','weight']:
+                    f.create_dataset( '2pt/xip/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/xim/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/gammat/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/wtheta/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                for d in ['npairs','weight']
+                    f.create_dataset( '2pt/random/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+        f.close()
+
         return calcs
 
     def run(self):
         #This is a parallel job
 
         calcs = self.setup_jobs()
-
-        self.theta  = []
-        self.xi     = []
-        self.xierr  = []
-        self.npairs = []
-        self.weight_ = []
-        self.calc   = []
 
         if self.comm:
             from .mpi_pool import MPIPool
@@ -242,14 +247,41 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        # if i==j:
-        #     npairs/=2
-        #     weight/=2
+        f = h5py.File('2pt.h5',mode='r+')
+        if i==j:
+            npairs/=2
+            weight/=2
 
-        # if k==0:
-        #     np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,xi2,npairs,weight)).T)
-        # else:
-        #     np.savetxt('2pt_'+str(i)+'_'+str(j)+'_'+str(k)+'.txt',np.vstack((theta,xi,npairs,weight)).T)
+        for ip in pix:
+            for jp in range(9):
+                for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
+                    if k==0:
+                        f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                        f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                    if k==1:
+                        f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                    if k==2:
+                        f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                for di,d in tuple(zip([3,4],['npairs','weight'])):
+                    if k==0:
+                        if i==j
+                            f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
+                            f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
+                        else:
+                            f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                            f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                    if k==1:
+                        if i==j
+                            f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
+                        else:
+                            f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                    if k==2:
+                        if i==j:
+                            f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
+                            f['2pt/random/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
+                        else:
+                            f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+                            f['2pt/random/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
 
         return 0
 
@@ -372,7 +404,7 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         print 'success build'
-        out = np.zeros((len(pixrange),7,self.params['tbins']))
+        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
         for x in range(len(pixrange)):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -394,7 +426,7 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix,rpix=rpix)
         jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
-        out = np.zeros((len(pixrange),7))
+        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
         for x in range(len(pixrange)):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -404,11 +436,11 @@ class Measure2Point(PipelineStage):
             ng.process(icat,jcat)
             rg.process(ircat,jcat)
             gammat,gammat_im,gammaterr=ng.calculateXi(rg)
-            out[x,0] = ng.meanlogr
-            out[x,1] = gammat
-            out[x,2] = gammat_im
-            out[x,3] = gg.npairs
-            out[x,4] = gg.weight
+            out[x,0,:] = ng.meanlogr
+            out[x,1,:] = gammat
+            out[x,2,:] = gammat_im
+            out[x,3,:] = gg.npairs
+            out[x,4,:] = gg.weight
 
         return out
 
@@ -420,7 +452,7 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
 
-        out = np.zeros((len(pixrange),7))
+        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
         for x in range(len(pixrange)):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -437,12 +469,12 @@ class Measure2Point(PipelineStage):
 
             wtheta,wthetaerr=nn.calculateXi(rr,dr=nr,rd=rn)
             wthetaerr=np.sqrt(wthetaerr)
-            out[x,0] = ng.meanlogr
-            out[x,1] = wtheta
-            out[x,3] = nn.npairs
-            out[x,4] = nn.weight
-            out[x,5] = rr.npairs
-            out[x,6] = rr.weight
+            out[x,0,:] = ng.meanlogr
+            out[x,1,:] = wtheta
+            out[x,3,:] = nn.npairs
+            out[x,4,:] = nn.weight
+            out[x,5,:] = rr.npairs
+            out[x,6,:] = rr.weight
 
         return out
 
