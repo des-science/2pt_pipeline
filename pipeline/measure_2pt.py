@@ -483,32 +483,4 @@ class Measure2Point(PipelineStage):
         Write data to files.
         """
 
-        if self.comm is None:
-            rank = 0
-        else:
-            rank = self.comm.Get_rank()
-
-        for n,name in enumerate(TWO_POINT_NAMES):
-            if (n<2)&(self.params['2pt_only'].lower() not in [None,'shear-shear','all']):
-                continue
-            if (n==2)&((self.params['2pt_only'].lower() not in [None,'pos-shear','all'])|(self.params['lensfile'] == 'None')):
-                continue
-            if (n==3)&((self.params['2pt_only'].lower() not in [None,'pos-pos','all'])|(self.params['lensfile'] == 'None')):
-                continue
-            filename = self.output_path(name).format(rank=rank)
-            f = None
-            for (theta,xi_data,npairs,weight,ijk) in zip(self.theta, self.xi, self.npairs, self.weight_, self.calc):
-                i,j,k = ijk
-                if (n<2) and (k!=0):
-                    continue
-                if (n==2) and (k!=1):
-                    continue
-                if (n==3) and (k!=2):
-                    continue
-                if f is None:
-                    f = open(filename, 'w')
-                for theta,xi_theta,npairs_,weight_ in zip(theta, xi_data[n], npairs, weight):
-                    f.write("{} {} {} {} {} {}\n".format(theta, i, j, xi_theta, npairs_, weight_))
-            if f is not None:
-                f.close()
-
+        return
