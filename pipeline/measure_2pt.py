@@ -201,7 +201,7 @@ class Measure2Point(PipelineStage):
                     f.create_dataset( '2pt/xim/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
                     f.create_dataset( '2pt/gammat/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
                     f.create_dataset( '2pt/wtheta/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                for d in ['npairs','weight']
+                for d in ['npairs','weight']:
                     f.create_dataset( '2pt/random/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
         f.close()
 
