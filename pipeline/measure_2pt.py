@@ -249,36 +249,35 @@ class Measure2Point(PipelineStage):
 
         f = h5py.File('2pt.h5',mode='r+')
 
-        for ip in pix:
-            for jp in range(9):
-                for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
-                    if k==0:
-                        f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                        f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                    if k==1:
-                        f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                    if k==2:
-                        f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                for di,d in tuple(zip([3,4],['npairs','weight'])):
-                    if k==0:
-                        if i==j:
-                            f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
-                            f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
-                        else:
-                            f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                            f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                    if k==1:
-                        if i==j:
-                            f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
-                        else:
-                            f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                    if k==2:
-                        if i==j:
-                            f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
-                            f['2pt/random/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
-                        else:
-                            f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
-                            f['2pt/random/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
+        for jp in range(9):
+            for di,d in tuple(zpix([0,1,2],['meanlogr','d1','d2'])):
+                if k==0:
+                    f['2pt/xpix/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                    f['2pt/xim/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                if k==1:
+                    f['2pt/gammat/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                if k==2:
+                    f['2pt/wtheta/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+            for di,d in tuple(zpix([3,4],['npairs','weight'])):
+                if k==0:
+                    if i==j:
+                        f['2pt/xpix/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/xim/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                    else:
+                        f['2pt/xpix/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/xim/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                if k==1:
+                    if i==j:
+                        f['2pt/gammat/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                    else:
+                        f['2pt/gammat/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                if k==2:
+                    if i==j:
+                        f['2pt/wtheta/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/random/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                    else:
+                        f['2pt/wtheta/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/random/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
 
         return 0
 
