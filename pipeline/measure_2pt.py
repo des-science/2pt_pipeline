@@ -248,9 +248,6 @@ class Measure2Point(PipelineStage):
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
         f = h5py.File('2pt.h5',mode='r+')
-        if i==j:
-            npairs/=2
-            weight/=2
 
         for ip in pix:
             for jp in range(9):
