@@ -197,12 +197,12 @@ class Measure2Point(PipelineStage):
         for i in pix:
             for j in range(9):
                 for d in ['meanlogr','d1','d2','npairs','weight']:
-                    f.create_dataset( '2pt/xip/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/xim/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/gammat/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/wtheta/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                for d in ['npairs','weight']
-                    f.create_dataset( '2pt/random/'+int(i)+'/'+int(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/xip/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/xim/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/gammat/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    f.create_dataset( '2pt/wtheta/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                for d in ['npairs','weight']:
+                    f.create_dataset( '2pt/random/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
         f.close()
 
         return calcs
@@ -264,14 +264,14 @@ class Measure2Point(PipelineStage):
                         f['2pt/wtheta/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
                 for di,d in tuple(zip([3,4],['npairs','weight'])):
                     if k==0:
-                        if i==j
+                        if i==j:
                             f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
                             f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
                         else:
                             f['2pt/xip/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
                             f['2pt/xim/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
                     if k==1:
-                        if i==j
+                        if i==j:
                             f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]/2
                         else:
                             f['2pt/gammat/'+int(ip)+'/'+int(jp)+'/'+d+'/'][:] = out[ip,jp,di,:]
