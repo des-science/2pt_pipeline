@@ -193,7 +193,7 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
-        f = h5py.File('2pt.txt',mode='w')
+        f = h5py.File('2pt.h5',mode='w')
         for i in pix:
             for j in range(9):
                 for d in ['meanlogr','d1','d2','npairs','weight']:
