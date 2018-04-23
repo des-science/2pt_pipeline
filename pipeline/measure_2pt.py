@@ -250,7 +250,7 @@ class Measure2Point(PipelineStage):
         f = h5py.File('2pt.h5',mode='r+')
 
         for jp in range(9):
-            for di,d in tuple(zpix([0,1,2],['meanlogr','d1','d2'])):
+            for di,d in tuple(pix([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
                     f['2pt/xpix/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                     f['2pt/xim/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
@@ -258,7 +258,7 @@ class Measure2Point(PipelineStage):
                     f['2pt/gammat/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                 if k==2:
                     f['2pt/wtheta/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
-            for di,d in tuple(zpix([3,4],['npairs','weight'])):
+            for di,d in tuple(pix([3,4],['npairs','weight'])):
                 if k==0:
                     if i==j:
                         f['2pt/xpix/'+int(pix)+'/'+int(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
