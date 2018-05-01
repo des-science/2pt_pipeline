@@ -101,6 +101,7 @@ class Measure2Point(PipelineStage):
         source_lens = destest.H5Source(params_lens)
         self.lens_selector = destest.Selector(params_lens,source_lens)
         self.lens_calibrator = destest.NoCalib(params_lens,self.lens_selector)
+        
 
         random_file = 'destest_random.yaml'
         params_random = yaml.load(open(random_file))
@@ -252,7 +253,8 @@ class Measure2Point(PipelineStage):
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
-                    f['2pt/xpix/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                    print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'
+                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                     f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                 if k==1:
                     f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
@@ -261,10 +263,10 @@ class Measure2Point(PipelineStage):
             for di,d in tuple(zip([3,4],['npairs','weight'])):
                 if k==0:
                     if i==j:
-                        f['2pt/xpix/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
                         f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
                     else:
-                        f['2pt/xpix/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                         f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
                 if k==1:
                     if i==j:
