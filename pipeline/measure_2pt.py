@@ -195,15 +195,19 @@ class Measure2Point(PipelineStage):
                         calcs.append((i,j,pix_,2))
 
         f = h5py.File('2pt.h5',mode='w')
-        for i in pix:
-            for j in range(9):
+        for i,j,ipix,calc in calcs:
+            for jpix in range(9):
                 for d in ['meanlogr','d1','d2','npairs','weight']:
-                    f.create_dataset( '2pt/xip/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/xim/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/gammat/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    f.create_dataset( '2pt/wtheta/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    if calc==0:
+                        f.create_dataset( '2pt/xip/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                        f.create_dataset( '2pt/xim/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    if calc==1:
+                        f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    if calc==2:
+                        f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
                 for d in ['npairs','weight']:
-                    f.create_dataset( '2pt/random/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                    if calc==2:
+                        f.create_dataset( '2pt/random/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
         f.close()
 
         return calcs
@@ -252,33 +256,33 @@ class Measure2Point(PipelineStage):
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
-                    print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'
-                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
-                    f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                    print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'
+                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                    f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
-                    f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                    f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
-                    f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                    f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
             for di,d in tuple(zip([3,4],['npairs','weight'])):
                 if k==0:
                     if i==j:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
                     if i==j:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
                     if i==j:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
 
         return 0
 
