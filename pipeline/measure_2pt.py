@@ -249,37 +249,36 @@ class Measure2Point(PipelineStage):
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
         f = h5py.File('2pt.h5',mode='r+')
-
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
                     print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'
-                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
-                    f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                    f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
-                    f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                    f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
-                    f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                    f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
             for di,d in tuple(zip([3,4],['npairs','weight'])):
                 if k==0:
                     if i==j:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
                     if i==j:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
                     if i==j:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]/2
+                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[pix,jp,di,:]
+                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
+                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+d+'/'][:] = out[jp,di,:]
 
         return 0
 
@@ -402,8 +401,8 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         print 'success build'
-        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
-        for x in range(len(pixrange)):
+        out = np.zeros((9,7,self.params['tbins']))
+        for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
@@ -424,8 +423,8 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix,rpix=rpix)
         jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
-        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
-        for x in range(len(pixrange)):
+        out = np.zeros((9,7,self.params['tbins']))
+        for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
 
@@ -450,8 +449,8 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
 
-        out = np.zeros((len(pixrange),9,7,self.params['tbins']))
-        for x in range(len(pixrange)):
+        out = np.zeros((9,7,self.params['tbins']))
+        for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
 
