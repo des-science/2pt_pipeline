@@ -151,7 +151,7 @@ class Measure2Point(PipelineStage):
     
     def get_hpix(self,pix=None):
         if pix == None:
-            print self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0],self.params['hpix_nside'] ,self.get_nside() 
+            print self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0],self.params['hpix_nside'] ,self.get_nside() , self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0] // ( self.params['hpix_nside'] // self.get_nside() ), self.params['hpix_nside'] // self.get_nside()
             return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0] // ( self.params['hpix_nside'] // self.get_nside() )
         else:
             return pix // ( self.params['hpix_nside'] // self.get_nside() )
