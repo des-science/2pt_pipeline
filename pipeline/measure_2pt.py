@@ -354,16 +354,23 @@ class Measure2Point(PipelineStage):
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
             gmask = cal.selector.get_match()
-            cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
+            if len(ra[gmask][mask][s][pixrange])>0:
+                cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
+            else:
+                cat = None
 
             ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[0][rmask]
             dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[0][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
             s,pixrange,rpixrange2 = get_pix_subset(ipix,pix[rmask],return_neighbor)
-            rcat = treecorr.Catalog(ra=ra[s][pixrange], 
-                                    dec=dec[s][pixrange], 
-                                    ra_units='deg', dec_units='deg')
+            if len(ra[s][pixrange])>0:
+                rcat = treecorr.Catalog(ra=ra[s][pixrange], 
+                                        dec=dec[s][pixrange], 
+                                        ra_units='deg', dec_units='deg')
+            else:
+                rcat = None
+                return cat,rcat,pixrange2,rpixrange2
 
         else: # shape catalog
 
@@ -379,8 +386,12 @@ class Measure2Point(PipelineStage):
             g1 = (g1-self.mean_e1[i])/R1
             g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[0][mask][s][pixrange]
             g2 = (g2-self.mean_e2[i])/R2
-            cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], dec=dec[mask][s][pixrange], 
-                                    ra_units='deg', dec_units='deg')
+            if len(g1)>0:
+                cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], 
+                                        dec=dec[mask][s][pixrange], ra_units='deg', dec_units='deg')
+            else:
+                cat = None
+                return cat,pixrange2
 
         if not np.isscalar(w):
             cat.w = w
@@ -402,6 +413,8 @@ class Measure2Point(PipelineStage):
 
         print 'success build'
         out = np.zeros((9,7,self.params['tbins']))
+        if (icat is None) or (jcat is None):
+            return out
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -424,6 +437,8 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
         out = np.zeros((9,7,self.params['tbins']))
+        if (icat is None) or (jcat is None):
+            return out
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -444,12 +459,13 @@ class Measure2Point(PipelineStage):
     def calc_pos_pos(self,i,j,pix,verbose,num_threads):
         print 'in pos_pos'
 
-
         pix = self.get_hpix()
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
 
         out = np.zeros((9,7,self.params['tbins']))
+        if (icat is None) or (jcat is None):
+            return out
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
