@@ -178,6 +178,7 @@ class Measure2Point(PipelineStage):
         
         pix = self.get_hpix()
         pix = np.unique(pix)
+        print '------------- number of pixels',len(pix)
 
         calcs=[]
         for i,j in all_calcs:
