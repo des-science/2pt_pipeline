@@ -321,7 +321,7 @@ class Measure2Point(PipelineStage):
         else:
             return R1, R2, mask[0], w
 
-    def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False,rpix=None):
+    def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False):
 
         def get_pix_subset(ipix,pix_,return_neighbor):
 
@@ -436,8 +436,7 @@ class Measure2Point(PipelineStage):
         print 'in pos_shear'
 
         pix = self.get_hpix()
-        rpix = self.get_rhpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix,rpix=rpix)
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
         jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
         out = np.zeros((9,7,self.params['tbins']))
@@ -464,8 +463,8 @@ class Measure2Point(PipelineStage):
         print 'in pos_pos'
 
         pix = self.get_hpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,rpix=rpix)
-        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True,rpix=rpix)
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)
+        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
         out = np.zeros((9,7,self.params['tbins']))
         if (icat is None) or (jcat is None):
