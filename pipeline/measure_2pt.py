@@ -195,7 +195,7 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
-        f = h5py.File('2pt.h5',mode='w')
+        f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
         for i,j,ipix,calc in calcs:
             for jpix in range(9):
                 for d in ['meanlogr','d1','d2','npairs','weight']:
@@ -256,7 +256,7 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=pool.comm)
+        f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
