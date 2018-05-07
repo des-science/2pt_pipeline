@@ -256,7 +256,7 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        f = h5py.File('2pt.h5',mode='r+')
+        f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=pool.comm)
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
@@ -287,6 +287,8 @@ class Measure2Point(PipelineStage):
                     else:
                         f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                         f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+
+        f.close()
 
         return 0
 
