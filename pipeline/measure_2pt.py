@@ -7,6 +7,7 @@ import healpy as hp
 from numpy.lib.recfunctions import append_fields, rename_fields
 from .stage import PipelineStage, TWO_POINT_NAMES
 import os
+import sys
 import yaml
 import destest
 
@@ -215,14 +216,17 @@ class Measure2Point(PipelineStage):
     def run(self):
         #This is a parallel job
 
-        calcs = self.setup_jobs()
-
         if self.comm:
             from .mpi_pool import MPIPool
             pool = MPIPool(self.comm)
+            if not pool.is_master():
+                pool.wait()
+                sys.exit(0)
+            calcs = self.setup_jobs()
             pool.map(task, calcs)
             pool.close()
         else:
+            calcs = self.setup_jobs()
             map(task, calcs)
 
     def load_metadata(self):
