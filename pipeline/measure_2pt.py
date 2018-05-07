@@ -10,6 +10,7 @@ import os
 import sys
 import yaml
 import destest
+import mpi4py.MPI
 
 CORES_PER_TASK=20
 
