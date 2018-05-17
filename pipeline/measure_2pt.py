@@ -46,6 +46,8 @@ class Measure2Point(PipelineStage):
         """
         super(Measure2Point,self).__init__(param_file)
 
+        print 'im working'
+
         import importlib
         col = importlib.import_module('.'+self.params['dict_file'],'pipeline')
 
@@ -196,7 +198,8 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
-        f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=mpi4py.MPI.COMM_WORLD)
+        f = h5py.File('2pt.h5',mode='w')
+        print 'f done'
         for i,j,ipix,calc in calcs:
             for jpix in range(9):
                 for d in ['meanlogr','d1','d2','npairs','weight']:
@@ -211,6 +214,9 @@ class Measure2Point(PipelineStage):
                     if calc==2:
                         f.create_dataset( '2pt/random/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
         f.close()
+        
+        self.comm.Barrier()
+        print 'done calcs'
 
         return calcs
 
@@ -220,11 +226,17 @@ class Measure2Point(PipelineStage):
         if self.comm:
             from .mpi_pool import MPIPool
             pool = MPIPool(self.comm)
+            calcs = self.setup_jobs()
             if not pool.is_master():
+                self.comm.Barrier()
+                self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 pool.wait()
                 sys.exit(0)
             calcs = self.setup_jobs()
+            self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             pool.map(task, calcs)
+            self.comm.Barrier()
+            self.f.close()
             pool.close()
         else:
             calcs = self.setup_jobs()
@@ -257,39 +269,36 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
         for jp in range(9):
             for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
                 if k==0:
                     print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'
-                    f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                    f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                    self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                    self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
-                    f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                    self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
-                    f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                    self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
             for di,d in tuple(zip([3,4],['npairs','weight'])):
                 if k==0:
                     if i==j:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                        f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==1:
                     if i==j:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
                 if k==2:
                     if i==j:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
+                        self.f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
                     else:
-                        f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                        f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-
-        f.close()
+                        self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
+                        self.f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
 
         return 0
 
