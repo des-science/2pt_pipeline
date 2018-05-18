@@ -198,7 +198,7 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
-        f = h5py.File('2pt.h5',mode='w')
+        f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
         print 'f done'
         for i,j,ipix,calc in calcs:
             for jpix in range(9):
