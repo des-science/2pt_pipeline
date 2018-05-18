@@ -228,11 +228,15 @@ class Measure2Point(PipelineStage):
             pool = MPIPool(self.comm)
             calcs = self.setup_jobs()
             if not pool.is_master():
-                self.comm.Barrier()
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+                self.comm.Barrier()
                 pool.wait()
+                self.comm.Barrier()
+                self.f.close()
                 sys.exit(0)
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            print 'barrier'
+            self.comm.Barrier()
             pool.map(task, calcs)
             self.comm.Barrier()
             self.f.close()
