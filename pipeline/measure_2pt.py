@@ -232,7 +232,6 @@ class Measure2Point(PipelineStage):
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 pool.wait()
                 sys.exit(0)
-            calcs = self.setup_jobs()
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             pool.map(task, calcs)
             self.comm.Barrier()
