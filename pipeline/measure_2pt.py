@@ -265,11 +265,11 @@ class Measure2Point(PipelineStage):
         num_threads=CORES_PER_TASK
 
         if (k==0): # xi+-
-            out = self.calc_shear_shear(i,j,pix,verbose,num_threads)
+            self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
-            out = self.calc_pos_shear(i,j,pix,verbose,num_threads)
+            self.calc_pos_shear(i,j,pix,verbose,num_threads)
         if (k==2): # wtheta
-            out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
+            self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
         return 0
 
@@ -419,7 +419,7 @@ class Measure2Point(PipelineStage):
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
 
-        return out
+        return 
 
     def calc_pos_shear(self,i,j,ipix,verbose,num_threads):
         print 'in pos_shear'
@@ -449,7 +449,7 @@ class Measure2Point(PipelineStage):
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgnpairs'][:] = rg.npairs
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgweight'][:] = rg.weight
 
-        return out
+        return 
 
     def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
         print 'in pos_pos'
@@ -459,7 +459,7 @@ class Measure2Point(PipelineStage):
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
         if (icat is None) or (jcat is None):
-            return out
+            return 
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -484,7 +484,7 @@ class Measure2Point(PipelineStage):
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrnpairs'][:] = rr.npairs
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrweight'][:] = rr.weight
 
-        return out
+        return
 
     def write(self):
         """
