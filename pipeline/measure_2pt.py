@@ -202,17 +202,15 @@ class Measure2Point(PipelineStage):
         print 'f done'
         for i,j,ipix,calc in calcs:
             for jpix in range(9):
-                for d in ['meanlogr','d1','d2','npairs','weight']:
-                    if calc==0:
-                        f.create_dataset( '2pt/xip/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                        f.create_dataset( '2pt/xim/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    if calc==1:
+                if calc==0:
+                    for d in ['meanlogr','xip','xim','npairs','weight']:
+                        f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
+                if calc==1:
+                    for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
                         f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                    if calc==2:
+                if calc==2:
+                    for d in ['meanlogr','nnnpairs','nnweight','nrnpairs','nrweight','rnnpairs','rnweight','rrnpairs','rrweight']:
                         f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
-                for d in ['npairs','weight']:
-                    if calc==2:
-                        f.create_dataset( '2pt/random/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d+'/', shape=(self.params['tbins'],), dtype=float )
         f.close()
         
         self.comm.Barrier()
@@ -271,37 +269,6 @@ class Measure2Point(PipelineStage):
             out = self.calc_pos_shear(i,j,pix,verbose,num_threads)
         if (k==2): # wtheta
             out = self.calc_pos_pos(i,j,pix,verbose,num_threads)
-
-        for jp in range(9):
-            for di,d in tuple(zip([0,1,2],['meanlogr','d1','d2'])):
-                if k==0:
-                    print 'Writing in: 2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'
-                    self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                    self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                if k==1:
-                    self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                if k==2:
-                    self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-            for di,d in tuple(zip([3,4],['npairs','weight'])):
-                if k==0:
-                    if i==j:
-                        self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                    else:
-                        self.f['2pt/xip/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                        self.f['2pt/xim/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                if k==1:
-                    if i==j:
-                        self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                    else:
-                        self.f['2pt/gammat/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                if k==2:
-                    if i==j:
-                        self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                        self.f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]/2
-                    else:
-                        self.f['2pt/wtheta/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
-                        self.f['2pt/random/'+str(pix)+'/'+str(jp)+'/'+str(i)+'/'+str(j)+'/'+d+'/'][:] = out[jp,di,:]
 
         return 0
 
@@ -435,19 +402,19 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         print 'success build'
-        out = np.zeros((9,7,self.params['tbins']))
         if (icat is None) or (jcat is None):
             return out
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            gg.process(icat,jcat)
-            out[x,0,:] = gg.meanlogr
-            out[x,1,:] = gg.xip
-            out[x,2,:] = gg.xim
-            out[x,3,:] = gg.npairs
-            out[x,4,:] = gg.weight
+            gg.process_cross(icat,jcat)
+
+            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
+            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
+            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
+            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
+            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
 
         return out
 
@@ -458,7 +425,6 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
         jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
 
-        out = np.zeros((9,7,self.params['tbins']))
         if (icat is None) or (jcat is None):
             return out
         for x in range(9):
@@ -467,14 +433,18 @@ class Measure2Point(PipelineStage):
 
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            ng.process(icat,jcat)
-            rg.process(ircat,jcat)
-            gammat,gammat_im,gammaterr=ng.calculateXi(rg)
-            out[x,0,:] = ng.meanlogr
-            out[x,1,:] = gammat
-            out[x,2,:] = gammat_im
-            out[x,3,:] = gg.npairs
-            out[x,4,:] = gg.weight
+            ng.process_cross(icat,jcat)
+            rg.process_cross(ircat,jcat)
+
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxi'][:]     = rg.xi
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxim'][:]    = rg.xi_im
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngnpairs'][:] = ng.npairs
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngweight'][:] = ng.weight
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgnpairs'][:] = rg.npairs
+            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgweight'][:] = rg.weight
 
         return out
 
@@ -485,7 +455,6 @@ class Measure2Point(PipelineStage):
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
-        out = np.zeros((9,7,self.params['tbins']))
         if (icat is None) or (jcat is None):
             return out
         for x in range(9):
@@ -497,19 +466,20 @@ class Measure2Point(PipelineStage):
             nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
 
-            nn.process(icat,jcat)
-            rn.process(ircat,jcat)
-            nr.process(icat,jrcat)
-            rr.process(ircat,jrcat)
+            nn.process_cross(icat,jcat)
+            rn.process_cross(ircat,jcat)
+            nr.process_cross(icat,jrcat)
+            rr.process_cross(ircat,jrcat)
 
-            wtheta,wthetaerr=nn.calculateXi(rr,dr=nr,rd=rn)
-            wthetaerr=np.sqrt(wthetaerr)
-            out[x,0,:] = ng.meanlogr
-            out[x,1,:] = wtheta
-            out[x,3,:] = nn.npairs
-            out[x,4,:] = nn.weight
-            out[x,5,:] = rr.npairs
-            out[x,6,:] = rr.weight
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrnpairs'][:] = nr.npairs
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrweight'][:] = nr.weight
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnnpairs'][:] = rn.npairs
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnweight'][:] = rn.weight
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrnpairs'][:] = rr.npairs
+            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrweight'][:] = rr.weight
 
         return out
 
