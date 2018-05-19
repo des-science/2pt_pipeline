@@ -204,6 +204,7 @@ class Measure2Point(PipelineStage):
             for jpix in range(9):
                 if calc==0:
                     for d in ['meanlogr','xip','xim','npairs','weight']:
+                        print 'opening 2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d
                         f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==1:
                     for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
@@ -409,6 +410,8 @@ class Measure2Point(PipelineStage):
             jcat.wpos[pixrange[x]] = 1.
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
+
+            print 'writing 2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'
 
             self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
