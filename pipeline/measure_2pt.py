@@ -204,7 +204,7 @@ class Measure2Point(PipelineStage):
             for jpix in range(9):
                 if calc==0:
                     for d in ['meanlogr','xip','xim','npairs','weight']:
-                        print 'opening 2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d
+                        # print 'opening 2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d
                         f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==1:
                     for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
@@ -413,15 +413,15 @@ class Measure2Point(PipelineStage):
 
             print 'writing 2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'
 
-            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
-            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
-            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
-            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
-            self.f['2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
+            self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
+            self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
+            self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
+            self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
+            self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
 
         return out
 
-    def calc_pos_shear(self,i,j,pix,verbose,num_threads):
+    def calc_pos_shear(self,i,j,ipix,verbose,num_threads):
         print 'in pos_shear'
 
         pix = self.get_hpix()
@@ -439,19 +439,19 @@ class Measure2Point(PipelineStage):
             ng.process_cross(icat,jcat)
             rg.process_cross(ircat,jcat)
 
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxi'][:]     = rg.xi
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxim'][:]    = rg.xi_im
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngnpairs'][:] = ng.npairs
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngweight'][:] = ng.weight
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgnpairs'][:] = rg.npairs
-            self.f['2pt/gammat/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgweight'][:] = rg.weight
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxi'][:]     = rg.xi
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgxim'][:]    = rg.xi_im
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngnpairs'][:] = ng.npairs
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngweight'][:] = ng.weight
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgnpairs'][:] = rg.npairs
+            self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgweight'][:] = rg.weight
 
         return out
 
-    def calc_pos_pos(self,i,j,pix,verbose,num_threads):
+    def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
         print 'in pos_pos'
 
         pix = self.get_hpix()
@@ -474,15 +474,15 @@ class Measure2Point(PipelineStage):
             nr.process_cross(icat,jrcat)
             rr.process_cross(ircat,jrcat)
 
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrnpairs'][:] = nr.npairs
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrweight'][:] = nr.weight
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnnpairs'][:] = rn.npairs
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnweight'][:] = rn.weight
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrnpairs'][:] = rr.npairs
-            self.f['2pt/wtheta/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrweight'][:] = rr.weight
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrnpairs'][:] = nr.npairs
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrweight'][:] = nr.weight
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnnpairs'][:] = rn.npairs
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rnweight'][:] = rn.weight
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrnpairs'][:] = rr.npairs
+            self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrweight'][:] = rr.weight
 
         return out
 
