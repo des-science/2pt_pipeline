@@ -46,7 +46,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0.01
+slop        : 0.1
 flip_e2     : False
 2pt_only    : All
 
