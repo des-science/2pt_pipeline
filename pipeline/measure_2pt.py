@@ -299,15 +299,15 @@ class Measure2Point(PipelineStage):
         print 'before e1 ---------------------'
         pzbin = self.source_selector.get_col('e1')
 
-        R1,c,w = cal.calibrate('e1',mask=mask)
-        R2,c,w = cal.calibrate('e2',mask=mask)
-        print 'calibrate done'
-
         if type(cal)==destest.NoCalib: # lens catalog so get random mask
             f = h5py.File( self.input_path("nz_source"), mode='r')
             rmask = f['nofz']['ran_zbin'][:] == i
-            return R1, R2, mask[0], w, rmask
+            R1,c,w = cal.calibrate('e1',weight_only=True)
+            return R1, R1, mask[0], w, rmask
         else:
+            R1,c,w = cal.calibrate('e1',mask=mask)
+            R2,c,w = cal.calibrate('e2',mask=mask)
+            print 'calibrate done'
             return R1, R2, mask[0], w
 
     def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False):
