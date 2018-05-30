@@ -255,7 +255,7 @@ class Measure2Point(PipelineStage):
         """
         This is a wrapper for interaction with treecorr.
         """
-        print "Running 2pt analysis on pair {},{},{}".format(i, j, k)
+        print "Running 2pt analysis on pair {},{},{},{}".format(i, j, pix, k)
         print "bslop = ", self.params['slop']
         # k==0: xi+-
         # k==1: gammat
@@ -266,6 +266,7 @@ class Measure2Point(PipelineStage):
         num_threads=CORES_PER_TASK
 
         if (k==0): # xi+-
+            continue
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
@@ -279,7 +280,7 @@ class Measure2Point(PipelineStage):
         print 'in zbins R'
         f = h5py.File( self.input_path("nz_source"), mode='r')
         if type(cal)==destest.NoCalib: # lens catalog so get random mask
-            source_binning = [f['nofz/lens_zbin']]
+            source_binning = [f['nofz/lens_zbin'][:]]
         else:
             source_binning = []
             print 'fix to be actual number of bins'
