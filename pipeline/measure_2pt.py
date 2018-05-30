@@ -345,6 +345,8 @@ class Measure2Point(PipelineStage):
             print 'nocalib'
             gmask = cal.selector.get_match()
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
+            print len(pix),len(gmask),len(mask)
+            print pix,gmask,mask
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
             if len(ra[gmask][mask][s][pixrange])>0:
