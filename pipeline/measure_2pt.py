@@ -343,10 +343,10 @@ class Measure2Point(PipelineStage):
         if type(cal)==destest.NoCalib: # lens catalog
 
             print 'nocalib'
+            gmask = cal.selector.get_match()
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
-            gmask = cal.selector.get_match()
             if len(ra[gmask][mask][s][pixrange])>0:
                 cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
