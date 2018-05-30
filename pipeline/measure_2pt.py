@@ -291,7 +291,7 @@ class Measure2Point(PipelineStage):
         mask = []
         for s in source_binning:
             mask.append( s == i )
-            print 'mask length',len(mask[-1])
+            #print 'mask length',len(mask[-1])
 
         print 'before pzbin ---------------------'
         pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
