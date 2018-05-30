@@ -12,7 +12,7 @@ import yaml
 import destest
 import mpi4py.MPI
 
-CORES_PER_TASK=20
+CORES_PER_TASK=64
 
 global_measure_2_point = None
 
@@ -256,6 +256,7 @@ class Measure2Point(PipelineStage):
         This is a wrapper for interaction with treecorr.
         """
         print "Running 2pt analysis on pair {},{},{}".format(i, j, k)
+        print "bslop = ", self.params['slop']
         # k==0: xi+-
         # k==1: gammat
         # k==2: wtheta
@@ -425,8 +426,13 @@ class Measure2Point(PipelineStage):
         print 'in pos_shear'
 
         pix = self.get_hpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
-        jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
+        #icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
+        #jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
+        
+        #modifications introduced when the code was crashing just after iterating into a new pixel: 
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)       
+        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix)                                               
+
 
         if (icat is None) or (jcat is None):
             return out
