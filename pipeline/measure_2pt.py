@@ -302,8 +302,8 @@ class Measure2Point(PipelineStage):
         if type(cal)==destest.NoCalib: # lens catalog so get random mask
             f = h5py.File( self.input_path("nz_source"), mode='r')
             rmask = f['nofz']['ran_zbin'][:] == i
-            R1,c,w = cal.calibrate('e1',weight_only=True)
-            return R1, R1, mask[0], w, rmask
+            w = cal.calibrate('e1',weight_only=True)
+            return None, None, mask[0], w, rmask
         else:
             R1,c,w = cal.calibrate('e1',mask=mask)
             R2,c,w = cal.calibrate('e2',mask=mask)
