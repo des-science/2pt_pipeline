@@ -434,9 +434,9 @@ class Measure2Point(PipelineStage):
     def calc_pos_shear(self,i,j,ipix,verbose,num_threads):
         print 'in pos_shear'
 
-        pix = self.get_hpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)       
         pix = self.get_lhpix()
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)       
+        pix = self.get_hpix()
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix)                                               
 
 
