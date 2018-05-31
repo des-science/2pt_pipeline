@@ -343,8 +343,6 @@ class Measure2Point(PipelineStage):
             return s,pixrange,pixrange2
 
         print 'start build',i
-        ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[0]
-        dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[0]
 
         if type(cal)==destest.NoCalib: # lens catalog
 
@@ -355,6 +353,8 @@ class Measure2Point(PipelineStage):
             print pix,gmask,mask
             s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
+            ra=self.gold_selector.source.read(self.Dict.gold_dict['ra'])[0]
+            dec=self.gold_selector.source.read(self.Dict.gold_dict['dec'])[0]
             if len(ra[gmask][mask][s][pixrange])>0:
                 cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
                                     ra_units='deg', dec_units='deg')
@@ -374,6 +374,9 @@ class Measure2Point(PipelineStage):
                 return cat,rcat,pixrange2,rpixrange2
 
         else: # shape catalog
+
+            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[0]
+            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[0]
 
             print 'calib'
             R1,R2,mask,w = self.get_zbins_R(i,cal)
