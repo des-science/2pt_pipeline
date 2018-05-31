@@ -278,6 +278,8 @@ class nofz(PipelineStage):
         Build an n(z), non-tomographic [:,0] and tomographic [:,1:].
         """
 
+        print ' ---- build nofz bins ',bin_col,np.min(bin_col),np.max(bin_col),stack_col
+
         #R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Lucas: attempting to load mask here.
         if shape&(self.params['has_sheared']):
             #if 'pzbin_col' in self.gold.dtype.names:
@@ -420,7 +422,7 @@ class nofz(PipelineStage):
             b    = np.sum(weight[mask]**2)
             c    = self.area * 60. * 60.
             #print 'mask=',mask
-            print np.sum(weight[mask]),'objects found in this bin'
+            print np.sum(weight[mask]),'objects found in this bin',weight[mask]
             #print 'np.sum(weight)=',np.sum(weight)
             #print 'self.area=',self.area
             #print 'a=',a
