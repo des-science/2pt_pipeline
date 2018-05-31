@@ -417,7 +417,7 @@ class Measure2Point(PipelineStage):
 
         print 'success build'
         if (icat is None) or (jcat is None):
-            return out
+            return 
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
@@ -438,13 +438,13 @@ class Measure2Point(PipelineStage):
         print 'in pos_shear'
 
         pix = self.get_lhpix()
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)       
+        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)       
         pix = self.get_hpix()
-        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix)                                               
+        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)                                  
 
 
         if (icat is None) or (jcat is None):
-            return out
+            return 
         for x in range(9):
             jcat.wpos[:]=0.
             jcat.wpos[pixrange[x]] = 1.
