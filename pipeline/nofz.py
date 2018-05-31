@@ -278,7 +278,8 @@ class nofz(PipelineStage):
         Build an n(z), non-tomographic [:,0] and tomographic [:,1:].
         """
 
-        print ' ---- build nofz bins ',bin_col,np.min(bin_col),np.max(bin_col),stack_col
+        if len(bin_col)>5:
+           print ' ---- build nofz bins ',bin_col,np.min(bin_col),np.max(bin_col),stack_col
 
         #R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Lucas: attempting to load mask here.
         if shape&(self.params['has_sheared']):
