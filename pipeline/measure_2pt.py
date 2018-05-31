@@ -364,7 +364,7 @@ class Measure2Point(PipelineStage):
             ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[0][rmask]
             dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[0][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
-            s,pixrange,rpixrange2 = get_pix_subset(ipix,return_neighbor)
+            s,pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
             if len(ra[s][pixrange])>0:
                 rcat = treecorr.Catalog(ra=ra[s][pixrange], 
                                         dec=dec[s][pixrange], 
