@@ -159,6 +159,12 @@ class Measure2Point(PipelineStage):
         else:
             return pix // ( self.params['hpix_nside'] // self.get_nside() )
 
+    def get_lhpix(self,pix=None):
+        if pix == None:
+            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[0] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+        else:
+            return pix // ( self.params['hpix_nside'] // self.get_nside() )
+
     def setup_jobs(self):
 
         if hasattr(self.params['zbins'], "__len__"):
@@ -415,7 +421,7 @@ class Measure2Point(PipelineStage):
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
 
-            print 'writing 2pt/xipm/'+str(pix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'
+            print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'
 
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
@@ -429,11 +435,8 @@ class Measure2Point(PipelineStage):
         print 'in pos_shear'
 
         pix = self.get_hpix()
-        #icat,ircat,pixrange,rpixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
-        #jcat,pixrange = self.build_catalogs(self.lens_calibrator,j,ipix,pix,return_neighbor=True)
-        
-        #modifications introduced when the code was crashing just after iterating into a new pixel: 
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)       
+        pix = self.get_lhpix()
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix)                                               
 
 
@@ -463,7 +466,7 @@ class Measure2Point(PipelineStage):
     def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
         print 'in pos_pos'
 
-        pix = self.get_hpix()
+        pix = self.get_lhpix()
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
