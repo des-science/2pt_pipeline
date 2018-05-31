@@ -61,14 +61,14 @@ lens_pz_dict = {
 
 lens_dict = {
     'objid'         : 'COADD_OBJECTS_ID',
-    'ra'            : 'RA',
-    'dec'           : 'DEC',
+    'ra'            : 'ra',
+    'dec'           : 'dec',
     'weight'        : 'weight'
     }
 
 ran_dict = {
-    'ra'            : 'RA',
-    'dec'           : 'DEC',
+    'ra'            : 'ra',
+    'dec'           : 'dec',
     'ranbincol'     : 'z'
     }    
 
