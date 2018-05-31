@@ -191,7 +191,7 @@ class nofz(PipelineStage):
                                          lens_pzstack,
                                          self.params['lens_pdf_type'],
                                          lens_weight)
-            print 'Saving lens n(z)'
+            print 'Saving lens n(z)',len(lens_zbin),len(lens_pzbin)
 
             f = h5py.File( self.output_path("nz_source"), mode='r+')
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(len(lens_zbin)/10,) )
