@@ -5,9 +5,9 @@
 linear_bins : 20
 # columns over which to iterate linear splitting
 # reuse cached intermediate results? This will make subsequent runs much faster.
-load_cache  : True
+load_cache  : False
 # output directory
-output      : /global/cscratch1/sd/seccolf/2pt_pipeline/ 
+output      : .
 # If False, testsuite will terminate if the output directory already exists.
 output_exists : True 
 
@@ -45,7 +45,7 @@ table      : ['chi5_bright']
 
 # Selection 
 # optional direct path to select flags
-select_path : 'index/select'
+select_path : none
 # columns with which to mask the catalog
 select_cols : ['snr','snr','size_ratio','flags']
 # expressions by which to mask (must match 1-1 the list of select_cols)

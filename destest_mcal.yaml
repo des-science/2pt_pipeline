@@ -7,7 +7,7 @@ linear_bins : 20
 # reuse cached intermediate results? This will make subsequent runs much faster.
 load_cache  : True
 # output directory
-output      : /global/cscratch1/sd/seccolf/2pt_pipeline/ 
+output      : .
 # If False, testsuite will terminate if the output directory already exists.
 output_exists : True 
 
