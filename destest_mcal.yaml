@@ -5,7 +5,7 @@
 linear_bins : 20
 # columns over which to iterate linear splitting
 # reuse cached intermediate results? This will make subsequent runs much faster.
-load_cache  : True
+load_cache  : False
 # output directory
 output      : .
 # If False, testsuite will terminate if the output directory already exists.
