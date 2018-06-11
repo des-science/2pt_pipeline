@@ -85,6 +85,9 @@ class Measure2Point(PipelineStage):
         # Load data
         # self.load_data()
         self.load_metadata()
+
+        if 'ran_factor' not in self.params:
+            self.params['ran_factor'] = 999
                 
         mcal_file = 'destest_mcal.yaml'
         params_mcal = yaml.load(open(mcal_file))
@@ -354,9 +357,12 @@ class Measure2Point(PipelineStage):
 
             ra=self.gold_selector.source.read(self.Dict.gold_dict['ra'])[0]
             dec=self.gold_selector.source.read(self.Dict.gold_dict['dec'])[0]
-            if len(ra[gmask][mask][s][pixrange])>0:
-                cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], dec=dec[gmask][mask][s][pixrange], 
+            catlength = len(ra[gmask][mask][s][pixrange])
+            if catlength>0:
+                cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], 
+                                    dec=dec[gmask][mask][s][pixrange],
                                     ra_units='deg', dec_units='deg')
+                print '!!!!!! need weight in catalog for lenses.....'
             else:
                 cat = None
 
@@ -364,10 +370,17 @@ class Measure2Point(PipelineStage):
             dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[0][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
             s,pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
-            if len(ra[s][pixrange])>0:
-                rcat = treecorr.Catalog(ra=ra[s][pixrange], 
-                                        dec=dec[s][pixrange], 
-                                        ra_units='deg', dec_units='deg')
+            ranlength = ra[s][pixrange]
+            if ranlength>0:
+                if ranlength>self.params['ran_factor']*catlength:
+                    downsample = np.random.choice(np.arange(ranlength),self.params['ran_factor']*catlength,replace=False)
+                    rcat = treecorr.Catalog(ra=ra[s][pixrange][downsample], 
+                                            dec=dec[s][pixrange][downsample], 
+                                            ra_units='deg', dec_units='deg')
+                else:
+                    rcat = treecorr.Catalog(ra=ra[s][pixrange], 
+                                            dec=dec[s][pixrange], 
+                                            ra_units='deg', dec_units='deg')
             else:
                 rcat = None
                 return cat,rcat,pixrange2,rpixrange2
