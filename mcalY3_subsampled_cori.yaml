@@ -4,7 +4,7 @@ prefix        : y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
 run_directory : y3_subsampled
 test_run      : True #False
-
+ran_factor    : 5
 
 # blinding configurations
 
@@ -46,7 +46,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0.1
+slop        : 0.5
 flip_e2     : False
 2pt_only    : All
 
