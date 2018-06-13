@@ -29,7 +29,7 @@ pz_bin_dict = {
     'pzw'           : None
     }
 
-bpz_dict = {
+pz_dict = {
     'objid' : 'coadd_object_id',
     'pzbin' : 'zmean_sof', #this will only work for 'catalog/bpz/unsheared'
     'pzstack' : 'zmc_sof'
@@ -38,11 +38,6 @@ bpz_dict = {
     #'pz_2p' : 'bpz_zmean_sof_2p',
     #'pz_2m' : 'bpz_zmean_sof_2m'
 }
-
-dnf_dict = {
-    'objid' : 'coadd_object_id',
-    'pzbin' : 'zmean_sof' #this will only work for 'catalog/dnf/unsheared'
-    }
 
 pz_stack_dict = {
     'objid'         : 'coadd_objects_id',

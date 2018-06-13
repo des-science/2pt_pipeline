@@ -11,10 +11,32 @@ import sys
 import yaml
 import destest
 import mpi4py.MPI
-
-CORES_PER_TASK=64
+import importlib
+import glob
 
 global_measure_2_point = None
+
+def load_catalog(filename, inherit=None, return_calibrator=False):
+    """
+    Loads data access and calibration classes from destest for a given yaml setup file.
+    """
+
+    # Input yaml file defining catalog
+    params = yaml.load(open(filename))
+    params['param_file'] = filename
+    # Load destest source class to manage access to file
+    source = destest.H5Source(params)
+    # Load destest selector class to manage access to data in a structured way
+    if inherit is None:
+        sel = destest.Selector(params,source)
+    else:
+        sel = destest.Selector(params,source,inherit=inherit)
+    # Load destest calibrator class to manage calibration of the catalog
+    if return_calibrator:
+        cal = destest.MetaCalib(params,sel)
+        return sel, cal
+    else:
+        return sel
 
 def task(ijk):
     i,j,pix,k=ijk
@@ -40,163 +62,116 @@ class Measure2Point(PipelineStage):
         "any"    : "*{rank}*",
     }
 
-    def __init__(self,param_file):
+    def __init__(self, param_file):
         """
         Initialise object and load catalogs.
         """
         super(Measure2Point,self).__init__(param_file)
 
-        print 'im working'
-
-        import importlib
-        col = importlib.import_module('.'+self.params['dict_file'],'pipeline')
-
-        def load_bin_weight_files(file,objid):
-
-            filename = self.input_path(file)
-            array    = np.load(filename)
-
-            if np.array_equal(array[:,0], objid):
-                if (file == "nz_source")&self.params['has_sheared']:
-                    return array[:,1],array[:,2],array[:,3],array[:,4],array[:,5]
-                else:
-                    return array[:,1]
-            else:
-                print array[:,0],len(array[:,0]),objid,len(objid)
-                raise ValueError('bad binning or weight in file '+filename)
-
-        import glob
-        if (self.params['2pt_only'] == 'shear-shear')|(self.params['lensfile'] == 'None'):
-            names = TWO_POINT_NAMES[:2]
-        elif self.params['2pt_only'] == 'pos-shear':
-            names = TWO_POINT_NAMES[2:3]
-        elif self.params['2pt_only'] == 'pos-pos':
-            names = TWO_POINT_NAMES[3:]
-        else:
-            names = TWO_POINT_NAMES
-        for n,name in enumerate(names):
-            files=glob.glob(self.output_path('any').format(rank=name))
-            for file in files:
-                try:
-                    os.remove(file)
-                except OSError:
-                    print 'OSerror removing old 2pt file'
-
-        # Load data
-        # self.load_data()
+        # Load metadata (needed for mean shear)
         self.load_metadata()
 
+        # Default value for random subsampling factor
         if 'ran_factor' not in self.params:
             self.params['ran_factor'] = 999
-                
-        mcal_file = 'destest_mcal.yaml'
-        params_mcal = yaml.load(open(mcal_file))
-        params_mcal['param_file'] = mcal_file
-        source_mcal = destest.H5Source(params_mcal)
-        self.source_selector = destest.Selector(params_mcal,source_mcal)
-        self.source_calibrator = destest.MetaCalib(params_mcal,self.source_selector)
 
-        gold_file = 'destest_gold.yaml'
-        params_gold = yaml.load(open(gold_file))
-        params_gold['param_file'] = gold_file
-        source_gold = destest.H5Source(params_gold)
-        self.gold_selector = destest.Selector(params_gold,source_gold,inherit=self.source_selector)
-
-        lens_file = 'destest_redmagic.yaml'
-        params_lens = yaml.load(open(lens_file))
-        params_lens['param_file'] = lens_file
-        source_lens = destest.H5Source(params_lens)
-        self.lens_selector = destest.Selector(params_lens,source_lens)
-        self.lens_calibrator = destest.NoCalib(params_lens,self.lens_selector)
-        
-
-        random_file = 'destest_random.yaml'
-        params_random = yaml.load(open(random_file))
-        params_random['param_file'] = random_file
-        source_random = destest.H5Source(params_random)
-        self.ran_selector = destest.Selector(params_random,source_random)
-
+        # A dictionary to homogenize names of columns in the hdf5 master catalog 
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print 'using dictionary: ',self.params['dict_file']
+                
+        # Load data and calibration classes
+        self.source_selector, self.source_calibrator = load_catalog(self.params['shape_yaml'], return_calibrator=True)
+        self.lens_selector, self.lens_calibrator     = load_catalog(self.params['lens_yaml'], return_calibrator=True)
+        self.gold_selector = load_catalog(self.params['gold_yaml'], inherit=self.source_selector)
+        self.ran_selector  = load_catalog(self.params['random_yaml'])
 
-        print 'pz selector'
-        pz_file = 'destest_pz.yaml'
-        params_pz = yaml.load(open(pz_file))
-        params_pz['param_file'] = pz_file
-        if params_pz['group'][-3:] == 'bpz':
-            print "will use BPZ's column names"
-            self.Dict.pz_dict = self.Dict.bpz_dict
-        else:
-            print "will use DNF's column names"
-            self.Dict.pz_dict = self.Dict.dnf_dict
-        source_pz = destest.H5Source(params_pz)
-        self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.source_selector)
-
-        
-        # if self.params['flip_e2']==True:
-        #     print 'flipping e2'
-        #     self.shape['e2']*=-1
-
-        #self.weight         = load_bin_weight_files("weight",self.gold['objid'])
-        #if self.params['lensfile'] != 'None':
-        #    self.lens_binning   = load_bin_weight_files("nz_lens",self.lens['objid'])
-        #    self.lensweight     = self.lens['weight']
-        #    self.ran_binning    = np.load(self.input_path("randoms"))
-        #    if len(self.ran_binning)!=len(self.randoms):
-        #        raise ValueError('bad binning or weight in file '+self.input_path("randoms"))
+        self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
         
         global global_measure_2_point
         global_measure_2_point = self
 
+    def load_metadata(self):
+        """
+        Read metadata from nofz stage.
+        """
+
+        filename = self.input_path('nofz_meta')
+        data = yaml.load(open(filename))
+        self.mean_e1 = np.array(data['mean_e1'])
+        self.mean_e2 = np.array(data['mean_e2'])
+        self.zbins = len(np.array(data['source_bins'])) - 1
+        self.lens_zbins = len(np.array(data['lens_bins'])) - 1
+
     def get_nside(self):
+        """
+        Get the necessary nside to prevent the largest separation of pairs from spanning more than an adjacent pair of healpixels.
+        """
+
+        # Loop over nside until the resolution is more than the largest theta separation requested
         for nside in range(1,20):
-            if self.params['tbounds'][1]>hp.nside2resol(2**nside,arcmin=True):
+            if self.params['tbounds'][1] > hp.nside2resol(2**nside, arcmin=True):
                 nside -=1
                 break
+
         return 2**nside
 
-    
-    def get_hpix(self,pix=None):
-        if pix is None:
-            return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[0] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
-        else:
-            return pix // ( self.params['hpix_nside'] // self.get_nside() )
+    def get_hpix(self, pix=None):
+        """
+        Get downsampled healpix index for a given pixel, or if pix is None, return all downsampled healpix indices.
+        """
 
-    def get_lhpix(self,pix=None):
         if pix is None:
-            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[0] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+
+            return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] 
+                    // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+
         else:
-            return pix // ( self.params['hpix_nside'] // self.get_nside() )
+
+            return pix // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+
+    def get_lhpix(self, pix=None):
+        """
+        Same as get_hpix(), but uses the unmaked gold catalog for matching to lenses.
+        """
+
+        if pix is None:
+
+            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] 
+                    // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+
+        else:
+
+            return pix // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
     def setup_jobs(self):
+        """
+        Set up the list of jobs that must be distributed across nodes.
+        """
 
-        if hasattr(self.params['zbins'], "__len__"):
-            self.zbins=len(self.params['zbins'])-1
-        else:
-            self.zbins=self.params['zbins']
-
-        if self.params['lensfile'] != 'None':
-            if hasattr(self.params['lens_zbins'], "__len__"):
-                self.lens_zbins=len(self.params['lens_zbins'])-1
-            else:
-                self.lens_zbins=self.params['lens_zbins']
-
+        # Get max number of tomographic bins between lenses and sources
         if self.params['lensfile'] != 'None':
             nbin=max(self.lens_zbins,self.zbins)
         else:
             nbin=self.zbins
 
+        # Create dummy list of pairs of tomographic bins up to nbin (max of lenses and sources)
         all_calcs = [(i,j) for i in xrange(nbin) for j in xrange(nbin)]
         
+        # Get healpix values for each object and unique healpix cells
         pix = self.get_hpix()
         pix = np.unique(pix)
         print '------------- number of pixels',len(pix)
 
+        # Loop over tomographic bin pairs and add to final calculation list each requested correlation and unique healpix cell
         calcs=[]
+        # Loop over needed shear-shear correlations
         for i,j in all_calcs:
+            # Loop over tomographic bin pairs
             for pix_ in pix:
-                if (i<=j)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'shear-shear','all']):
-                    calcs.append((i,j,pix_,0))
+                # Loop over unique healpix cells
+                if (i<=j) & (j<self.zbins) & (self.params['2pt_only'].lower() in [None,'shear-shear','all']):
+                    calcs.append((i,j,pix_,0)) # Only add to list if calculating shear-shear and a valid tomographic pair (doesn't duplicate identical i<j and i>j)
+
         if self.params['lensfile'] != 'None':
             for i,j in all_calcs:
                 for pix_ in pix:
@@ -207,10 +182,10 @@ class Measure2Point(PipelineStage):
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
 
+        # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
         f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
-        print 'f done'
         for i,j,ipix,calc in calcs:
-            for jpix in range(9):
+            for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                 if calc==0:
                     for d in ['meanlogr','xip','xim','npairs','weight']:
                         # print 'opening 2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d
@@ -229,50 +204,51 @@ class Measure2Point(PipelineStage):
         return calcs
 
     def run(self):
-        #This is a parallel job
+        """
+        This is where all the calculations are done. A mpi pool is set up and the jobs accumulated in setup_jobs() are distributed across nodes.
+        """
 
         if self.comm:
+            # Parallel execution
             from .mpi_pool import MPIPool
+            # Setup mpi pool
             pool = MPIPool(self.comm)
+            # Get job list
             calcs = self.setup_jobs()
             if not pool.is_master():
+                # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 self.comm.Barrier()
                 pool.wait()
                 self.comm.Barrier()
                 self.f.close()
                 sys.exit(0)
+
+            # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
-            print 'barrier'
             self.comm.Barrier()
+            # Master distributes calculations across nodes.
             pool.map(task, calcs)
+            # Master waits for everyone to finish, then all close the h5 file and pool is closed.
             self.comm.Barrier()
             self.f.close()
             pool.close()
         else:
+            # Serial execution
             calcs = self.setup_jobs()
             map(task, calcs)
 
-    def load_metadata(self):
-        import yaml
-        filename = self.input_path('nofz_meta')
-        data = yaml.load(open(filename))
-        self.mean_e1 = np.array(data['mean_e1'])
-        self.mean_e2 = np.array(data['mean_e2'])
-
     def call_treecorr(self,i,j,pix,k):
         """
-        This is a wrapper for interaction with treecorr.
+        This is a dummy function for interaction with the treecorr wrappers.
         """
         print "Running 2pt analysis on pair {},{},{},{}".format(i, j, pix, k)
-        print "bslop = ", self.params['slop']
         # k==0: xi+-
         # k==1: gammat
         # k==2: wtheta
         
-        verbose=0
-        # Cori value
-        num_threads=CORES_PER_TASK
+        verbose = 0
+        num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
@@ -281,163 +257,193 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-        return 0
-
     def get_zbins_R(self,i,cal,shape=True):
+        """
+        Get the lens or source binning, calibration, and weights for a given tomographic bin.
+        """ 
 
-        print 'in zbins R'
+        # Open file from nofz stage that contains the catalog tomographic binning indices and read.
         f = h5py.File( self.input_path("nz_source"), mode='r')
-        if type(cal)==destest.NoCalib: # lens catalog so get random mask
-            source_binning = [f['nofz/lens_zbin'][:]]
-        else:
-            source_binning = []
-            print 'fix to be actual number of bins'
-            for zbin_ in ['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m']:
-                source_binning.append(f['nofz'][zbin_][:])
-                print 'souce_binning_length',i,len(source_binning[-1])
+        if type(cal)==destest.NoCalib: # Lens catalog
+            binning = [f['nofz/lens_zbin'][:]]
+        else: # Source catalog
+            binning = []
+            for zbin_ in ['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m']: # Length 5 for unsheared and sheared metacal selections
+                binning.append(f['nofz'][zbin_][:])
 
-        print 'source binning',source_binning,np.max(source_binning[0]),np.min(source_binning[0])
+        # Create tomographic binning mask
         mask = []
-        for s in source_binning:
+        for s in binning:
             mask.append( s == i )
-            #print 'mask length',len(mask[-1])
 
-        print 'before pzbin ---------------------'
-        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'before e1 ---------------------'
-        pzbin = self.source_selector.get_col('e1')
+        if type(cal)==destest.NoCalib: # Lens catalog
 
-        if type(cal)==destest.NoCalib: # lens catalog so get random mask
+            # Get random binning as well
             f = h5py.File( self.input_path("nz_source"), mode='r')
             rmask = f['nofz']['ran_zbin'][:] == i
-            w = cal.calibrate('e1',weight_only=True)
-            return None, None, mask[0], w, rmask
-        else:
-            R1,c,w = cal.calibrate('e1',mask=mask)
-            R2,c,w = cal.calibrate('e2',mask=mask)
-            print 'calibrate done'
-            return R1, R2, mask[0], w
+            # Get weights
+            w = cal.calibrate('e1', weight_only=True)
+            # Return lens binning mask, weights, and random binning mask
+            return None, None, mask[self.Dict.ind['u']], w, rmask
+
+        else: # Source catalog
+
+            # Get responses
+            R1,c,w = cal.calibrate('e1', mask=mask)
+            R2,c,w = cal.calibrate('e2', mask=mask)
+            # Return responses, source binning mask and weights            
+            return R1, R2, mask[self.Dict.ind['u']], w
 
     def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False):
+        """
+        Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
+        """
 
         def get_pix_subset(ipix,pix_,return_neighbor):
+            """
+            Find the indices of the healpixel subset of the catalog for ipix and optionally all neighboring pixels. pix_ from the catalog is (or should be) pre-sorted for faster searching.
+            """
 
+            # Get theta,phi for a healpixel index and return indices of all neighboring pixels (including ipix for auto-correlations).
             theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
             jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
             jpix = np.append(ipix,jpix)
 
-            s = np.argsort(pix_)
-            pix_ = pix_[s]
             if return_neighbor:
-                pixrange = []
-                pixrange2 = [0]
+                # Return objects in pixel ipix and all neighbors 
+
+                pixrange = [] # Objects in ipix
+                pixrange2 = [] # Lists of objects in neighboring pixels
                 tmp = 0
-                for x,jp in enumerate(jpix):
-                    pixrange = np.append(pixrange,np.r_[int(np.searchsorted(pix_, jp)) : int(np.searchsorted(pix_, jp, side='right'))])
+                for x,jp in enumerate(jpix): # Iterate over neighboring pixels
+                    pixrange = np.append(pixrange,np.r_[int(np.searchsorted(pix_, jp)) : int(np.searchsorted(pix_, jp, side='right'))]) # Cumulative list of slices (np.r_) of pix_ corresponding to ranges of pixels in jpix list.
                     tmp2 = np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
-                    pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] )
+                    pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
                     tmp += tmp2
                 pixrange = pixrange.astype(int)
+
             else:
-                pixrange = np.r_[int(np.searchsorted(pix_, ipix)) : int(np.searchsorted(pix_, ipix, side='right'))]
+                # Return objects in pixel ipix 
+
+                pixrange = np.r_[int(np.searchsorted(pix_, ipix)) : int(np.searchsorted(pix_, ipix, side='right'))] # Find slice (np.r_) corresponding to range of pix_ that contains ipix.
                 pixrange2 = None
 
-            return s,pixrange,pixrange2
-
-        print 'start build',i
+            return pixrange,pixrange2
 
         if type(cal)==destest.NoCalib: # lens catalog
 
-            print 'nocalib'
+            # Get index matching of gold to lens catalog (smaller than gold)
             gmask = cal.selector.get_match()
+            # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
-            print len(pix),len(gmask),len(mask)
-            print pix,gmask,mask
-            s,pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
+            # Get index slices needed for the subset of healpixels in this calculation
+            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
 
-            ra=self.gold_selector.source.read(self.Dict.gold_dict['ra'])[0]
-            dec=self.gold_selector.source.read(self.Dict.gold_dict['dec'])[0]
-            catlength = len(ra[gmask][mask][s][pixrange])
-            if catlength>0:
-                cat = treecorr.Catalog(ra=ra[gmask][mask][s][pixrange], 
-                                    dec=dec[gmask][mask][s][pixrange],
-                                    ra_units='deg', dec_units='deg')
-                print '!!!!!! need weight in catalog for lenses.....'
+            # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
+            ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
+            dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
+
+            catlength = len(ra[gmask][mask][pixrange]) # Length of catalog after masking
+            if catlength>0: # Check that objects exist in selection, otherwise return cat = None
+
+                if np.isscalar(w):
+                    cat = treecorr.Catalog(ra=ra[gmask][mask][pixrange],
+                                           dec=dec[gmask][mask][pixrange],
+                                           ra_units='deg', dec_units='deg')
+                else:
+                    cat = treecorr.Catalog(ra=ra[gmask][mask][pixrange],
+                                           dec=dec[gmask][mask][pixrange],
+                                           w = w[pixrange],
+                                           ra_units='deg', dec_units='deg')
             else:
+
                 cat = None
 
-            ra = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[0][rmask]
-            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[0][rmask]
+            # Load random ra,dec and calculate healpix values
+            ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask]
+            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
-            s,pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
-            ranlength = len(ra[s][pixrange])
-            if ranlength>0:
-                if ranlength>self.params['ran_factor']*catlength:
-                    downsample = np.random.choice(np.arange(ranlength),self.params['ran_factor']*catlength,replace=False)
-                    rcat = treecorr.Catalog(ra=ra[s][pixrange][downsample], 
-                                            dec=dec[s][pixrange][downsample], 
+
+            # Get index slices needed for the subset of healpixels in this calculation
+            pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
+
+            ranlength = len(ra[pixrange]) # Length of catalog after masking
+            if ranlength>0: # Check that objects exist in selection, otherwise return cat = None
+
+                if ranlength>self.params['ran_factor']*catlength: # Calculate if downsampling is possible
+                    # Set fixed random seed to make results reproducible
+                    np.random.seed(seed=self.params['random_seed'])
+                    # Downsample random catalog to be ran_factor times larger than lenses
+                    downsample = np.random.choice(np.arange(ranlength),self.params['ran_factor']*catlength,replace=False) # Downsample 
+                    rcat = treecorr.Catalog(ra=ra[pixrange][downsample], 
+                                            dec=dec[pixrange][downsample], 
                                             ra_units='deg', dec_units='deg')
                 else:
-                    rcat = treecorr.Catalog(ra=ra[s][pixrange], 
-                                            dec=dec[s][pixrange], 
+                    rcat = treecorr.Catalog(ra=ra[pixrange], 
+                                            dec=dec[pixrange], 
                                             ra_units='deg', dec_units='deg')
             else:
+
                 rcat = None
-                return cat,rcat,pixrange2,rpixrange2
 
-        else: # shape catalog
+        else: # source catalog
 
-            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[0]
-            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[0]
-
-            print 'calib'
+            # Load ra,dec from gold catalog
+            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
+            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
+            # Get tomographic bin masks for sources, and responses/weights
             R1,R2,mask,w = self.get_zbins_R(i,cal)
-            print 'got z bins'
-            s,pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
-            print 'got pix subset'
+            # Get index slices needed for the subset of healpixels in this calculation
+            pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
 
-            print mask,s,pixrange
-            print len(cal.selector.get_col(self.Dict.shape_dict['e1'])[0]),len(mask),len(s),len(pixrange)
-            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[0][mask][s][pixrange]
+            # Get e1,e2, subtract mean shear, and correct with mean response
+            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask][pixrange]
             g1 = (g1-self.mean_e1[i])/R1
-            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[0][mask][s][pixrange]
+            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask][pixrange]
             g2 = (g2-self.mean_e2[i])/R2
-            if len(g1)>0:
-                cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][s][pixrange], 
-                                        dec=dec[mask][s][pixrange], ra_units='deg', dec_units='deg')
+
+            if len(g1)>0: # Check there are objects in this selection, otherwise return cat = None
+                if np.isscalar(w):
+                    cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][pixrange], 
+                                            dec=dec[mask][pixrange], ra_units='deg', dec_units='deg')
+                else:
+                    cat = treecorr.Catalog(g1=g1, g2=g2, w=w, ra=ra[mask][pixrange], 
+                                            dec=dec[mask][pixrange], ra_units='deg', dec_units='deg')
             else:
                 cat = None
                 return cat,pixrange2
 
-        if not np.isscalar(w):
-            cat.w = w
-
         if type(cal)==destest.NoCalib:
             return cat,rcat,pixrange2,rpixrange2
-
-        return cat,pixrange2
+        else:
+            return cat,pixrange2
 
     def calc_shear_shear(self,i,j,ipix,verbose,num_threads):
-
+        """
+        Treecorr wrapper for shear-shear calculations.
+        """
         print 'in shear_shear'
 
+        # Get healpix list for sources
         pix = self.get_hpix()
-        print 'before build'
+        # Build catalogs for tomographic bin i
         icat,pixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
-        print 'before build j'
+        # Build catalogs for tomographic bin j
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
-        print 'success build'
-        if (icat is None) or (jcat is None):
+        if (icat is None) or (jcat is None): # No objects in selection
             return 
+
+        # Loop over pixels
         for x in range(9):
-            jcat.wpos[:]=0.
-            jcat.wpos[pixrange[x]] = 1.
-            gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
+            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
+            # Run calculation
+            gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
 
-            print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'
-
+            # Write output to h5 file
+            print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
@@ -447,25 +453,35 @@ class Measure2Point(PipelineStage):
         return 
 
     def calc_pos_shear(self,i,j,ipix,verbose,num_threads):
+        """
+        Treecorr wrapper for pos-shear calculations.
+        """
         print 'in pos_shear'
 
+        # Get healpix list for lenses
         pix = self.get_lhpix()
+        # Build catalogs for tomographic bin i
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)       
+        # Get healpix list for sources
         pix = self.get_hpix()
+        # Build catalogs for tomographic bin j
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)                                  
-
-
-        if (icat is None) or (jcat is None):
+        if (icat is None) or (jcat is None): # No objects in selection
             return 
-        for x in range(9):
-            jcat.wpos[:]=0.
-            jcat.wpos[pixrange[x]] = 1.
 
-            ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+        # Loop over pixels
+        for x in range(9):
+            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
+            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
+
+            # Run calculation
+            ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             ng.process_cross(icat,jcat)
             rg.process_cross(ircat,jcat)
 
+            # Write output to h5 file
+            print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
@@ -479,28 +495,38 @@ class Measure2Point(PipelineStage):
         return 
 
     def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
+        """
+        Treecorr wrapper for pos-pos calculations.
+        """
         print 'in pos_pos'
 
+        # Get healpix list for lenses
         pix = self.get_lhpix()
+        # Build catalogs for tomographic bin i
         icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)
+        # Build catalogs for tomographic bin i
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
-        if (icat is None) or (jcat is None):
+        if (icat is None) or (jcat is None): # No objects in selection
             return 
+
+        # Loop over pixels
         for x in range(9):
-            jcat.wpos[:]=0.
-            jcat.wpos[pixrange[x]] = 1.
+            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
+            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
 
-            nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            rn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-            rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][0], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
-
+            # Run calculation
+            nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             nn.process_cross(icat,jcat)
             rn.process_cross(ircat,jcat)
             nr.process_cross(icat,jrcat)
             rr.process_cross(ircat,jrcat)
 
+            # Write output to h5 file
+            print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
@@ -515,7 +541,7 @@ class Measure2Point(PipelineStage):
 
     def write(self):
         """
-        Write data to files.
+        Write data to files. Empty.
         """
 
         return

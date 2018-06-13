@@ -24,6 +24,7 @@ hpix_nside    : 16384
 
 oneplusm       : True
 has_sheared    : True
+random_seed     : 3.14 # Fixed seed to make things reproducible between runs.
 
 # nofz parameters
 
@@ -34,7 +35,6 @@ nzbins      : 400 # Number of n(z) array z bins
 nzmax       : 4.0 # Max z for n(z)
 pdf_type    : sample # pdf for stacking pdfs
 lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
-lens_pz_seed     : 3.14 # Fixed seed to make lens n(z)s reproducible between runs.
 
 # correlation 
 
@@ -44,6 +44,7 @@ slop        : 0.5
 flip_e2     : False
 2pt_only    : All
 ran_factor  : 5
+cores_per_task : 64
 
 # cov parameters
 

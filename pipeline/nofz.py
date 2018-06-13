@@ -19,7 +19,7 @@ class ParamError(Exception):
   def __str__(self):
     return repr(self.value)
 
-def load_catalog(filename,inherit=None,return_calibrator=False):
+def load_catalog(filename, inherit=None, return_calibrator=False):
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
@@ -78,9 +78,6 @@ class nofz(PipelineStage):
 
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
-        # No weights for metacal
-        self.weight = [1]
- 
         # Setup n(z) array binning for sources
         if self.params['pdf_type']!='pdf':
             # Define z binning of returned n(z)s
@@ -137,7 +134,7 @@ class nofz(PipelineStage):
                 pzbin, # Array by which to bin
                 pzstack, # Array by which to stack
                 self.params['pdf_type'], # Type of stacking
-                self.weight, # Weight array: shape weight * response
+                None, # Weight array: shape weight * response
                 shape=True) # Is this a source operation?
 
         else: 
@@ -290,7 +287,7 @@ class nofz(PipelineStage):
             # Photo-z stacking for redmagic (or any catalog that reports a gaussian photo-z mean + width)
             if pdf_type == 'rm':
                 # Set fixed random seed to make results reproducible
-                np.random.seed(seed=self.params['lens_pz_seed'])
+                np.random.seed(seed=self.params['random_seed'])
                 # Stack value derived as random draw from gaussian reported photo-z
                 stack_col = np.random.normal(stack_col, self.lens_selector.get_col(self.Dict.lens_pz_dict['pzerr'])[self.Dict.ind['u']])
 
