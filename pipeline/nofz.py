@@ -1,6 +1,5 @@
 import numpy as np
 import twopoint
-import healpy
 import fitsio as fio
 import healpy as hp
 from numpy.lib.recfunctions import append_fields, rename_fields
@@ -13,6 +12,34 @@ import yaml
 import pdb
 import importlib
 import h5py
+
+class ParamError(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
+
+def load_catalog(filename,inherit=None,return_calibrator=False):
+    """
+    Loads data access and calibration classes from destest for a given yaml setup file.
+    """
+
+    # Input yaml file defining catalog
+    params = yaml.load(open(filename))
+    params['param_file'] = filename
+    # Load destest source class to manage access to file
+    source = destest.H5Source(params)
+    # Load destest selector class to manage access to data in a structured way
+    if inherit is None:
+        sel = destest.Selector(params,source)
+    else:
+        sel = destest.Selector(params,source,inherit=inherit)
+    # Load destest calibrator class to manage calibration of the catalog
+    if return_calibrator:
+        cal = destest.MetaCalib(params,sel)
+        return sel, cal
+    else:
+        return sel
 
 class nofz(PipelineStage):
     name = "nofz"
@@ -34,185 +61,136 @@ class nofz(PipelineStage):
 
     def __init__(self, param_file):
         """
-        Produces n(z)s from input catalogs.
+        Produces tomographic binning, n(z)s, and metadata from input catalogs.
         """
         super(nofz,self).__init__(param_file)
         
-        
-        #using a dictionary that changes names of columns in the hdf5 master catalog to simpler 
+        # A dictionary to homogenize names of columns in the hdf5 master catalog 
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print 'using dictionary: ',self.params['dict_file']
                 
-        print 'mcal selector'
-        #mcal_file = '/global/homes/s/seccolf/des-science/2pt_pipeline/destest_mcal.yaml'
-        mcal_file = 'destest_mcal.yaml'
-        params_mcal = yaml.load(open(mcal_file))
-        params_mcal['param_file'] = mcal_file
-        source_mcal = destest.H5Source(params_mcal)
-        self.selector_mcal = destest.Selector(params_mcal,source_mcal)
-        self.calibrator = destest.MetaCalib(params_mcal,self.selector_mcal)
-        #now, using selector_mcal.get_col(col) should return a column from the catalog for column name col with the cuts specified by the destest_mcal.yaml file
+        # Load data and calibration classes
+        self.source_selector, self.source_calibrator = load_catalog(self.params['shape_yaml'], return_calibrator=True)
+        self.lens_selector, self.lens_calibrator     = load_catalog(self.params['lens_yaml'], return_calibrator=True)
+        self.gold_selector = load_catalog(self.params['gold_yaml'], inherit=self.source_selector)
+        self.pz_selector   = load_catalog(self.params['pz_yaml'],   inherit=self.source_selector)
+        self.ran_selector  = load_catalog(self.params['random_yaml'])
 
-        print 'lens selector'
-        lens_file = 'destest_redmagic.yaml'
-        params_lens = yaml.load(open(lens_file))
-        params_lens['param_file'] = lens_file
-        source_lens = destest.H5Source(params_lens)
-        self.selector_lens = destest.Selector(params_lens,source_lens)
-        self.calibrator_lens = destest.NoCalib(params_lens,self.selector_lens)
-
-        print 'random selector'
-        random_file = 'destest_random.yaml'
-        params_random = yaml.load(open(random_file))
-        params_random['param_file'] = random_file
-        source_random = destest.H5Source(params_random)
-        self.selector_random = destest.Selector(params_random,source_random)
-        
-        print 'pz selector'
-        pz_file = 'destest_pz.yaml'
-        params_pz = yaml.load(open(pz_file))
-        params_pz['param_file'] = pz_file
-        if params_pz['group'][-3:] == 'bpz':
-            print "will use BPZ's column names"
-            self.Dict.pz_dict = self.Dict.bpz_dict
-        else:
-            print "will use DNF's column names"
-            self.Dict.pz_dict = self.Dict.dnf_dict
-        source_pz = destest.H5Source(params_pz)
-        self.selector_pz = destest.Selector(params_pz,source_pz,inherit=self.selector_mcal)
-        #now you get columns by doing col=selector_pz.get_col(Dict.pz_dict['pzbin']) for instance
-        
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
-
-        # snr = self.selector_mcal.get_col('snr')
-        # for i in range(5):
-        #     print np.max(snr[i]),np.min(snr[i])
-
-        # Load data #comment it now as a test
-        #self.load_data() #Lucas: maybe will have to get rid of this entirely
-
-        #once we actually start using weights, use the few lines below
-        S = len(self.selector_pz.get_col(self.Dict.pz_dict['pzbin'],nosheared=True))
-        #print S
-        self.weight = np.ones(S)
-        #print '\nweights done\n'
+        # No weights for metacal
+        self.weight = [1]
  
-        
-        # Setup binning
-        if self.params['pdf_type']!='pdf': 
-            self.z       = (np.linspace(0.,4.,401)[1:]+np.linspace(0.,4.,401)[:-1])/2.+1e-4 # 1e-4 for buzzard redshift files
-            self.dz      = self.z[1]-self.z[0]
-            self.binlow  = self.z-self.dz/2.
-            self.binhigh = self.z+self.dz/2.
+        # Setup n(z) array binning for sources
+        if self.params['pdf_type']!='pdf':
+            # Define z binning of returned n(z)s
+
+            self.z       = np.linspace(0., self.params['nzmax'], self.params['nzbins']+1)
+            self.z       = (self.z[1:] + self.z[:-1]) / 2. + 1e-4 # 1e-4 for buzzard redshift files
+            self.dz      = self.z[1] - self.z[0] # N(z) binning width
+            self.binlow  = self.z - self.dz/2. # Lower bin edges
+            self.binhigh = self.z + self.dz/2. # Upper bin edges
+
         else:
-            self.binlow  = np.array(self.params['pdf_z'][:-1])
-            self.binhigh = np.array(self.params['pdf_z'][1:])
-            self.z       = (self.binlow+self.binhigh)/2.
-            self.dz      = self.binlow[1]-self.binlow[0]
+            # Adopt pdf binning
 
-        #print 'passed first part\n\n'
+            raise ParamError('Not updated to work with full pdfs.')
 
+        # Setup tomographic bin edges for sources
         if hasattr(self.params['zbins'], "__len__"):
-            self.tomobins = len(self.params['zbins']) - 1
-            self.binedges = self.params['zbins']
+            # Provided array of bin edges in yaml
+            self.tomobins = len(self.params['zbins']) - 1 # Number of tomographic bins
+            self.binedges = self.params['zbins'] # Bin edges
         else:
+            # Provided number of bins in yaml
             self.tomobins = self.params['zbins']
-            #self.binedges = self.find_bin_edges(self.pz['pzbin'][self.mask], self.tomobins, w = self.shape['weight'][self.mask]) #Lucas: original
-            self.binedges = self.find_bin_edges(self.selector_pz.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
-            print 'remind troxel to replace this function to use destest classes' #troxel: don't remove
+            self.binedges = self.find_bin_edges(self.pz_selector.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
             
+        # Setup tomographic bin edges for lenses
         if self.params['lensfile'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
-                self.lens_tomobins = len(self.params['lens_zbins']) - 1
+                # Provided array of bin edges in yaml
+                self.lens_tomobins = len(self.params['lens_zbins']) - 1 
                 self.lens_binedges = self.params['lens_zbins']
             else:
+                # Provided number of bins in yaml
                 self.lens_tomobins = self.params['lens_zbins']
-                #self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) #Lucas: original
                 self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
-                #deal with lenses later
-        print 'Binning was set up'
         
         return
 
     def run(self):
-        
-        # Calculate source n(z)s and write to file
-        print 'before pzbin ---------------------'
-        pzbin = self.selector_pz.get_col(self.Dict.pz_dict['pzbin'])
-        print 'before e1 ---------------------'
-        e1 = self.selector_mcal.get_col('e1')
-        print 'In run: pzbin = ',len(pzbin[0]),pzbin
+        """
+        Run the nofz module to produce n(z)s and metadata.
+        """
+
+        # Get the PZ binning and stacking arrays
+        pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])[self.Dict.ind['u']]
+        pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
         if self.params['pdf_type']!='pdf': 
+            # Get binning and n(z) by stacking a scalar derived from pdf
+
             zbin, self.nofz = self.build_nofz_bins(
-                self.tomobins,
-                self.binedges,
-                pzbin,
-                self.selector_pz.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']],
-                self.params['pdf_type'],
-                self.weight,
-                shape=True)
+                self.tomobins, # Number of tomographic bins
+                self.binedges, # Tomographic bin edges
+                pzbin, # Array by which to bin
+                pzstack, # Array by which to stack
+                self.params['pdf_type'], # Type of stacking
+                self.weight, # Weight array: shape weight * response
+                shape=True) # Is this a source operation?
+
         else: 
-            pdfs = np.zeros((len(self.pz),len(self.z)))
-            for i in range(len(self.z)):
-                pdfs[:,i] = self.pz['pzstack'+str(i)]
-            zbin, self.nofz = self.build_nofz_bins(
-                               self.tomobins,
-                               self.binedges,
-                               pzbin,
-                               pdfs,
-                               self.params['pdf_type'],
-                               self.weight,
-                               shape=True)
 
-        print '\nCalculated source n(z), now getting sigma_e and Neff '
+            raise ParamError('Not updated to work with full pdfs.')
 
+        # Calculate sigma_e and n_eff
         self.get_sige_neff(zbin,self.tomobins)
 
+        # Write source tomographic binning indicies to file for use later in the pipeline
         f = h5py.File( self.output_path("nz_source"), mode='w')
         for zbin_,zname in tuple(zip(zbin,['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m'])):
             f.create_dataset( 'nofz/'+zname, maxshape=(2*len(zbin_),), shape=(len(zbin_),), dtype=zbin_.dtype, chunks=(len(zbin_)/10,) )
             f['nofz/'+zname][:] = zbin_
-        f.close()
 
-        print 'Calculated sigma_e and Neff for sources.\nCalculating lens n(z)'
-
-        # Calculate lens n(z)s and write to file
-        lens_pzbin = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzbin'])[0]
-        lens_pzstack = self.selector_lens.get_col(self.Dict.lens_pz_dict['pzstack'])[0]
-        lens_weight = self.calibrator_lens.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
+        # Get the lens PZ binning and stacking arrays and weights
+        pzbin   = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzbin'])[self.Dict.ind['u']]
+        pzstack = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
+        weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
                 
         if self.params['lensfile'] != 'None':
+            # Calculate lens n(z)s and write to file
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
-                                         self.lens_tomobins,
+                                         self.lens_tomobins, 
                                          self.lens_binedges,
-                                         lens_pzbin,
-                                         lens_pzstack,
+                                         pzbin,
+                                         pzstack,
                                          self.params['lens_pdf_type'],
-                                         lens_weight)
-            print 'Saving lens n(z)',len(lens_zbin),len(lens_pzbin)
+                                         weight)
 
+            # Write lens tomographic binning indicies to file for use later in the pipeline
             f = h5py.File( self.output_path("nz_source"), mode='r+')
             f.create_dataset( 'nofz/lens_zbin', maxshape=(len(lens_zbin),), shape=(len(lens_zbin),), dtype=lens_zbin.dtype, chunks=(len(lens_zbin)/10,) )
             f['nofz/lens_zbin'][:] = lens_zbin
 
-            ran_binning = np.digitize(self.selector_random.get_col(self.Dict.ran_dict['ranbincol'])[0], self.lens_binedges, right=True) - 1
+            # Calculate and write random tomographic binning indicies to file for use later in the pipeline
+            pzbin = self.ran_selector.get_col(self.Dict.ran_dict['ranbincol'])[self.Dict.ind['u']]
+            ran_binning = np.digitize(pzbin, self.lens_binedges, right=True) - 1
+
             f.create_dataset( 'nofz/ran_zbin', maxshape=(len(ran_binning),), shape=(len(ran_binning),), dtype=ran_binning.dtype, chunks=(len(ran_binning)/10,) )
             f['nofz/ran_zbin'][:] = ran_binning
 
-            f.close()
+            # Calculate lens n_eff
+            self.get_lens_neff( lens_zbin, self.lens_tomobins, lens_weight)
 
-            if np.isscalar(lens_weight):
-                self.get_lens_neff(lens_zbin,self.lens_tomobins,np.ones(len(lens_zbin)))
-            else:
-                self.get_lens_neff(lens_zbin,self.lens_tomobins,lens_weight)
+        f.close()
 
     def write(self):
         """
-        Write lens and source n(z)s to fits file for tomographic and non-tomographic cases.
+        Write lens and source n(z)s to twopoint fits file.
         """
 
+        # Create source twopoint number density object
         nz_source = twopoint.NumberDensity(
                      NOFZ_NAMES[0],
                      self.binlow, 
@@ -220,31 +198,42 @@ class nofz(PipelineStage):
                      self.binhigh, 
                      [self.nofz[i,:] for i in range(self.tomobins)])
 
+        # Add metatdata
         nz_source.ngal      = self.neff
         nz_source.sigma_e   = self.sigma_e
         nz_source.area      = self.area
         kernels             = [nz_source]
         np.savetxt(self.output_path("nz_source_txt"), np.vstack((self.binlow, self.nofz)).T)
 
+        # Doing calculations on lenses, so include them
         if self.params['lensfile'] != 'None':
+            # Create lens twopoint number density object
             nz_lens      = twopoint.NumberDensity(
                             NOFZ_NAMES[1], 
                             self.binlow, 
                             self.z, 
                             self.binhigh, 
                             [self.lens_nofz[i,:] for i in range(self.lens_tomobins)])
+
+            # Add metatdata
             nz_lens.ngal = self.lens_neff
             nz_lens.area = self.area
             kernels.append(nz_lens)
             np.savetxt(self.output_path("nz_lens_txt"), np.vstack((self.binlow, self.lens_nofz)).T)
 
+        # Write to twopoint fits file
         data             = twopoint.TwoPointFile([], kernels, None, None)
         data.to_fits(self.output_path("2pt"), clobber=True)
 
+        # Write metadata to yaml file for use in further pipeline stages
         self.write_metadata()
 
     def write_metadata(self):
-        import yaml
+        """
+        Write metadata to yaml file for use in further pipeline stages.
+        """
+
+        # Define dictionary structure
         data = {
             "neff": self.neff,
             "neffc": self.neffc,
@@ -256,95 +245,90 @@ class nofz(PipelineStage):
             "area": self.area,
             "repository_version:": find_git_hash(),
         }
-        #if 'pzbin_col' in self.gold.dtype.names:
-        #    data["source_bins"] = "gold_file_bins"
-        #else:
+
+        # Add source bin edges
         if type(self.binedges) is list:
             data.update({ "source_bins" : self.binedges })
         else:
             data.update({ "source_bins" : self.binedges.tolist() })
 
+        # Add lens bin information
         if self.params['lensfile'] != 'None':
             data.update({ "lens_neff" : self.lens_neff,
                           "lens_tomobins" : self.lens_tomobins,
                           "lens_bins" : self.lens_binedges })
         print data
+        # Save dict to yaml file.
         filename = self.output_path('metadata')
         open(filename, 'w').write(yaml.dump(data))
 
-
-    def build_nofz_bins(self, zbins, edge, bin_col, stack_col, pdf_type, weight,shape=False):
+    def build_nofz_bins(self, zbins, edge, bin_col, stack_col, pdf_type, weight, shape=False):
         """
-        Build an n(z), non-tomographic [:,0] and tomographic [:,1:].
+        Build the n(z)s.
         """
 
-        if len(bin_col)>5:
-           print ' ---- build nofz bins ',bin_col,np.min(bin_col),np.max(bin_col),stack_col
-
-        #R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Lucas: attempting to load mask here.
+        # Create tomographic bin indicies from bin edges.
         if shape&(self.params['has_sheared']):
-            #if 'pzbin_col' in self.gold.dtype.names:
-            #    xbins = self.gold['pzbin_col']
-            #else:
-            xbins0=[]
-            print 'In build_nofz_bins: bin_col=',bin_col
-            for x in bin_col:
-                #print 'In build_nofz_bins: np.digitize(x, edge, right=True) - 1 = ',np.digitize(x, edge, right=True) - 1
-                xbins0.append(np.digitize(x, edge, right=True) - 1)
-                print np.min(x),np.max(x),np.min(xbins0[-1]),np.max(xbins0[-1])
-            xbins = xbins0[0]
-        else:
-            #if 'pzbin_col' in self.gold.dtype.names:
-            #    xbins0 = self.gold['pzbin_col']
-            #else:
-            xbins0 = np.digitize(bin_col, edge, right=True) - 1
-            xbins=xbins0
 
-        # Stack n(z)
+            # Loop over unsheared and sheared catalogs (bin_col list)
+            xbins0=[]
+            for x in bin_col:
+                # Digitize the bin indices from the edges
+                xbins0.append(np.digitize(x, edge, right=True) - 1)
+            xbins = xbins0[0]
+
+        else:
+
+            raise ParamError('Not updated to support non-metacal catalogs.')
+
+        # Create empty n(z) array
         nofz  = np.zeros((zbins, len(self.z)))
 
-        # MC Sample of pdf or redmagic (if redmagic, takes random draw from gaussian of width 0.01)
+        # N(z) is created from stacking scalar value derived from the pdf
         if (pdf_type == 'sample') | (pdf_type == 'rm'):
+
+            # Photo-z stacking for redmagic (or any catalog that reports a gaussian photo-z mean + width)
             if pdf_type == 'rm':
-                #stack_col = np.random.normal(stack_col, self.lens_pz['pzerr']*np.ones(len(stack_col)))
-                stack_col = np.random.normal(stack_col, self.selector_lens.get_col(self.Dict.lens_pz_dict['pzerr'])[0])
+                # Set fixed random seed to make results reproducible
+                np.random.seed(seed=self.params['lens_pz_seed'])
+                # Stack value derived as random draw from gaussian reported photo-z
+                stack_col = np.random.normal(stack_col, self.lens_selector.get_col(self.Dict.lens_pz_dict['pzerr'])[self.Dict.ind['u']])
+
+            # Stack scalar values into n(z) looping over tomographic bins
             for i in range(zbins):
+                # Get array masks for the tomographic bin for unsheared and sheared catalogs
                 mask        =  (xbins == i)
                 if shape:
-                    #mask = mask&self.mask #Lucas: forget this mask since get_col deals with it
                     if self.params['has_sheared']:
-                        #print 'In build_nofz_bins: xbins0=',xbins0,'\n\nI will crash now\n\n'
                         mask_1p = (xbins0[1] == i)
                         mask_1m = (xbins0[2] == i)
                         mask_2p = (xbins0[3] == i)
                         mask_2m = (xbins0[4] == i)
 
-                        if len(weight)<=5:
-                            weight_ = weight[0]*self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
-                        else:
-                            weight_ = weight*self.calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
-                        print 'check that theres no double weighting in final pipeline' #troxel: don't remove
+                        weight_ = self.source_calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
                         
                     else:
-                        m1 = self.shape['m1']
-                        m2 = self.shape['m2']
-                        weight_ = weight*(m1+m2)/2.
+
+                        raise ParamError('Not updated to support non-metacal catalogs.')
+
                 else:
-                    weight_ = weight
+
+                    weight_ = weight 
+
+                # Stack n(z)
                 if np.isscalar(weight_):
+
                     nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]))
                 else:
+
                     nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
         # Stacking pdfs
         elif pdf_type == 'pdf':
-            for i in xrange(zbins):
-                mask      =  (xbins == i)
-                if shape:
-                    mask = mask&self.mask
-                nofz[i,:] =  np.sum((stack_col[mask].T * weight[mask]).T, axis=0)
-                nofz[i,:] /= np.sum(nofz[i,:]) * self.dz
+
+             raise ParamError('Not updated to work with full pdfs.')
 
         return xbins0, nofz
 
@@ -352,6 +336,8 @@ class nofz(PipelineStage):
         """
         For an array x, returns the boundaries of nbins equal (possibly weighted by w) bins.
         From github.com/matroxel/destest.
+
+        This is probably really slow for DES Y3 size catalogs. There's a better way built into destest, but probably won't ever use this, so haven't ported over.
         """
 
         if w is None:
@@ -407,128 +393,148 @@ class nofz(PipelineStage):
 
     def get_lens_neff(self, zbin, tomobins, weight):
         """
-        Calculate neff for catalog.
+        Calculate neff for lens catalog.
         """
 
+        # Check if area is defined - else retrieve it
         if not hasattr(self,'area'):
             self.get_area()
 
+        # Define empty arrays that will be saved
         self.lens_neff = []
+
         for i in range(tomobins):
-            print '\nDoing lens zbin',i
-            
+            # Loop over source tomographic bins
 
+            # get object selection for tomographic bin i
             mask = (zbin == i)
-            a    = np.sum(weight[mask])**2
-            b    = np.sum(weight[mask]**2)
-            c    = self.area * 60. * 60.
-            #print 'mask=',mask
-            print np.sum(weight[mask]),'objects found in this bin',weight[mask]
-            #print 'np.sum(weight)=',np.sum(weight)
-            #print 'self.area=',self.area
-            #print 'a=',a
-            #print 'b=',b
-            #print 'c=',c
-            
-            self.lens_neff.append(np.asscalar( a/b/c ))
 
-        return
+            if np.isscalar(weight):
+                # If weight is a scalar (no weights), calculate simple n_raw
 
+                self.lens_neff.append( np.asscalar( np.sum( mask ) / ( self.area * 60.**2 ) ) )
+
+            else:
+
+                # Calculate components of the sigma_e and n_eff calculations
+                a    = np.sum( weight[mask]    )**2
+                b    = np.sum( weight[mask]**2 )
+                # print np.sum(weight[mask]),'objects found in this bin',weight[mask]
+                
+                self.lens_neff.append( np.asscalar( a / b / ( self.area * 60.**2 ) ) )
 
     def get_sige_neff(self, zbin, tomobins):
+        """
+        Calculate sigma_e and n_eff for for the source tomographic bins.
+        """
 
+        # Check if area is defined - else retrieve it
         if not hasattr(self,'area'):
             self.get_area()
 
-        self.mean_e1 = []
-        self.mean_e2 = []
-        self.sigma_e = []
-        self.sigma_ec = []
-        self.neff = []
-        self.neffc = []
-        e1_  = self.selector_mcal.get_col(self.Dict.shape_dict['e1'],nosheared=True)[0]
-        e2_  = self.selector_mcal.get_col(self.Dict.shape_dict['e2'],nosheared=True)[0]
-        cov00_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov00'],nosheared=True)[0]
-        cov11_  = self.selector_mcal.get_col(self.Dict.shape_dict['cov11'],nosheared=True)[0]
+        # Define empty arrays that will be saved
+        self.mean_e1  = []
+        self.mean_e2  = []
+        self.sigma_e  = [] # Heymans versions - these are typically used in covariance calculations
+        self.neff     = []
+        self.sigma_ec = [] # Chang versions - better at a theoretical level
+        self.neffc    = []
+
         for i in range(tomobins):
-            print '\nDoing source zbin',i
+            # Loop over source tomographic bins
+            print 'Doing sige and neff for source zbin',i
+
             if self.params['has_sheared']:
-                mask = (zbin[0] == i)
+                # Select objects in tomographic bin i
+                mask    = (zbin[0] == i)
                 mask_1p = (zbin[1] == i)
                 mask_1m = (zbin[2] == i)
                 mask_2p = (zbin[3] == i)
                 mask_2m = (zbin[4] == i)
 
-                R,c,w = self.calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m]) #Added by Troxel. Lucas: R will be the final mean response
+                # Calculate mean reponse in tomographic bin i and get weight vector
+                R,c,w = self.source_calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 if type(w) is list:
                     w = w[0]
-                if np.isscalar(w):
-                    print 'Re-defining w as np.ones(np.sum(mask))'
-                    w = np.ones(np.sum(mask))
 
-                print np.sum(mask),'objects found in this bin'
-                e1  = e1_[mask]
-                e2  = e2_[mask]
+                # print np.sum(mask),'objects found in this bin'
+                # Select objects in bin and get e and e cov arrays
+                e1  = self.source_selector.get_col(self.Dict.shape_dict['e1'], 
+                                                  mask=mask, nosheared=True)[self.Dict.ind['u']]
+                e2  = self.source_selector.get_col(self.Dict.shape_dict['e2'], 
+                                                  mask=mask, nosheared=True)[self.Dict.ind['u']]
                 s   = R
-                var = cov00_[mask]+cov11_[mask]
+                var =   self.source_selector.get_col(self.Dict.shape_dict['cov00'], 
+                                                    mask=mask, nosheared=True)[self.Dict.ind['u']]
+                      + self.source_selector.get_col(self.Dict.shape_dict['cov11'], 
+                                                    mask=mask, nosheared=True)[self.Dict.ind['u']]
+                # Regularize variance for small number of ill-defined covariances
                 var[var>2] = 2.
             
-
             else:
-                mask = (zbin == i)
-                m1 = cat['m1']
-                m2 = cat['m2']
-                e1  = cat['e1'][mask]
-                e2  = cat['e2'][mask]
-                w   = cat['weight'][mask]
-                s = (m1[mask]+m2[mask])/2.
-                snvar = 0.24#np.sqrt((cat['e1'][mask][cat['snr'][mask]>100].var()+cat['e2'][mask][cat['snr'][mask]>100].var())/2.)
-                print i,'snvar',snvar
-                var = 1./w - snvar**2
-                var[var < 0.] = 0.
-                w[w > snvar**-2] = snvar**-2
-                print 'var',var.min(),var.max()
 
-            self.mean_e1.append(np.asscalar(np.average(e1,weights=w))) # this is without calibration factor!
-            self.mean_e2.append(np.asscalar(np.average(e2,weights=w)))
-            
-            a1 = np.sum(w**2 * (e1-self.mean_e1[i])**2)
-            a2 = np.sum(w**2 * (e2-self.mean_e2[i])**2)
-            b  = np.sum(w**2)
-            c  = np.sum(w * s)
-            d  = np.sum(w)
-            
-            self.sigma_e.append( np.sqrt( (a1/c**2 + a2/c**2) * (d**2/b) / 2. ) )
-            self.sigma_ec.append( np.sqrt( np.sum(w**2 * (e1**2 + e2**2 - var)) / (2.*np.sum(w**2 * s**2)) ) )
+                raise ParamError('Not updated to support non-metacal catalogs.')
 
+            # Calculate mean shear without calibration factor
+            if np.isscalar(w):
+                self.mean_e1.append( np.asscalar( np.average(e1) ) )
+                self.mean_e2.append( np.asscalar( np.average(e2) ) )
+            else:
+                self.mean_e1.append( np.asscalar( np.average(e1, weights=w) ) )
+                self.mean_e2.append( np.asscalar( np.average(e2, weights=w) ) )
             
-            a    = np.sum(w)**2
-            c    = self.area * 60. * 60.
+            # Calculate components of the sigma_e and n_eff calculations
+            sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
+            sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
+            sum_w2    = np.sum( w**2                               )
+            sum_ws    = np.sum( w * s                              )
+            sum_w     = np.sum( w                                  )
+            
+            # Calculate sigma_e 
+            self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2) 
+                                          * (sum_w**2 / sum_w2) / 2. ) )
+            self.sigma_ec.append( np.sqrt( np.sum( w**2 * (e1**2 + e2**2 - var) ) 
+                                           / ( 2. * np.sum(w**2 * s**2) ) 
+                                          ) 
+                                 )
 
-            self.neff.append( a/b/c )
-            self.neffc.append( ((self.sigma_ec[i]**2 * np.sum(w * s)**2) / np.sum(w**2 * (s**2 * self.sigma_ec[i]**2 + var/2.))) / self.area / 60**2 )
+            # Calculate n_eff
+            self.neff.append( sum_w**2 / sum_w2 / ( self.area * 60. * 60. ) )
+            self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 ) 
+                                 / np.sum( w**2 * ( s**2 * self.sigma_ec[i]**2 + var / 2. ) )
+                               / self.area / 60**2 
+                              )
 
     def get_area(self):
+        """
+        Retrieve area from yaml file or calculate it if not provided.
+        """
 
         if hasattr(self,'area'):
+            # Area already calculated or read in elsewhere.
             return
 
-        if self.params['area']=='None':
+        if 'area' not in self.params:
+            # Area not provided in yaml - calculating with healpix.
 
-            import healpy as hp
+            print 'Calculating area via healpixel counting -- very inaccurate, you should be worried and provide a better effective area estimate.'
 
-            pix=hp.ang2pix(4096, np.pi/2.-np.radians(self.shape['dec']),np.radians(self.shape['ra']), nest=True)
-            area=hp.nside2pixarea(4096)*(180./np.pi)**2
-            mask=np.bincount(pix)>0
-            self.area=np.sum(mask)*area
-            self.area=float(self.area)
-            print self.area
+            # Calculate pixel positions
+            ra   = self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
+            dec  = self.gold_selector.get_col(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
+            pix  = hp.ang2pix(4096, np.pi/2. - np.radians(dec),
+                                    np.radians(ra), nest=True)
+            # Calculate area of pixel in deg^2
+            area = hp.nside2pixarea(4096) * ( 180. / np.pi )**2
+            # Get number of used pixels
+            mask = np.bincount(pix) > 0
+            # Multiple to get final area
+            self.area=float( np.sum(mask) * area )
         
         else:
+            # Area provided in yaml
 
             self.area = self.params['area']
-
-        return 
 
 def find_git_hash():
     try:
