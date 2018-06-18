@@ -104,7 +104,7 @@ class nofz(PipelineStage):
             self.binedges = self.find_bin_edges(self.pz_selector.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
             
         # Setup tomographic bin edges for lenses
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
                 # Provided array of bin edges in yaml
                 self.lens_tomobins = len(self.params['lens_zbins']) - 1 
@@ -155,7 +155,7 @@ class nofz(PipelineStage):
         pzstack = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
         weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
                 
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             # Calculate lens n(z)s and write to file
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
                                          self.lens_tomobins, 
@@ -250,7 +250,7 @@ class nofz(PipelineStage):
             data.update({ "source_bins" : self.binedges.tolist() })
 
         # Add lens bin information
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             data.update({ "lens_neff" : self.lens_neff,
                           "lens_tomobins" : self.lens_tomobins,
                           "lens_bins" : self.lens_binedges })

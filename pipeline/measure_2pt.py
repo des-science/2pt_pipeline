@@ -147,7 +147,7 @@ class Measure2Point(PipelineStage):
         """
 
         # Get max number of tomographic bins between lenses and sources
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             nbin=max(self.lens_zbins,self.zbins)
         else:
             nbin=self.zbins
@@ -170,7 +170,7 @@ class Measure2Point(PipelineStage):
                 if (i<=j) & (j<self.zbins) & (self.params['2pt_only'].lower() in [None,'shear-shear','all']):
                     calcs.append((i,j,pix_,0)) # Only add to list if calculating shear-shear and a valid tomographic pair (doesn't duplicate identical i<j and i>j)
 
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             for i,j in all_calcs:
                 for pix_ in pix:
                     if (i<self.lens_zbins)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'pos-shear','all']):
