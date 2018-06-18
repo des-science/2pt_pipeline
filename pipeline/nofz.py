@@ -276,7 +276,7 @@ class nofz(PipelineStage):
                 xbins0.append(np.digitize(x, edge, right=True) - 1)
             xbins = xbins0[0]
 
-        elif:
+        else:
 
             raise ParamError('Not updated to support non-metacal catalogs.')
 
