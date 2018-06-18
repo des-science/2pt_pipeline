@@ -306,6 +306,7 @@ class nofz(PipelineStage):
                         mask_2m = (xbins0[4] == i)
 
                         weight_ = self.source_calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        print 'weight',weight_
                         
                     else:
 
