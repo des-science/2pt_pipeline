@@ -122,8 +122,7 @@ class Measure2Point(PipelineStage):
 
         if pix is None:
 
-            return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] 
-                    // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+            return self.gold_selector.get_col(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
         else:
 
@@ -136,8 +135,7 @@ class Measure2Point(PipelineStage):
 
         if pix is None:
 
-            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] 
-                    // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
         else:
 
