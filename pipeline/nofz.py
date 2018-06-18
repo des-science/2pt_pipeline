@@ -153,7 +153,7 @@ class nofz(PipelineStage):
             f['nofz/'+zname][:] = zbin_
 
         # Get the lens PZ binning and stacking arrays and weights
-        pzbin   = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzbin'])[self.Dict.ind['u']]
+        pzbin   = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzbin'])
         pzstack = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
         weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
                 
