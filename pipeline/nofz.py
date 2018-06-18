@@ -181,7 +181,7 @@ class nofz(PipelineStage):
             f['nofz/ran_zbin'][:] = ran_binning
 
             # Calculate lens n_eff
-            self.get_lens_neff( lens_zbin, self.lens_tomobins, lens_weight)
+            self.get_lens_neff( lens_zbin, self.lens_tomobins, weight)
 
         f.close()
 
