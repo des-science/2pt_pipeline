@@ -267,7 +267,7 @@ class nofz(PipelineStage):
         """
 
         # Create tomographic bin indicies from bin edges.
-        if shape&(self.params['has_sheared']):
+        if (~shape)|(self.params['has_sheared']):
 
             # Loop over unsheared and sheared catalogs (bin_col list)
             xbins0=[]
@@ -276,7 +276,7 @@ class nofz(PipelineStage):
                 xbins0.append(np.digitize(x, edge, right=True) - 1)
             xbins = xbins0[0]
 
-        else:
+        elif:
 
             raise ParamError('Not updated to support non-metacal catalogs.')
 
