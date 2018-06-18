@@ -16,7 +16,7 @@ import glob
 
 global_measure_2_point = None
 
-def load_catalog(filename, inherit=None, return_calibrator=False):
+def load_catalog(filename, inherit=None, return_calibrator=None):
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
@@ -32,8 +32,8 @@ def load_catalog(filename, inherit=None, return_calibrator=False):
     else:
         sel = destest.Selector(params,source,inherit=inherit)
     # Load destest calibrator class to manage calibration of the catalog
-    if return_calibrator:
-        cal = destest.MetaCalib(params,sel)
+    if return_calibrator is not None:
+        cal = return_calibrator(params,sel)
         return sel, cal
     else:
         return sel
@@ -80,8 +80,8 @@ class Measure2Point(PipelineStage):
         print 'using dictionary: ',self.params['dict_file']
                 
         # Load data and calibration classes
-        self.source_selector, self.source_calibrator = load_catalog(self.params['shape_yaml'], return_calibrator=True)
-        self.lens_selector, self.lens_calibrator     = load_catalog(self.params['lens_yaml'], return_calibrator=True)
+        self.source_selector, self.source_calibrator = load_catalog(self.params['shape_yaml'], return_calibrator=destest.MetaCalib)
+        self.lens_selector, self.lens_calibrator     = load_catalog(self.params['lens_yaml'], return_calibrator=destest.NoCalib)
         self.gold_selector = load_catalog(self.params['gold_yaml'], inherit=self.source_selector)
         self.ran_selector  = load_catalog(self.params['random_yaml'])
 
