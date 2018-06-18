@@ -128,6 +128,8 @@ class nofz(PipelineStage):
         if self.params['pdf_type']!='pdf': 
             # Get binning and n(z) by stacking a scalar derived from pdf
 
+            print pzbin, pzstack,self.binedges,self.tomobins
+
             zbin, self.nofz = self.build_nofz_bins(
                 self.tomobins, # Number of tomographic bins
                 self.binedges, # Tomographic bin edges
