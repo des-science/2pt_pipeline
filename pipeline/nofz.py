@@ -122,7 +122,7 @@ class nofz(PipelineStage):
         """
 
         # Get the PZ binning and stacking arrays
-        pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])[self.Dict.ind['u']]
+        pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
         if self.params['pdf_type']!='pdf': 
