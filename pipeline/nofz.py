@@ -461,8 +461,7 @@ class nofz(PipelineStage):
                 e2  = self.source_selector.get_col(self.Dict.shape_dict['e2'], 
                                                   mask=mask, nosheared=True)[self.Dict.ind['u']]
                 s   = R
-                var =   self.source_selector.get_col(self.Dict.shape_dict['cov00'],mask=mask, nosheared=True)[self.Dict.ind['u']] + 
-self.source_selector.get_col(self.Dict.shape_dict['cov11'],=mask, nosheared=True)[self.Dict.ind['u']]
+                var =   self.source_selector.get_col(self.Dict.shape_dict['cov00'],mask=mask, nosheared=True)[self.Dict.ind['u']] + self.source_selector.get_col(self.Dict.shape_dict['cov11'],mask=mask, nosheared=True)[self.Dict.ind['u']]
                 # Regularize variance for small number of ill-defined covariances
                 var[var>2] = 2.
             
