@@ -203,7 +203,7 @@ class nofz(PipelineStage):
         np.savetxt(self.output_path("nz_source_txt"), np.vstack((self.binlow, self.nofz)).T)
 
         # Doing calculations on lenses, so include them
-        if self.params['lensfile'] != 'None':
+        if self.params['lens_yaml'] != 'None':
             # Create lens twopoint number density object
             nz_lens      = twopoint.NumberDensity(
                             NOFZ_NAMES[1], 
