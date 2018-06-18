@@ -166,8 +166,7 @@ class nofz(PipelineStage):
                                          pzstack,
                                          self.params['lens_pdf_type'],
                                          weight)
-
-            print 'lens_zbin',lens_zbin
+            lens_zbin = lens_zbin[0]
 
             # Write lens tomographic binning indicies to file for use later in the pipeline
             f = h5py.File( self.output_path("nz_source"), mode='r+')
