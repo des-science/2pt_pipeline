@@ -457,11 +457,11 @@ class nofz(PipelineStage):
                 # print np.sum(mask),'objects found in this bin'
                 # Select objects in bin and get e and e cov arrays
                 e1  = self.source_selector.get_col(self.Dict.shape_dict['e1'], 
-                                                  mask=mask, nosheared=True)[self.Dict.ind['u']]
+                                                  nosheared=True)[self.Dict.ind['u']][mask]
                 e2  = self.source_selector.get_col(self.Dict.shape_dict['e2'], 
-                                                  mask=mask, nosheared=True)[self.Dict.ind['u']]
+                                                  nosheared=True)[self.Dict.ind['u']][mask]
                 s   = R
-                var =   self.source_selector.get_col(self.Dict.shape_dict['cov00'],mask=mask, nosheared=True)[self.Dict.ind['u']] + self.source_selector.get_col(self.Dict.shape_dict['cov11'],mask=mask, nosheared=True)[self.Dict.ind['u']]
+                var = self.source_selector.get_col(self.Dict.shape_dict['cov00'],mask=mask, nosheared=True)[self.Dict.ind['u']] + self.source_selector.get_col(self.Dict.shape_dict['cov11'],mask=mask, nosheared=True)[self.Dict.ind['u']][mask]
                 # Regularize variance for small number of ill-defined covariances
                 var[var>2] = 2.
             
