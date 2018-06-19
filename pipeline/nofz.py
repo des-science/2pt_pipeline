@@ -484,6 +484,7 @@ class nofz(PipelineStage):
                 sum_w2    = np.sum( mask )
                 sum_ws    = np.sum( mask ) * s
                 sum_w     = np.sum( mask )
+                sum_w2s2  = np.sum( mask ) * s**2
             else:
                 # Calculate mean shear without calibration factor
                 self.mean_e1.append( np.asscalar( np.average(e1, weights=w) ) )
@@ -491,9 +492,10 @@ class nofz(PipelineStage):
                 # Calculate components of the sigma_e and n_eff calculations
                 sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
                 sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
-                sum_w2    = np.sum( w**2                               )
-                sum_ws    = np.sum( w * s                              )
-                sum_w     = np.sum( w                                  )
+                sum_w2    = np.sum( w**2  )
+                sum_ws    = np.sum( w * s )
+                sum_w     = np.sum( w     )
+                sum_w2s2  = np.sum( w**2 * s**2 )
             
             print 'neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2
 
@@ -501,7 +503,7 @@ class nofz(PipelineStage):
             self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2) 
                                           * (sum_w**2 / sum_w2) / 2. ) )
             self.sigma_ec.append( np.sqrt( np.sum( w**2 * (e1**2 + e2**2 - var) ) 
-                                           / ( 2. * np.sum(w**2 * s**2) ) 
+                                           / ( 2. * sum_w2s2 ) 
                                           ) 
                                  )
 
