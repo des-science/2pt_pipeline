@@ -219,7 +219,6 @@ class Measure2Point(PipelineStage):
                 self.comm.Barrier()
                 pool.wait()
                 self.comm.Barrier()
-                self.f.close()
                 sys.exit(0)
 
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
@@ -253,7 +252,7 @@ class Measure2Point(PipelineStage):
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
-            return
+            # return
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
@@ -466,7 +465,7 @@ class Measure2Point(PipelineStage):
         pix = self.get_hpix()
         # Build catalogs for tomographic bin j
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)                                  
-        if (icat is None) or (jcat is None): # No objects in selection
+        if (icat is None) or (jcat is None) or (ircat is None): # No objects in selection
             return 
 
         # Loop over pixels
@@ -507,7 +506,7 @@ class Measure2Point(PipelineStage):
         # Build catalogs for tomographic bin i
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
-        if (icat is None) or (jcat is None): # No objects in selection
+        if (icat is None) or (jcat is None) or (ircat is None) or (jrcat is None): # No objects in selection
             return 
 
         # Loop over pixels
