@@ -474,21 +474,27 @@ class nofz(PipelineStage):
 
                 raise ParamError('Not updated to support non-metacal catalogs.')
 
-            # Calculate mean shear without calibration factor
             if np.isscalar(w):
+                # Calculate mean shear without calibration factor
                 self.mean_e1.append( np.asscalar( np.average(e1) ) )
                 self.mean_e2.append( np.asscalar( np.average(e2) ) )
+                # Calculate components of the sigma_e and n_eff calculations
+                sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
+                sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
+                sum_w2    = np.sum( mask )
+                sum_ws    = np.sum( mask ) * s
+                sum_w     = np.sum( mask )
             else:
+                # Calculate mean shear without calibration factor
                 self.mean_e1.append( np.asscalar( np.average(e1, weights=w) ) )
                 self.mean_e2.append( np.asscalar( np.average(e2, weights=w) ) )
+                # Calculate components of the sigma_e and n_eff calculations
+                sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
+                sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
+                sum_w2    = np.sum( w**2                               )
+                sum_ws    = np.sum( w * s                              )
+                sum_w     = np.sum( w                                  )
             
-            # Calculate components of the sigma_e and n_eff calculations
-            sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
-            sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
-            sum_w2    = np.sum( w**2                               )
-            sum_ws    = np.sum( w * s                              )
-            sum_w     = np.sum( w                                  )
-
             print 'neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2
 
             # Calculate sigma_e 
