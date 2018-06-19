@@ -488,7 +488,9 @@ class nofz(PipelineStage):
             sum_w2    = np.sum( w**2                               )
             sum_ws    = np.sum( w * s                              )
             sum_w     = np.sum( w                                  )
-            
+
+            print 'neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2
+
             # Calculate sigma_e 
             self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2) 
                                           * (sum_w**2 / sum_w2) / 2. ) )
