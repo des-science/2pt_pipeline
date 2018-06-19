@@ -253,6 +253,7 @@ class Measure2Point(PipelineStage):
             return
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
+            return
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
