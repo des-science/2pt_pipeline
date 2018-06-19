@@ -468,6 +468,8 @@ class Measure2Point(PipelineStage):
         if (icat is None) or (jcat is None) or (ircat is None): # No objects in selection
             return 
 
+        print icat,jcat,ircat
+
         # Loop over pixels
         for x in range(9):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
