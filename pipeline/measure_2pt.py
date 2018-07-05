@@ -20,7 +20,6 @@ def load_catalog(filename, inherit=None, return_calibrator=None):
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
-
     # Input yaml file defining catalog
     params = yaml.load(open(filename))
     params['param_file'] = filename
@@ -106,13 +105,11 @@ class Measure2Point(PipelineStage):
         """
         Get the necessary nside to prevent the largest separation of pairs from spanning more than an adjacent pair of healpixels.
         """
-
         # Loop over nside until the resolution is more than the largest theta separation requested
         for nside in range(1,20):
             if self.params['tbounds'][1] > hp.nside2resol(2**nside, arcmin=True):
                 nside -=1
                 break
-
         return 2**nside
 
     def get_hpix(self, pix=None):
@@ -141,7 +138,7 @@ class Measure2Point(PipelineStage):
 
             return pix // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
-    def setup_jobs(self):
+    def setup_jobs(self,pool):
         """
         Set up the list of jobs that must be distributed across nodes.
         """
@@ -186,13 +183,18 @@ class Measure2Point(PipelineStage):
             for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                 if calc==0:
                     for d in ['meanlogr','xip','xim','npairs','weight']:
-                        # print 'opening 2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d
+                        if pool.is_master():
+                            print 'opening xipm '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==1:
                     for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
+                        if pool.is_master():
+                            print 'opening gammat '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==2:
                     for d in ['meanlogr','nnnpairs','nnweight','nrnpairs','nrweight','rnnpairs','rnweight','rrnpairs','rrweight']:
+                        if pool.is_master():
+                            print 'opening wtheta '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
         f.close()
         
@@ -212,7 +214,7 @@ class Measure2Point(PipelineStage):
             # Setup mpi pool
             pool = MPIPool(self.comm)
             # Get job list
-            calcs = self.setup_jobs()
+            calcs = self.setup_jobs(pool)
             if not pool.is_master():
                 # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
@@ -429,12 +431,15 @@ class Measure2Point(PipelineStage):
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
 
         if (icat is None) or (jcat is None): # No objects in selection
+            print 'xipm not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None
             return 
 
         # Loop over pixels
         for x in range(9):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
+            print 'xipm doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            return
             # Run calculation
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
@@ -464,6 +469,7 @@ class Measure2Point(PipelineStage):
         # Build catalogs for tomographic bin j
         jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)                                  
         if (icat is None) or (jcat is None) or (ircat is None): # No objects in selection
+            print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None,ircat is None
             return 
 
         print icat,jcat,ircat
@@ -472,7 +478,8 @@ class Measure2Point(PipelineStage):
         for x in range(9):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
-
+            print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            return
             # Run calculation
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
@@ -507,12 +514,15 @@ class Measure2Point(PipelineStage):
         jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
 
         if (icat is None) or (jcat is None) or (ircat is None) or (jrcat is None): # No objects in selection
+            print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None,ircat is None,jrcat is None
             return 
 
         # Loop over pixels
         for x in range(9):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
+            print 'wtheta doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            return
 
             # Run calculation
             nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
