@@ -181,18 +181,12 @@ class Measure2Point(PipelineStage):
             for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                 if calc==0:
                     for d in ['meanlogr','xip','xim','npairs','weight']:
-                        if pool.is_master() | pool is None:
-                            print 'opening xipm '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==1:
                     for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
-                        if pool.is_master() | pool is None:
-                            print 'opening gammat '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
                 if calc==2:
                     for d in ['meanlogr','nnnpairs','nnweight','nrnpairs','nrweight','rnnpairs','rnweight','rrnpairs','rrweight']:
-                        if pool.is_master() | pool is None:
-                            print 'opening wtheta '+str(ipix)+' '+str(jpix)+' '+str(i)+' '+str(j)
                         f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
         f.close()
         
