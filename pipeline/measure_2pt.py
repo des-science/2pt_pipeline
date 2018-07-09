@@ -150,7 +150,7 @@ class Measure2Point(PipelineStage):
         # Get healpix values for each object and unique healpix cells
         pix = self.get_hpix()
         pix = np.unique(pix)
-        print '------------- number of pixels',len(pix)
+        print '------------- number of pixels',len(pix),pix
 
         # Loop over tomographic bin pairs and add to final calculation list each requested correlation and unique healpix cell
         calcs=[]
