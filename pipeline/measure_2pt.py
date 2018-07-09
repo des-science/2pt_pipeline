@@ -130,7 +130,7 @@ class Measure2Point(PipelineStage):
         Same as get_hpix(), but uses the unmaked gold catalog for matching to lenses.
         """
 
-            return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
+        return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
 
     def setup_jobs(self,pool):
