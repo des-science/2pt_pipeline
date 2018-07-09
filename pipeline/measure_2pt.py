@@ -467,7 +467,7 @@ class Measure2Point(PipelineStage):
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None,ircat is None
             return 
 
-        print icat,jcat,ircat
+        # print icat,jcat,ircat
 
         # Loop over pixels
         for x in range(9):
