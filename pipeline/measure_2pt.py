@@ -173,7 +173,10 @@ class Measure2Point(PipelineStage):
                         calcs.append((i,j,pix_,2))
 
         # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
-        f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
+        if pool is None:
+            f = h5py.File('2pt.h5',mode='w')
+        else:
+            f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
         for i,j,ipix,calc in calcs:
             for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                 if calc==0:
@@ -230,6 +233,7 @@ class Measure2Point(PipelineStage):
         else:
             # Serial execution
             calcs = self.setup_jobs(None)
+            self.f = h5py.File('2pt.h5',mode='r+')
             map(task, calcs)
 
     def call_treecorr(self,i,j,pix,k):
