@@ -190,7 +190,8 @@ class Measure2Point(PipelineStage):
                         f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
         f.close()
         
-        self.comm.Barrier()
+        if self.comm is not None:
+            self.comm.Barrier()
         print 'done calcs'
 
         return calcs
