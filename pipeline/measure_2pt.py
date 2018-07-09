@@ -125,18 +125,13 @@ class Measure2Point(PipelineStage):
 
             return pix // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
-    def get_lhpix(self, pix=None):
+    def get_lhpix(self):
         """
         Same as get_hpix(), but uses the unmaked gold catalog for matching to lenses.
         """
 
-        if pix is None:
-
             return self.gold_selector.source.read(self.Dict.gold_dict['hpix'])[self.Dict.ind['u']] // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
-        else:
-
-            return pix // ( hp.nside2npix(self.params['hpix_nside']) // hp.nside2npix(self.get_nside()) )
 
     def setup_jobs(self,pool):
         """
@@ -336,7 +331,7 @@ class Measure2Point(PipelineStage):
             # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
-            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][mask],return_neighbor)
+            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
@@ -346,12 +341,12 @@ class Measure2Point(PipelineStage):
             if catlength>0: # Check that objects exist in selection, otherwise return cat = None
 
                 if np.isscalar(w):
-                    cat = treecorr.Catalog(ra=ra[gmask][mask][pixrange],
-                                           dec=dec[gmask][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.mask][mask][pixrange],
                                            ra_units='deg', dec_units='deg')
                 else:
-                    cat = treecorr.Catalog(ra=ra[gmask][mask][pixrange],
-                                           dec=dec[gmask][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.mask][mask][pixrange],
                                            w = w[pixrange],
                                            ra_units='deg', dec_units='deg')
             else:
