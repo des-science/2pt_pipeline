@@ -509,6 +509,7 @@ class nofz(PipelineStage):
 
             # Calculate n_eff
             self.neff.append( sum_w**2 / sum_w2 / ( self.area * 60. * 60. ) )
+            print '.......',sum_w**2,sum_w2,self.area * 60. * 60.,self.area
             self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 ) 
                                  / np.sum( w**2 * ( s**2 * self.sigma_ec[i]**2 + var / 2. ) )
                                / self.area / 60**2 
