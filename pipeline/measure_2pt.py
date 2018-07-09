@@ -331,8 +331,6 @@ class Measure2Point(PipelineStage):
             # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
-            print pix,gmask,cal.selector.mask[0],mask
-            print len(pix),len(gmask),len(cal.selector.mask_),len(mask),np.sum(mask)
             pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask_][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
@@ -343,12 +341,12 @@ class Measure2Point(PipelineStage):
             if catlength>0: # Check that objects exist in selection, otherwise return cat = None
 
                 if np.isscalar(w):
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.mask][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask_][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.mask_][mask][pixrange],
                                            ra_units='deg', dec_units='deg')
                 else:
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.mask][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask_][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.mask_][mask][pixrange],
                                            w = w[pixrange],
                                            ra_units='deg', dec_units='deg')
             else:
