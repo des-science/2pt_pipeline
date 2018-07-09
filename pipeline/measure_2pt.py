@@ -235,7 +235,7 @@ class Measure2Point(PipelineStage):
         """
         This is a dummy function for interaction with the treecorr wrappers.
         """
-        print "Running 2pt analysis on pair {},{},{},{}".format(i, j, pix, k)
+        #print "Running 2pt analysis on pair {},{},{},{}".format(i, j, pix, k)
         # k==0: xi+-
         # k==1: gammat
         # k==2: wtheta
@@ -244,7 +244,6 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
-            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
@@ -332,7 +331,6 @@ class Measure2Point(PipelineStage):
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
             pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask_][mask],return_neighbor)
-            print 'pix',np.unique(pix)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
@@ -358,7 +356,6 @@ class Measure2Point(PipelineStage):
             ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask]
             dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask]
             pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
-            print 'ranpix',np.unique(pix)
 
             # Get index slices needed for the subset of healpixels in this calculation
             pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
@@ -418,7 +415,6 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for shear-shear calculations.
         """
-        print 'in shear_shear'
 
         # Get healpix list for sources
         pix = self.get_hpix()
@@ -436,7 +432,6 @@ class Measure2Point(PipelineStage):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'xipm doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            return
             # Run calculation
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
@@ -455,7 +450,6 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for pos-shear calculations.
         """
-        print 'in pos_shear'
 
         # Get healpix list for lenses
         pix = self.get_lhpix()
@@ -476,7 +470,6 @@ class Measure2Point(PipelineStage):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            return
             # Run calculation
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
@@ -501,7 +494,6 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for pos-pos calculations.
         """
-        print 'in pos_pos'
 
         # Get healpix list for lenses
         pix = self.get_lhpix()
@@ -519,7 +511,6 @@ class Measure2Point(PipelineStage):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'wtheta doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            return
 
             # Run calculation
             nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
