@@ -245,6 +245,7 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
+            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
