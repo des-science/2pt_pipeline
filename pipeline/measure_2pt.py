@@ -331,7 +331,7 @@ class Measure2Point(PipelineStage):
             # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
-            print len(pix),len(gmask),len(cal.select.mask),len(mask),np.sum(mask)
+            print len(pix),len(gmask),len(cal.selector.mask),len(mask),np.sum(mask)
             pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
