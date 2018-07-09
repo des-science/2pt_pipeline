@@ -339,7 +339,7 @@ class Measure2Point(PipelineStage):
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
             dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
 
-            catlength = len(ra[gmask][mask][pixrange]) # Length of catalog after masking
+            catlength = len(ra[gmask][cal.selector.mask_][mask][pixrange]) # Length of catalog after masking
             if catlength>0: # Check that objects exist in selection, otherwise return cat = None
 
                 if np.isscalar(w):
