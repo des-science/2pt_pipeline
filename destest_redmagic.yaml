@@ -39,13 +39,13 @@ filename   : '/global/cscratch1/sd/troxel/cats_des_y3/Y3_mastercat_v1_6_20_18_su
 group      : 'catalog/redmagic' #change HERE! this changes the path inside the HDF5 file
 # if metacalibrating, include array of five tables: unsehared, 1p, 1m, 2p, 2m
 # else if classic calibration, include table name (still as a list of length one)
-table      : ['chi5_bright']
+table      : ['combined_sample_fid']
 # shearing factor for metacal
 #dg         : 0.01
 
 # Selection 
 # optional direct path to select flags
-select_path : none
+select_path : 'index/redmagic/combined_sample_fid/select'
 # columns with which to mask the catalog
 select_cols : ['snr','snr','size_ratio','flags']
 # expressions by which to mask (must match 1-1 the list of select_cols)
