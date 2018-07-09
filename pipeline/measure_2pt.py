@@ -229,7 +229,7 @@ class Measure2Point(PipelineStage):
             pool.close()
         else:
             # Serial execution
-            calcs = self.setup_jobs()
+            calcs = self.setup_jobs(None)
             map(task, calcs)
 
     def call_treecorr(self,i,j,pix,k):
