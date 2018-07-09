@@ -332,8 +332,8 @@ class Measure2Point(PipelineStage):
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
             print pix,gmask,cal.selector.mask[0],mask
-            print len(pix),len(gmask),len(cal.selector.mask_[self.Dict.ind['u']]),len(mask),np.sum(mask)
-            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask_[self.Dict.ind['u']]][mask],return_neighbor)
+            print len(pix),len(gmask),len(cal.selector.mask_),len(mask),np.sum(mask)
+            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask_][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
