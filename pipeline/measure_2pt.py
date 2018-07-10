@@ -41,6 +41,9 @@ def task(ijk):
     i,j,pix,k=ijk
     global_measure_2_point.call_treecorr(i,j,pix,k)
 
+def task_cleanup():
+    global_measure_2_point.cleanup()
+
 class Measure2Point(PipelineStage):
     name = "2pt"
     inputs = {
@@ -144,6 +147,8 @@ class Measure2Point(PipelineStage):
         else:
             nbin=self.zbins
 
+        print 'setting up ',nbin,'tomographic bins'
+
         # Create dummy list of pairs of tomographic bins up to nbin (max of lenses and sources)
         all_calcs = [(i,j) for i in xrange(nbin) for j in xrange(nbin)]
         
@@ -173,6 +178,7 @@ class Measure2Point(PipelineStage):
                         calcs.append((i,j,pix_,2))
         if pool is not None:
             if not pool.is_master():
+                print 'done calcs'
                 return calcs
 
         # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
@@ -223,13 +229,24 @@ class Measure2Point(PipelineStage):
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             # Master waits for everyone to finish, then all close the h5 file and pool is closed.
-            self.f.close()
+            calcs = []
+            for i in range(pool.size):
+                calcs.append(None)
+            pool.map(task_cleanup, calcs)
             pool.close()
         else:
             # Serial execution
             calcs = self.setup_jobs(None)
             self.f = h5py.File('2pt.h5',mode='r+')
             map(task, calcs)
+
+    def cleanup(self,tmp):
+        """
+        Closes h5 to prevent hang.
+        """
+
+        self.f.close()
+
 
     def call_treecorr(self,i,j,pix,k):
         """
