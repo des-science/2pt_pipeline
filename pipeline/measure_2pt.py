@@ -179,7 +179,7 @@ class Measure2Point(PipelineStage):
         if pool is None:
             f = h5py.File('2pt.h5',mode='w')
         else:
-            f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
+            f = h5py.File('2pt.h5',mode='w')#, driver='mpio', comm=self.comm)
         for i,j,ipix,calc in calcs:
                 for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                     if calc==0:
