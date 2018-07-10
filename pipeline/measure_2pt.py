@@ -331,24 +331,24 @@ class Measure2Point(PipelineStage):
             # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
-            print pix,gmask,cal.selector.mask_,mask
-            print len(pix),len(gmask),len(cal.selector.mask_),len(mask)
-            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.mask_][mask],return_neighbor)
+            print pix,gmask,cal.selector.get_mask()[self.Dict.ind['u']],mask
+            print len(pix),len(gmask),len(cal.selector.get_mask()[self.Dict.ind['u']]),len(mask)
+            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
             dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
 
-            catlength = len(ra[gmask][cal.selector.mask_][mask][pixrange]) # Length of catalog after masking
+            catlength = len(ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange]) # Length of catalog after masking
             if catlength>0: # Check that objects exist in selection, otherwise return cat = None
 
                 if np.isscalar(w):
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask_][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.mask_][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
                                            ra_units='deg', dec_units='deg')
                 else:
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.mask_][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.mask_][mask][pixrange],
+                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
+                                           dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
                                            w = w[pixrange],
                                            ra_units='deg', dec_units='deg')
             else:
@@ -436,7 +436,7 @@ class Measure2Point(PipelineStage):
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'xipm doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             # Run calculation
-            if np.sum(jcat.wpos):
+            if np.sum(jcat.wpos)==0:
                 continue
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
@@ -519,7 +519,7 @@ class Measure2Point(PipelineStage):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'wtheta doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            if np.sum(jcat.wpos):
+            if np.sum(jcat.wpos)==0:
                 continue
 
             # Run calculation
