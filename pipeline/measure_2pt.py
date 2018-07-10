@@ -171,6 +171,9 @@ class Measure2Point(PipelineStage):
                 for pix_ in pix:
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
+        if pool is not None:
+            if not pool.is_master():
+                return calcs
 
         # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
         if pool is None:
@@ -178,20 +181,18 @@ class Measure2Point(PipelineStage):
         else:
             f = h5py.File('2pt.h5',mode='w', driver='mpio', comm=self.comm)
         for i,j,ipix,calc in calcs:
-            for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
-                if calc==0:
-                    for d in ['meanlogr','xip','xim','npairs','weight']:
-                        f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
-                if calc==1:
-                    for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
-                        f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
-                if calc==2:
-                    for d in ['meanlogr','nnnpairs','nnweight','nrnpairs','nrweight','rnnpairs','rnweight','rrnpairs','rrweight']:
-                        f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
+                for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
+                    if calc==0:
+                        for d in ['meanlogr','xip','xim','npairs','weight']:
+                            f.create_dataset( '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
+                    if calc==1:
+                        for d in ['meanlogr','ngxi','ngxim','rgxi','rgxim','ngnpairs','ngweight','rgnpairs','rgweight']:
+                            f.create_dataset( '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
+                    if calc==2:
+                        for d in ['meanlogr','nnnpairs','nnweight','nrnpairs','nrweight','rnnpairs','rnweight','rrnpairs','rrweight']:
+                            f.create_dataset( '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)+'/'+d, shape=(self.params['tbins'],), dtype=float )
         f.close()
-        
-        if self.comm is not None:
-            self.comm.Barrier()
+
         print 'done calcs'
 
         return calcs
@@ -208,12 +209,12 @@ class Measure2Point(PipelineStage):
             pool = MPIPool(self.comm)
             # Get job list
             calcs = self.setup_jobs(pool)
+            self.comm.Barrier()
             if not pool.is_master():
                 # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 self.comm.Barrier()
                 pool.wait()
-                self.comm.Barrier()
                 sys.exit(0)
 
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
@@ -222,7 +223,6 @@ class Measure2Point(PipelineStage):
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             # Master waits for everyone to finish, then all close the h5 file and pool is closed.
-            self.comm.Barrier()
             self.f.close()
             pool.close()
         else:
@@ -244,6 +244,7 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
+            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
@@ -435,6 +436,8 @@ class Measure2Point(PipelineStage):
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'xipm doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             # Run calculation
+            if np.sum(jcat.wpos):
+                continue
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
 
@@ -473,6 +476,8 @@ class Measure2Point(PipelineStage):
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             # Run calculation
+            if np.sum(jcat.wpos):
+                continue
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             ng.process_cross(icat,jcat)
@@ -513,6 +518,8 @@ class Measure2Point(PipelineStage):
             jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'wtheta doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            if np.sum(jcat.wpos):
+                continue
 
             # Run calculation
             nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
