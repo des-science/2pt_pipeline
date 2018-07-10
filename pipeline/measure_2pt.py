@@ -244,7 +244,6 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
-            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
@@ -331,8 +330,6 @@ class Measure2Point(PipelineStage):
             # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
             # Get index slices needed for the subset of healpixels in this calculation
-            print pix,gmask,cal.selector.get_mask()[self.Dict.ind['u']],mask
-            print len(pix),len(gmask),len(cal.selector.get_mask()[self.Dict.ind['u']]),len(mask)
             pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
@@ -481,7 +478,6 @@ class Measure2Point(PipelineStage):
             print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             # Run calculation
             if np.sum(jcat.wpos)==0:
-                print pixrange[x]
                 continue
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
