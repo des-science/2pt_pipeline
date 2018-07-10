@@ -476,7 +476,8 @@ class Measure2Point(PipelineStage):
             jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
             print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             # Run calculation
-            if np.sum(jcat.wpos):
+            if np.sum(jcat.wpos)==0:
+                print pixrange[x]
                 continue
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
