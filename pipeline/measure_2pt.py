@@ -365,12 +365,16 @@ class Measure2Point(PipelineStage):
 
             ranlength = len(ra[pixrange]) # Length of catalog after masking
             if ranlength>0: # Check that objects exist in selection, otherwise return cat = None
+                if catlength==0:
+                    print 'randoms where no cat',i,ipix
+                    rcat=None
 
-                if ranlength>self.params['ran_factor']*catlength: # Calculate if downsampling is possible
+                elif ranlength>self.params['ran_factor']*catlength: # Calculate if downsampling is possible
                     # Set fixed random seed to make results reproducible
                     np.random.seed(seed=self.params['random_seed'])
                     # Downsample random catalog to be ran_factor times larger than lenses
                     downsample = np.random.choice(np.arange(ranlength),self.params['ran_factor']*catlength,replace=False) # Downsample 
+
                     rcat = treecorr.Catalog(ra=ra[pixrange][downsample], 
                                             dec=dec[pixrange][downsample], 
                                             ra_units='deg', dec_units='deg')
