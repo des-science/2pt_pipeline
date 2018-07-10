@@ -41,8 +41,8 @@ def task(ijk):
     i,j,pix,k=ijk
     global_measure_2_point.call_treecorr(i,j,pix,k)
 
-def task_cleanup():
-    global_measure_2_point.cleanup()
+def task_cleanup(tmp):
+    global_measure_2_point.cleanup(tmp)
 
 class Measure2Point(PipelineStage):
     name = "2pt"
