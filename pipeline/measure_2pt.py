@@ -228,11 +228,13 @@ class Measure2Point(PipelineStage):
             self.comm.Barrier()
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
+            print 'out of main loop',pool.rank
             # Master waits for everyone to finish, then all close the h5 file and pool is closed.
             calcs = []
             for i in range(pool.size):
                 calcs.append(None)
-            pool.map(task_cleanup, calcs)
+            if pool.is_master():
+                pool.map(task_cleanup, calcs)
             pool.close()
         else:
             # Serial execution
