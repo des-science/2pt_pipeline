@@ -339,77 +339,10 @@ class Measure2Point(PipelineStage):
 
         return pixrange
 
-    def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False):
+    def build_catalogs(self,cal,i,return_neighbor=False):
         """
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
         """
-
-        if type(cal)==destest.NoCalib: # lens catalog
-
-            # Get index matching of gold to lens catalog (smaller than gold)
-            gmask = cal.selector.get_match()
-            # Get tomographic bin masks for lenses and randoms, and weights
-            R1,R2,mask,w,rmask = self.get_zbins_R(i,cal,shape=False)
-            # Get index slices needed for the subset of healpixels in this calculation
-            pixrange,pixrange2 = get_pix_subset(ipix,pix[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask],return_neighbor)
-
-            # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
-            ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
-            dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
-
-            catlength = len(ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange]) # Length of catalog after masking
-            if catlength>0: # Check that objects exist in selection, otherwise return cat = None
-
-                if np.isscalar(w):
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
-                                           wpos=np.ones(len()),ra_units='deg', dec_units='deg')
-                else:
-                    cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
-                                           dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
-                                           w = w[pixrange],
-                                           ra_units='deg', dec_units='deg')
-            else:
-
-                cat = None
-
-            # Load random ra,dec and calculate healpix values
-            ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask]
-            dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask]
-            pix = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(dec),np.radians(ra),nest=True))
-
-            # Get index slices needed for the subset of healpixels in this calculation
-            pixrange,rpixrange2 = get_pix_subset(ipix,pix,return_neighbor)
-
-            ranlength = len(ra[pixrange]) # Length of catalog after masking
-            if ranlength>0: # Check that objects exist in selection, otherwise return cat = None
-                if catlength==0:
-                    print 'randoms where no cat',i,ipix
-                    rcat=None
-
-                elif ranlength>self.params['ran_factor']*catlength: # Calculate if downsampling is possible
-                    # Set fixed random seed to make results reproducible
-                    np.random.seed(seed=self.params['random_seed'])
-                    # Downsample random catalog to be ran_factor times larger than lenses
-                    downsample = np.random.choice(np.arange(ranlength),self.params['ran_factor']*catlength,replace=False) # Downsample 
-
-                    rcat = treecorr.Catalog(ra=ra[pixrange][downsample], 
-                                            dec=dec[pixrange][downsample], 
-                                            ra_units='deg', dec_units='deg')
-                else:
-                    rcat = treecorr.Catalog(ra=ra[pixrange], 
-                                            dec=dec[pixrange], 
-                                            ra_units='deg', dec_units='deg')
-            else:
-
-                rcat = None
-
-
-
-
-
-
-
 
         if type(cal)==destest.NoCalib: # lens catalog
 
@@ -492,7 +425,7 @@ class Measure2Point(PipelineStage):
                                  ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j)
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,return_neighbor=True)
 
         # Loop over pixels
         for x in range(9):
@@ -561,7 +494,7 @@ class Measure2Point(PipelineStage):
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j)                              
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,return_neighbor=True)                              
 
         # Loop over pixels
         for x in range(9):
@@ -636,7 +569,7 @@ class Measure2Point(PipelineStage):
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j)  
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,return_neighbor=True)  
 
         # Loop over pixels
         for x in range(9):
