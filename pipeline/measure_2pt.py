@@ -339,7 +339,7 @@ class Measure2Point(PipelineStage):
 
         return pixrange
 
-    def build_catalogs(self,cal,i,return_neighbor=False):
+    def build_catalogs(self,cal,i,ipix,return_neighbor=False):
         """
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
         """
@@ -408,7 +408,7 @@ class Measure2Point(PipelineStage):
         """
 
         # Build catalog for tomographic bin i
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i)
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i,ipix)
 
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
@@ -425,7 +425,7 @@ class Measure2Point(PipelineStage):
                                  ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,return_neighbor=True)
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)
 
         # Loop over pixels
         for x in range(9):
@@ -466,7 +466,7 @@ class Measure2Point(PipelineStage):
         """
 
         # Build catalog for tomographic bin i
-        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i)
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
 
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
@@ -494,7 +494,7 @@ class Measure2Point(PipelineStage):
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,return_neighbor=True)                              
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)                              
 
         # Loop over pixels
         for x in range(9):
@@ -541,7 +541,7 @@ class Measure2Point(PipelineStage):
         """
 
         # Build catalog for tomographic bin i
-        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i)
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
 
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
@@ -569,7 +569,7 @@ class Measure2Point(PipelineStage):
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
-        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,return_neighbor=True)  
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,ipix,return_neighbor=True)  
 
         # Loop over pixels
         for x in range(9):
