@@ -275,7 +275,7 @@ class Measure2Point(PipelineStage):
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
-    def get_zbins_R(self,i,cal,shape=True):
+    def get_zbins_R(self,i,cal):
         """
         Get the lens or source binning, calibration, and weights for a given tomographic bin.
         """ 
@@ -312,41 +312,37 @@ class Measure2Point(PipelineStage):
             # Return responses, source binning mask and weights            
             return R1, R2, mask[self.Dict.ind['u']], w
 
+    def get_pix_subset(self,ipix,pix,return_neighbor):
+        """
+        Find the indices of the healpixel subset of the catalog for ipix and optionally all neighboring pixels. pix_ from the catalog is (or should be) pre-sorted for faster searching.
+        """
+
+        # Get theta,phi for a healpixel index and return indices of all neighboring pixels (including ipix for auto-correlations).
+        theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
+        jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
+        jpix = np.append(ipix,jpix)
+
+        if return_neighbor:
+            # Return objects in pixel ipix and all neighbors 
+
+            pixrange = [] # List of object slices in self and neighboring pixels
+            tmp = 0
+            for x,jp in enumerate(jpix): # Iterate over neighboring pixels
+                tmp2 = np.searchsorted(pix, jp, side='right') - np.searchsorted(pix, jp)
+                pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
+                tmp += tmp2
+
+        else:
+            # Return objects in pixel ipix 
+
+            pixrange = np.r_[int(np.searchsorted(pix, ipix)) : int(np.searchsorted(pix, ipix, side='right'))] # Find slice (np.r_) corresponding to range of pix_ that contains ipix.
+
+        return pixrange
+
     def build_catalogs(self,cal,i,ipix,pix,return_neighbor=False):
         """
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
         """
-
-        def get_pix_subset(ipix,pix_,return_neighbor):
-            """
-            Find the indices of the healpixel subset of the catalog for ipix and optionally all neighboring pixels. pix_ from the catalog is (or should be) pre-sorted for faster searching.
-            """
-
-            # Get theta,phi for a healpixel index and return indices of all neighboring pixels (including ipix for auto-correlations).
-            theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
-            jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
-            jpix = np.append(ipix,jpix)
-
-            if return_neighbor:
-                # Return objects in pixel ipix and all neighbors 
-
-                pixrange = [] # Objects in ipix
-                pixrange2 = [] # Lists of objects in neighboring pixels
-                tmp = 0
-                for x,jp in enumerate(jpix): # Iterate over neighboring pixels
-                    pixrange = np.append(pixrange,np.r_[int(np.searchsorted(pix_, jp)) : int(np.searchsorted(pix_, jp, side='right'))]) # Cumulative list of slices (np.r_) of pix_ corresponding to ranges of pixels in jpix list.
-                    tmp2 = np.searchsorted(pix_, jp, side='right') - np.searchsorted(pix_, jp)
-                    pixrange2.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
-                    tmp += tmp2
-                pixrange = pixrange.astype(int)
-
-            else:
-                # Return objects in pixel ipix 
-
-                pixrange = np.r_[int(np.searchsorted(pix_, ipix)) : int(np.searchsorted(pix_, ipix, side='right'))] # Find slice (np.r_) corresponding to range of pix_ that contains ipix.
-                pixrange2 = None
-
-            return pixrange,pixrange2
 
         if type(cal)==destest.NoCalib: # lens catalog
 
@@ -367,7 +363,7 @@ class Measure2Point(PipelineStage):
                 if np.isscalar(w):
                     cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
                                            dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
-                                           ra_units='deg', dec_units='deg')
+                                           wpos=np.ones(len()),ra_units='deg', dec_units='deg')
                 else:
                     cat = treecorr.Catalog(ra=ra[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
                                            dec=dec[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask][pixrange],
@@ -408,62 +404,115 @@ class Measure2Point(PipelineStage):
 
                 rcat = None
 
+
+
+
+
+
+
+
+        if type(cal)==destest.NoCalib: # lens catalog
+
+            # Get healpix list for lenses
+            pix = self.get_lhpix()
+
+            # Get ranges for ipix
+            pixrange = self.get_pix_subset(ipix,pix,return_neighbor)
+
+            # Get index matching of gold to lens catalog (smaller than gold)
+            gmask = cal.selector.get_match()
+
+            # Get tomographic bin masks for lenses and randoms, and weights
+            R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
+
+            # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
+            ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            w   = w[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+
+            if np.sum(rmask)>self.params['ran_factor']*np.sum(mask): # Calculate if downsampling is possible
+                # Set fixed random seed to make results reproducible
+                np.random.seed(seed=self.params['random_seed'])
+                # Downsample random catalog to be ran_factor times larger than lenses
+                downsample = np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False) # Downsample 
+
+            # Load random ra,dec and calculate healpix values
+            ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
+            ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
+            pix     = self.get_hpix(pix=hp.ang2pix(self.params['hpix_nside'],np.pi/2.-np.radians(ran_dec),np.radians(ran_ra),nest=True))
+
+            # Get ranges for ipix
+            rpixrange = self.get_pix_subset(ipix,pix,return_neighbor)
+
+            return ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange
+
         else: # source catalog
 
-            # Load ra,dec from gold catalog
-            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
-            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[self.Dict.ind['u']]
+            # Get healpix list for sources
+            pix = self.get_hpix()
+
             # Get tomographic bin masks for sources, and responses/weights
-            R1,R2,mask,w = self.get_zbins_R(i,cal)
-            # Get index slices needed for the subset of healpixels in this calculation
-            pixrange,pixrange2 = get_pix_subset(ipix,pix[mask],return_neighbor)
+            R1,R2,mask,w      = self.get_zbins_R(i,cal)
+
+            # Get ranges for ipix
+            pixrange          = self.get_pix_subset(ipix,pix[mask],return_neighbor)
+
+            # Load ra,dec from gold catalog
+            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][mask]
+            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][mask]
 
             # Get e1,e2, subtract mean shear, and correct with mean response
-            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask][pixrange]
+            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask]
             g1 = (g1-self.mean_e1[i])/R1
-            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask][pixrange]
+            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask]
             g2 = (g2-self.mean_e2[i])/R2
 
-            if len(g1)>0: # Check there are objects in this selection, otherwise return cat = None
-                if np.isscalar(w):
-                    cat = treecorr.Catalog(g1=g1, g2=g2, ra=ra[mask][pixrange], 
-                                            dec=dec[mask][pixrange], ra_units='deg', dec_units='deg')
-                else:
-                    cat = treecorr.Catalog(g1=g1, g2=g2, w=w, ra=ra[mask][pixrange], 
-                                            dec=dec[mask][pixrange], ra_units='deg', dec_units='deg')
-            else:
-                cat = None
-                return cat,pixrange2
-
-        if type(cal)==destest.NoCalib:
-            return cat,rcat,pixrange2,rpixrange2
-        else:
-            return cat,pixrange2
+            return ra,dec,g1,g2,w,pixrange
 
     def calc_shear_shear(self,i,j,ipix,verbose,num_threads):
         """
         Treecorr wrapper for shear-shear calculations.
         """
 
-        # Get healpix list for sources
-        pix = self.get_hpix()
-        # Build catalogs for tomographic bin i
-        icat,pixrange = self.build_catalogs(self.source_calibrator,i,ipix,pix)
-        # Build catalogs for tomographic bin j
-        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)
+        # Build catalog for tomographic bin i
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i)
 
-        if (icat is None) or (jcat is None): # No objects in selection
-            print 'xipm not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None
+        # Build treecorr catalog for bin i
+        w_ = np.zeros(len(ra))
+        w_[pixrange] = w # Set used object's weight
+        if np.sum(w)==0:
+            print 'xipm not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            for x in range(9):
+                self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
             return 
+
+        icat = treecorr.Catalog( g1 = g1, g2   = g2, 
+                                 ra = ra, dec  = dec, 
+                                 w  = w_,  wpos = np.ones(len(ra)), 
+                                 ra_units='deg', dec_units='deg')
+
+        # Build catalogs for tomographic bin j
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j)
 
         # Loop over pixels
         for x in range(9):
-            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
-            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
-            print 'xipm doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+
+            # Build treecorr catalog for bin i
+            w_ = np.zeros(len(ra))
+            w_[pixrange[x]] = w # Set used object's weight
+            if np.sum(w)==0:
+                print 'xipm not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
+                return 
+
+            jcat = treecorr.Catalog( g1 = g1, g2   = g2,
+                                     ra = ra, dec  = dec,
+                                     w  = w_,  wpos = np.ones(len(ra)),
+                                     ra_units='deg', dec_units='deg')
+
+            print 'xipm doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+
             # Run calculation
-            if np.sum(jcat.wpos)==0:
-                continue
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
 
@@ -483,28 +532,55 @@ class Measure2Point(PipelineStage):
         Treecorr wrapper for pos-shear calculations.
         """
 
-        # Get healpix list for lenses
-        pix = self.get_lhpix()
-        # Build catalogs for tomographic bin i
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)       
-        # Get healpix list for sources
-        pix = self.get_hpix()
-        # Build catalogs for tomographic bin j
-        jcat,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,pix,return_neighbor=True)                                  
-        if (icat is None) or (jcat is None) or (ircat is None): # No objects in selection
-            print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None,ircat is None
+        # Build catalog for tomographic bin i
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i)
+
+        # Build treecorr catalog for bin i
+        w_ = np.zeros(len(ra))
+        w_[pixrange] = w # Set used object's weight
+        if np.sum(w)==0:
+            print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            for x in range(9):
+                self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
             return 
 
-        # print icat,jcat,ircat
+        icat = treecorr.Catalog( ra = ra, dec  = dec, 
+                                 w  = w_,  wpos = np.ones(len(ra)), 
+                                 ra_units='deg', dec_units='deg')
+
+        w_ = np.zeros(len(ran_ra))
+        w_[pixrange] = 1. # Set used object's weight
+        if np.sum(w)==0:
+            print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
+            for x in range(9):
+                self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
+            return 
+
+        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
+                                  w  = w_,  wpos = np.ones(len(ra)), 
+                                  ra_units='deg', dec_units='deg')
+
+        # Build catalogs for tomographic bin j
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j)                              
 
         # Loop over pixels
         for x in range(9):
-            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
-            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
-            print 'gammat doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            # Run calculation
-            if np.sum(jcat.wpos)==0:
-                continue
+
+            # Build treecorr catalog for bin j
+            w_ = np.zeros(len(ra))
+            w_[pixrange[x]] = w # Set used object's weight
+            if np.sum(w)==0:
+                print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
+                return 
+
+            jcat = treecorr.Catalog( g1 = g1, g2   = g2,
+                                     ra = ra, dec  = dec,
+                                     w  = w_,  wpos = np.ones(len(ra)),
+                                     ra_units='deg', dec_units='deg')
+
+            print 'gammat doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             ng.process_cross(icat,jcat)
@@ -531,30 +607,71 @@ class Measure2Point(PipelineStage):
         Treecorr wrapper for pos-pos calculations.
         """
 
-        # Get healpix list for lenses
-        pix = self.get_lhpix()
-        # Build catalogs for tomographic bin i
-        icat,ircat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix)
-        # Build catalogs for tomographic bin i
-        jcat,jrcat,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix,pix,return_neighbor=True)
+        # Build catalog for tomographic bin i
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i)
 
-        if (icat is None) or (jcat is None) or (ircat is None) or (jrcat is None): # No objects in selection
-            print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. ',icat is None,jcat is None,ircat is None,jrcat is None
+        # Build treecorr catalog for bin i
+        w_ = np.zeros(len(ra))
+        w_[pixrange] = w # Set used object's weight
+        if np.sum(w)==0:
+            print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            for x in range(9):
+                self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
             return 
+
+        icat = treecorr.Catalog( ra = ra, dec  = dec, 
+                                 w  = w_,  wpos = np.ones(len(ra)), 
+                                 ra_units='deg', dec_units='deg')
+
+        w_ = np.zeros(len(ran_ra))
+        w_[pixrange] = 1. # Set used object's weight
+        if np.sum(w)==0:
+            print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
+            for x in range(9):
+                self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+            return 
+
+        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
+                                  w  = w_,  wpos = np.ones(len(ra)), 
+                                  ra_units='deg', dec_units='deg')
+
+        # Build catalogs for tomographic bin j
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j)  
 
         # Loop over pixels
         for x in range(9):
-            jcat.wpos[:] = 0. # Set up dummy weight to preserve tree
-            jcat.wpos[pixrange[x]] = 1. # Set used objects dummy weight to 1
-            print 'wtheta doing '+str(len(icat.ra))+' '+str(np.sum(jcat.wpos))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
-            if np.sum(jcat.wpos)==0:
-                continue
+
+            # Build treecorr catalog for bin j
+            w_ = np.zeros(len(ra))
+            w_[pixrange] = w # Set used object's weight
+            if np.sum(w)==0:
+                print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                for x in range(9):
+                    self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                return 
+
+            jcat = treecorr.Catalog( ra = ra, dec  = dec, 
+                                     w  = w_,  wpos = np.ones(len(ra)), 
+                                     ra_units='deg', dec_units='deg')
+
+            w_ = np.zeros(len(ran_ra))
+            w_[pixrange] = 1. # Set used object's weight
+            if np.sum(w)==0:
+                print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
+                for x in range(9):
+                    self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                return 
+
+            jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
+                                      w  = w_,  wpos = np.ones(len(ra)), 
+                                      ra_units='deg', dec_units='deg')
 
             # Run calculation
             nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             nr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+
             nn.process_cross(icat,jcat)
             rn.process_cross(ircat,jcat)
             nr.process_cross(icat,jrcat)
