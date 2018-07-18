@@ -362,6 +362,7 @@ class Measure2Point(PipelineStage):
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
             dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            print w,pixrange
             if not np.isscalar(w):
                 w   = w[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
 
@@ -477,7 +478,7 @@ class Measure2Point(PipelineStage):
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
-            return 
+            return
 
         icat = treecorr.Catalog( ra = ra, dec  = dec, 
                                  w  = w_,  wpos = np.ones(len(ra)), 
@@ -489,7 +490,7 @@ class Measure2Point(PipelineStage):
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
-            return 
+            return
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
                                   w  = w_,  wpos = np.ones(len(ra)), 
