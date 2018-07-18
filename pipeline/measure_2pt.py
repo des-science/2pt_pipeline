@@ -351,7 +351,7 @@ class Measure2Point(PipelineStage):
             pix = self.get_lhpix()
 
             # Get ranges for ipix
-            pixrange = self.get_pix_subset(ipix,pix,return_neighbor)
+            pixrange = self.get_pix_subset(ipix,pix[mask],return_neighbor)
 
             # Get index matching of gold to lens catalog (smaller than gold)
             gmask = cal.selector.get_match()
