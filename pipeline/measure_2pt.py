@@ -493,7 +493,7 @@ class Measure2Point(PipelineStage):
             return
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                  w  = w_,  wpos = np.ones(len(ra)), 
+                                  w  = w_,  wpos = np.ones(len(ran_ra)), 
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
@@ -568,7 +568,7 @@ class Measure2Point(PipelineStage):
             return 
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                  w  = w_,  wpos = np.ones(len(ra)), 
+                                  w  = w_,  wpos = np.ones(len(ran_ra)), 
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
@@ -599,7 +599,7 @@ class Measure2Point(PipelineStage):
                 return 
 
             jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                      w  = w_,  wpos = np.ones(len(ra)), 
+                                      w  = w_,  wpos = np.ones(len(ran_ra)), 
                                       ra_units='deg', dec_units='deg')
 
             # Run calculation
