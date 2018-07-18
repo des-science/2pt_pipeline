@@ -485,7 +485,7 @@ class Measure2Point(PipelineStage):
                                  ra_units='deg', dec_units='deg')
 
         w_ = np.zeros(len(ran_ra))
-        w_[pixrange] = 1. # Set used object's weight
+        w_[rpixrange] = 1. # Set used object's weight
         if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             for x in range(9):
@@ -560,7 +560,7 @@ class Measure2Point(PipelineStage):
                                  ra_units='deg', dec_units='deg')
 
         w_ = np.zeros(len(ran_ra))
-        w_[pixrange] = 1. # Set used object's weight
+        w_[rpixrange] = 1. # Set used object's weight
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             for x in range(9):
@@ -579,7 +579,7 @@ class Measure2Point(PipelineStage):
 
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
-            w_[pixrange] = w # Set used object's weight
+            w_[pixrange[x]] = w # Set used object's weight
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 for x in range(9):
@@ -591,7 +591,7 @@ class Measure2Point(PipelineStage):
                                      ra_units='deg', dec_units='deg')
 
             w_ = np.zeros(len(ran_ra))
-            w_[pixrange] = 1. # Set used object's weight
+            w_[rpixrange[x]] = 1. # Set used object's weight
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
                 for x in range(9):
