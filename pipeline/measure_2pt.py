@@ -362,7 +362,8 @@ class Measure2Point(PipelineStage):
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
             dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-            w   = w[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            if not np.isscalar(w):
+                w   = w[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
 
             if np.sum(rmask)>self.params['ran_factor']*np.sum(mask): # Calculate if downsampling is possible
                 # Set fixed random seed to make results reproducible
