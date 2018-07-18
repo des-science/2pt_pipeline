@@ -229,12 +229,14 @@ class Measure2Point(PipelineStage):
                 self.comm.Barrier()
                 pool.wait()
                 print 'slave done',pool.rank
+                sys.stdout.flush()
                 sys.exit(0)
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             print 'out of main loop',pool.rank
+            sys.stdout.flush()
             # # Master waits for everyone to finish, then all close the h5 file and pool is closed.
             # calcs = []
             # for i in range(pool.size):
@@ -416,6 +418,7 @@ class Measure2Point(PipelineStage):
         w_[pixrange] = w # Set used object's weight
         if np.sum(w_)==0:
             print 'xipm not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            sys.stdout.flush()
             for x in range(9):
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
             return 
@@ -436,6 +439,7 @@ class Measure2Point(PipelineStage):
             w_[pixrange[x]] = w # Set used object's weight
             if np.sum(w_)==0:
                 print 'xipm not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                sys.stdout.flush()
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 return 
 
@@ -445,6 +449,7 @@ class Measure2Point(PipelineStage):
                                      ra_units='deg', dec_units='deg')
 
             print 'xipm doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            sys.stdout.flush()
 
             # Run calculation
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
@@ -452,6 +457,7 @@ class Measure2Point(PipelineStage):
 
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            sys.stdout.flush()
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
@@ -474,6 +480,7 @@ class Measure2Point(PipelineStage):
         w_[pixrange] = w # Set used object's weight
         if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            sys.stdout.flush()
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
             return
@@ -486,6 +493,7 @@ class Measure2Point(PipelineStage):
         w_[rpixrange] = 1. # Set used object's weight
         if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
+            sys.stdout.flush()
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
             return
@@ -505,6 +513,7 @@ class Measure2Point(PipelineStage):
             w_[pixrange[x]] = w # Set used object's weight
             if np.sum(w_)==0:
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                sys.stdout.flush()
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
                 return 
 
@@ -514,6 +523,7 @@ class Measure2Point(PipelineStage):
                                      ra_units='deg', dec_units='deg')
 
             print 'gammat doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
+            sys.stdout.flush()
 
             ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
@@ -522,6 +532,7 @@ class Measure2Point(PipelineStage):
 
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            sys.stdout.flush()
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
@@ -549,6 +560,7 @@ class Measure2Point(PipelineStage):
         w_[pixrange] = w # Set used object's weight
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
+            sys.stdout.flush()
             for x in range(9):
                 self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
             return 
@@ -561,6 +573,7 @@ class Measure2Point(PipelineStage):
         w_[rpixrange] = 1. # Set used object's weight
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
+            sys.stdout.flush()
             for x in range(9):
                 self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
             return 
@@ -580,6 +593,7 @@ class Measure2Point(PipelineStage):
             w_[pixrange[x]] = w # Set used object's weight
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                sys.stdout.flush()
                 for x in range(9):
                     self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
                 return 
@@ -592,6 +606,7 @@ class Measure2Point(PipelineStage):
             w_[rpixrange[x]] = 1. # Set used object's weight
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
+                sys.stdout.flush()
                 for x in range(9):
                     self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
                 return 
@@ -613,6 +628,7 @@ class Measure2Point(PipelineStage):
 
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            sys.stdout.flush()
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
