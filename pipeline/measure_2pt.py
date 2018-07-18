@@ -272,6 +272,7 @@ class Measure2Point(PipelineStage):
             return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
+            return
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
@@ -362,7 +363,6 @@ class Measure2Point(PipelineStage):
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
             dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-            print w,pixrange
             if not np.isscalar(w):
                 w   = w[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
 
