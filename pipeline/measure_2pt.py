@@ -233,6 +233,7 @@ class Measure2Point(PipelineStage):
                 sys.exit(0)
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            self.comm.Barrier()
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             print 'out of main loop',pool.rank
