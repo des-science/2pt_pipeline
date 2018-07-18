@@ -357,7 +357,7 @@ class Measure2Point(PipelineStage):
             R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
 
             # Get ranges for ipix
-            pixrange = self.get_pix_subset(ipix,pix[mask],return_neighbor)
+            pixrange = self.get_pix_subset(ipix,pix[gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask],return_neighbor)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
             ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
