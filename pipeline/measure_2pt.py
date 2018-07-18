@@ -413,7 +413,7 @@ class Measure2Point(PipelineStage):
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
         w_[pixrange] = w # Set used object's weight
-        if np.sum(w)==0:
+        if np.sum(w_)==0:
             print 'xipm not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             for x in range(9):
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
@@ -433,7 +433,7 @@ class Measure2Point(PipelineStage):
             # Build treecorr catalog for bin i
             w_ = np.zeros(len(ra))
             w_[pixrange[x]] = w # Set used object's weight
-            if np.sum(w)==0:
+            if np.sum(w_)==0:
                 print 'xipm not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 return 
@@ -471,7 +471,7 @@ class Measure2Point(PipelineStage):
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
         w_[pixrange] = w # Set used object's weight
-        if np.sum(w)==0:
+        if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
@@ -483,7 +483,7 @@ class Measure2Point(PipelineStage):
 
         w_ = np.zeros(len(ran_ra))
         w_[pixrange] = 1. # Set used object's weight
-        if np.sum(w)==0:
+        if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             for x in range(9):
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
@@ -502,7 +502,7 @@ class Measure2Point(PipelineStage):
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
             w_[pixrange[x]] = w # Set used object's weight
-            if np.sum(w)==0:
+            if np.sum(w_)==0:
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
                 return 
@@ -546,7 +546,7 @@ class Measure2Point(PipelineStage):
         # Build treecorr catalog for bin i
         w_ = np.zeros(len(ra))
         w_[pixrange] = w # Set used object's weight
-        if np.sum(w)==0:
+        if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             for x in range(9):
                 self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
@@ -558,7 +558,7 @@ class Measure2Point(PipelineStage):
 
         w_ = np.zeros(len(ran_ra))
         w_[pixrange] = 1. # Set used object's weight
-        if np.sum(w)==0:
+        if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             for x in range(9):
                 self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
@@ -577,7 +577,7 @@ class Measure2Point(PipelineStage):
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
             w_[pixrange] = w # Set used object's weight
-            if np.sum(w)==0:
+            if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 for x in range(9):
                     self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
@@ -589,7 +589,7 @@ class Measure2Point(PipelineStage):
 
             w_ = np.zeros(len(ran_ra))
             w_[pixrange] = 1. # Set used object's weight
-            if np.sum(w)==0:
+            if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
                 for x in range(9):
                     self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
