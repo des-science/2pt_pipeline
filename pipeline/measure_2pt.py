@@ -228,19 +228,19 @@ class Measure2Point(PipelineStage):
                 self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 self.comm.Barrier()
                 pool.wait()
+                print 'slave done',pool.rank
                 sys.exit(0)
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
             self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
-            self.comm.Barrier()
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             print 'out of main loop',pool.rank
-            # Master waits for everyone to finish, then all close the h5 file and pool is closed.
-            calcs = []
-            for i in range(pool.size):
-                calcs.append(None)
-            if pool.is_master():
-                pool.map(task_cleanup, calcs)
+            # # Master waits for everyone to finish, then all close the h5 file and pool is closed.
+            # calcs = []
+            # for i in range(pool.size):
+            #     calcs.append(None)
+            # if pool.is_master():
+            #     pool.map(task_cleanup, calcs)
             pool.close()
         else:
             # Serial execution
