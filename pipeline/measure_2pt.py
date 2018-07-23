@@ -495,7 +495,7 @@ class Measure2Point(PipelineStage):
             print f['2pt/xipm/'+str(ipix)+'/'].keys()
             print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'].keys()
             print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'].keys()
-            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+].keys()
+            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)].keys()
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
