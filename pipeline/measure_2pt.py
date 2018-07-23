@@ -176,10 +176,10 @@ class Measure2Point(PipelineStage):
                 for pix_ in pix:
                     if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
                         calcs.append((i,j,pix_,2))
-        if pool is not None:
-            if not pool.is_master():
-                print 'done calcs'
-                return calcs
+        # if pool is not None:
+        #     if not pool.is_master():
+        #         print 'done calcs'
+        #         return calcs
 
         # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
         if pool is None:
