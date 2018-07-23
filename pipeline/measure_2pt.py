@@ -225,15 +225,15 @@ class Measure2Point(PipelineStage):
             self.comm.Barrier()
             if not pool.is_master():
                 # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
-                self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
-                self.comm.Barrier()
-                pool.wait()
+                # self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+                # self.comm.Barrier()
+                # pool.wait()
                 print 'slave done',pool.rank
                 sys.stdout.flush()
                 sys.exit(0)
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
-            self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
-            self.comm.Barrier()
+            # self.f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            # self.comm.Barrier()
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
             print 'out of main loop',pool.rank
@@ -483,13 +483,14 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
+            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
             self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:]      = 1
-
+            f.close()
             print 'are there pairs 2',self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]
 
         return 
@@ -560,6 +561,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
+            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
@@ -571,7 +573,7 @@ class Measure2Point(PipelineStage):
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgweight'][:] = rg.weight
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:]    = 1
             self.f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rgtot'][:]    = 1
-
+            f.close()
         return 
 
     def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
@@ -656,6 +658,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
+            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
@@ -669,7 +672,8 @@ class Measure2Point(PipelineStage):
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrtot'][:]    = nr.tot
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrtot'][:]    = rn.tot
             self.f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrtot'][:]    = rr.tot
-
+            f.close()
+            
         return
 
     def write(self):
