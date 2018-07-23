@@ -183,10 +183,14 @@ class Measure2Point(PipelineStage):
 
         # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
         if pool is None:
-            f = h5py.File('2pt.h5',mode='w')
+            rank=0
+            size=1
+            f = h5py.File('2pt_'+str(rank)+'.h5',mode='w')
         else:
-            f = h5py.File('2pt.h5',mode='w')#, driver='mpio', comm=self.comm)
-        for i,j,ipix,calc in calcs:
+            rank = pool.rank
+            size = pool.size
+            f = h5py.File('2pt_'+str(rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
+        for i,j,ipix,calc in calcs[rank::size]:
                 for jpix in range(9): # There will only ever be 9 pixel pair correlations - the auto-correlation and 8 neighbors
                     if calc==0:
                         for d in ['meanlogr','xip','xim','npairs','weight']:
@@ -483,7 +487,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            f = h5py.File('2pt_'+str(rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
@@ -561,7 +565,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            f = h5py.File('2pt_'+str(rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
@@ -658,7 +662,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            f = h5py.File('2pt_'+str(rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
@@ -673,7 +677,7 @@ class Measure2Point(PipelineStage):
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrtot'][:]    = rn.tot
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrtot'][:]    = rr.tot
             f.close()
-            
+
         return
 
     def write(self):
