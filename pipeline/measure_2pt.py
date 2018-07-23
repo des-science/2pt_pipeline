@@ -430,11 +430,11 @@ class Measure2Point(PipelineStage):
             f.close()
             return 
 
-        print i,j,ipix,np.sum(w_),pixrange
-        print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
-        print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
-        print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
-        print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
+        # print i,j,ipix,np.sum(w_),pixrange
+        # print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
+        # print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
+        # print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
+        # print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
         # np.save('ra1.npy',ra)
         # np.save('dec1.npy',dec)
         # np.save('g11.npy',g1)
@@ -462,11 +462,11 @@ class Measure2Point(PipelineStage):
                 f.close()
                 return 
 
-            print i,j,ipix,x,np.sum(w_),pixrange[x]
-            print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
-            print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
-            print g1[pixrange[x]].min(),g1[pixrange[x]].max(),g1[pixrange[x]].mean()
-            print g2[pixrange[x]].min(),g2[pixrange[x]].max(),g2[pixrange[x]].mean()
+            # print i,j,ipix,x,np.sum(w_),pixrange[x]
+            # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
+            # print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
+            # print g1[pixrange[x]].min(),g1[pixrange[x]].max(),g1[pixrange[x]].mean()
+            # print g2[pixrange[x]].min(),g2[pixrange[x]].max(),g2[pixrange[x]].mean()
             # np.save('ra2.npy',ra)
             # np.save('dec2.npy',dec)
             # np.save('g12.npy',g1)
@@ -485,24 +485,16 @@ class Measure2Point(PipelineStage):
             gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
             gg.process_cross(icat,jcat)
 
-            print 'are there pairs',gg.npairs
-
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            print f.keys()
-            print f['2pt/xipm/'].keys()
-            print f['2pt/xipm/'+str(ipix)+'/'].keys()
-            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'].keys()
-            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'].keys()
-            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)].keys()
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]   = gg.npairs
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/weight'][:]   = gg.weight
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:]      = 1
-            print 'are there pairs 2',f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/npairs'][:]
+
         f.close()
 
         return 
