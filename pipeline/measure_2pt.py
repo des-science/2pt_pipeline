@@ -490,6 +490,12 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
+            print f.keys()
+            print f['2pt/xipm/'].keys()
+            print f['2pt/xipm/'+str(ipix)+'/'].keys()
+            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'].keys()
+            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'].keys()
+            print f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+].keys()
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
