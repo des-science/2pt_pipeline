@@ -427,6 +427,7 @@ class Measure2Point(PipelineStage):
             sys.stdout.flush()
             for x in range(9):
                 f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
+            f.close()
             return 
 
         print i,j,ipix,np.sum(w_),pixrange
@@ -458,6 +459,7 @@ class Measure2Point(PipelineStage):
                 print 'xipm not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
                 f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
+                f.close()
                 return 
 
             print i,j,ipix,x,np.sum(w_),pixrange[x]
