@@ -414,6 +414,7 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for shear-shear calculations.
         """
+        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i,ipix)
@@ -487,7 +488,6 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = gg.meanlogr
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xip'][:]      = gg.xip
             f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/xim'][:]      = gg.xim
@@ -503,6 +503,7 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for pos-shear calculations.
         """
+        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -565,7 +566,6 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = ng.meanlogr
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxi'][:]     = ng.xi
             f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngxim'][:]    = ng.xi_im
@@ -584,6 +584,8 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for pos-pos calculations.
         """
+
+        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -662,7 +664,6 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+', driver='mpio', comm=self.comm)
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/meanlogr'][:] = nn.meanlogr
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnnpairs'][:] = nn.npairs
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nnweight'][:] = nn.weight
