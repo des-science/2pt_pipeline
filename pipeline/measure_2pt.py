@@ -429,11 +429,11 @@ class Measure2Point(PipelineStage):
         print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
         print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
         print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
-        np.save('ra1.npy',ra)
-        np.save('dec1.npy',dec)
-        np.save('g11.npy',g1)
-        np.save('g21.npy',g2)
-        np.save('w_1.npy',w_)
+        # np.save('ra1.npy',ra)
+        # np.save('dec1.npy',dec)
+        # np.save('g11.npy',g1)
+        # np.save('g21.npy',g2)
+        # np.save('w_1.npy',w_)
 
         icat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
@@ -460,11 +460,11 @@ class Measure2Point(PipelineStage):
             print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
             print g1[pixrange[x]].min(),g1[pixrange[x]].max(),g1[pixrange[x]].mean()
             print g2[pixrange[x]].min(),g2[pixrange[x]].max(),g2[pixrange[x]].mean()
-            np.save('ra2.npy',ra)
-            np.save('dec2.npy',dec)
-            np.save('g12.npy',g1)
-            np.save('g22.npy',g2)
-            np.save('w_2.npy',w_)
+            # np.save('ra2.npy',ra)
+            # np.save('dec2.npy',dec)
+            # np.save('g12.npy',g1)
+            # np.save('g22.npy',g2)
+            # np.save('w_2.npy',w_)
 
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
