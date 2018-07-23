@@ -471,7 +471,7 @@ class Measure2Point(PipelineStage):
                                      w  = w_,  wpos = np.ones(len(ra)),
                                      ra_units='deg', dec_units='deg')
 
-            return
+            sys.exit()
 
             print 'xipm doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             sys.stdout.flush()
