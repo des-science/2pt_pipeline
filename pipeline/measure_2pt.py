@@ -424,9 +424,15 @@ class Measure2Point(PipelineStage):
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
             return 
 
+        print i,j,ipix,np.sum(w_),pixrange
+        print ra.min(),ra.max(),ra.mean()
+        print dec.min(),dec.max(),dec.mean()
+        print g1.min(),g1.max(),g1.mean()
+        print g2.min(),g2.max(),g2.mean()
+
         icat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
-                                 w  = w_,  wpos = np.ones(len(ra)), 
+                                 w  = w_, wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
@@ -443,6 +449,12 @@ class Measure2Point(PipelineStage):
                 sys.stdout.flush()
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 return 
+
+            print i,j,ipix,np.sum(w_),pixrange[x]
+            print ra.min(),ra.max(),ra.mean()
+            print dec.min(),dec.max(),dec.mean()
+            print g1.min(),g1.max(),g1.mean()
+            print g2.min(),g2.max(),g2.mean()
 
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
