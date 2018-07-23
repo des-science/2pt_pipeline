@@ -425,10 +425,10 @@ class Measure2Point(PipelineStage):
             return 
 
         print i,j,ipix,np.sum(w_),pixrange
-        print ra.min(),ra.max(),ra.mean()
-        print dec.min(),dec.max(),dec.mean()
-        print g1.min(),g1.max(),g1.mean()
-        print g2.min(),g2.max(),g2.mean()
+        print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
+        print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
+        print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
+        print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
 
         icat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
@@ -450,11 +450,11 @@ class Measure2Point(PipelineStage):
                 self.f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 return 
 
-            print i,j,ipix,np.sum(w_),pixrange[x]
-            print ra.min(),ra.max(),ra.mean()
-            print dec.min(),dec.max(),dec.mean()
-            print g1.min(),g1.max(),g1.mean()
-            print g2.min(),g2.max(),g2.mean()
+            print i,j,ipix,x,np.sum(w_),pixrange[x]
+            print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
+            print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
+            print g1[pixrange[x]].min(),g1[pixrange[x]].max(),g1[pixrange[x]].mean()
+            print g2[pixrange[x]].min(),g2[pixrange[x]].max(),g2[pixrange[x]].mean()
 
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
