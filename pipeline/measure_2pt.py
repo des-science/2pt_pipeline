@@ -276,10 +276,8 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
-            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
-            return
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
@@ -383,7 +381,7 @@ class Measure2Point(PipelineStage):
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
             pix     = hp.ang2pix(self.get_nside(),np.pi/2.-np.radians(ran_dec),np.radians(ran_ra),nest=True)
-            print 'pix.....',pix,np.diff(pix).min()
+            # print 'pix.....',pix,np.diff(pix).min()
 
             # Get ranges for ipix
             rpixrange = self.get_pix_subset(ipix,pix,return_neighbor)
@@ -620,15 +618,15 @@ class Measure2Point(PipelineStage):
                                  w  = w_, wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
 
-        print i,j,ipix,np.sum(w_),pixrange
-        print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
-        print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
+        # print i,j,ipix,np.sum(w_),pixrange
+        # print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
+        # print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
 
         w_ = np.zeros(len(ran_ra))
         w_[rpixrange] = 1. # Set used object's weight
-        print i,j,ipix,np.sum(w_),rpixrange
-        print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
-        print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
+        # print i,j,ipix,np.sum(w_),rpixrange
+        # print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
+        # print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
@@ -660,8 +658,8 @@ class Measure2Point(PipelineStage):
             jcat = treecorr.Catalog( ra = ra, dec  = dec, 
                                      w  = w_,  wpos = np.ones(len(ra)), 
                                      ra_units='deg', dec_units='deg')
-            print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
-            print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
+            # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
+            # print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
 
             w_ = np.zeros(len(ran_ra))
             w_[rpixrange[x]] = 1. # Set used object's weight
@@ -675,8 +673,8 @@ class Measure2Point(PipelineStage):
             jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
                                       w  = w_,  wpos = np.ones(len(ran_ra)), 
                                       ra_units='deg', dec_units='deg')
-            print ran_ra[pixrange[x]].min(),ran_ra[pixrange[x]].max(),ran_ra[pixrange[x]].mean()
-            print ran_dec[pixrange[x]].min(),ran_dec[pixrange[x]].max(),ran_dec[pixrange[x]].mean()
+            # print ran_ra[pixrange[x]].min(),ran_ra[pixrange[x]].max(),ran_ra[pixrange[x]].mean()
+            # print ran_dec[pixrange[x]].min(),ran_dec[pixrange[x]].max(),ran_dec[pixrange[x]].mean()
 
             # Run calculation
             nn = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
