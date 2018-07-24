@@ -382,7 +382,7 @@ class Measure2Point(PipelineStage):
             # Load random ra,dec and calculate healpix values
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
-            pix     = self.get_hpix(pix=hp.ang2pix(self.get_nside(),np.pi/2.-np.radians(ran_dec),np.radians(ran_ra),nest=True))
+            pix     = hp.ang2pix(self.get_nside(),np.pi/2.-np.radians(ran_dec),np.radians(ran_ra),nest=True)
             print 'pix.....',pix,np.diff(pix).min()
 
             # Get ranges for ipix
