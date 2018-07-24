@@ -526,8 +526,6 @@ class Measure2Point(PipelineStage):
         print i,j,ipix,np.sum(w_),pixrange
         print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
         print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
-        print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
-        print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
 
         w_ = np.zeros(len(ran_ra))
         w_[rpixrange] = 1. # Set used object's weight
