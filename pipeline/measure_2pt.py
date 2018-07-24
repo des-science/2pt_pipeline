@@ -625,6 +625,9 @@ class Measure2Point(PipelineStage):
 
         w_ = np.zeros(len(ran_ra))
         w_[rpixrange] = 1. # Set used object's weight
+        print i,j,ipix,np.sum(w_),rpixrange
+        print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
+        print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
@@ -636,8 +639,6 @@ class Measure2Point(PipelineStage):
                                   w  = w_,     wpos = np.ones(len(ran_ra)), 
                                   ra_units='deg', dec_units='deg')
 
-        print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
-        print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
 
         # Build catalogs for tomographic bin j
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,ipix,return_neighbor=True)  
