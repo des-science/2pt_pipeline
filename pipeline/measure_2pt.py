@@ -276,6 +276,7 @@ class Measure2Point(PipelineStage):
         num_threads = self.params['cores_per_task']
 
         if (k==0): # xi+-
+            return
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
@@ -522,6 +523,12 @@ class Measure2Point(PipelineStage):
                                  w  = w_,  wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
 
+        print i,j,ipix,np.sum(w_),pixrange
+        print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
+        print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
+        print g1[pixrange].min(),g1[pixrange].max(),g1[pixrange].mean()
+        print g2[pixrange].min(),g2[pixrange].max(),g2[pixrange].mean()
+
         w_ = np.zeros(len(ran_ra))
         w_[rpixrange] = 1. # Set used object's weight
         if np.sum(w_)==0:
@@ -535,8 +542,11 @@ class Measure2Point(PipelineStage):
                                   w  = w_,  wpos = np.ones(len(ran_ra)), 
                                   ra_units='deg', dec_units='deg')
 
+        print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
+        print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
+
         # Build catalogs for tomographic bin j
-        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)                              
+        ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)
 
         # Loop over pixels
         for x in range(9):
@@ -554,6 +564,12 @@ class Measure2Point(PipelineStage):
                                      ra = ra, dec  = dec,
                                      w  = w_,  wpos = np.ones(len(ra)),
                                      ra_units='deg', dec_units='deg')
+
+            print i,j,ipix,x,np.sum(w_),pixrange[x]
+            print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
+            print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
+            print g1[pixrange[x]].min(),g1[pixrange[x]].max(),g1[pixrange[x]].mean()
+            print g2[pixrange[x]].min(),g2[pixrange[x]].max(),g2[pixrange[x]].mean()
 
             print 'gammat doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             sys.stdout.flush()
@@ -601,7 +617,7 @@ class Measure2Point(PipelineStage):
             return 
 
         icat = treecorr.Catalog( ra = ra, dec  = dec, 
-                                 w  = w_,  wpos = np.ones(len(ra)), 
+                                 w  = w_, wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
 
         w_ = np.zeros(len(ran_ra))
@@ -611,10 +627,10 @@ class Measure2Point(PipelineStage):
             sys.stdout.flush()
             for x in range(9):
                 f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
-            return 
+            return
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                  w  = w_,  wpos = np.ones(len(ran_ra)), 
+                                  w  = w_,     wpos = np.ones(len(ran_ra)), 
                                   ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
@@ -675,7 +691,7 @@ class Measure2Point(PipelineStage):
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrweight'][:] = rr.weight
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:]    = nn.tot
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrtot'][:]    = nr.tot
-            f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nrtot'][:]    = rn.tot
+            f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rntot'][:]    = rn.tot
             f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/rrtot'][:]    = rr.tot
         f.close()
 
