@@ -377,7 +377,7 @@ class Measure2Point(PipelineStage):
                 # Set fixed random seed to make results reproducible
                 np.random.seed(seed=self.params['random_seed'])
                 # Downsample random catalog to be ran_factor times larger than lenses
-                downsample = np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False) # Downsample 
+                downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample 
 
             # Load random ra,dec and calculate healpix values
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
