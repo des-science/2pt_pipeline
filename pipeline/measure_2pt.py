@@ -231,7 +231,7 @@ class Measure2Point(PipelineStage):
                 # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
                 # f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
                 # self.comm.Barrier()
-                # pool.wait()
+                pool.wait()
                 print 'slave done',pool.rank
                 sys.stdout.flush()
                 sys.exit(0)
