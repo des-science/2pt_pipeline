@@ -460,7 +460,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/xipm/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)
+            path = '2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.write_h5(path,'meanlogr',gg.meanlogr)
             self.write_h5(path,'xip',gg.xip)
             self.write_h5(path,'xim',gg.xim)
@@ -551,7 +551,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/gammat/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)
+            path = '2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.write_h5(path,'meanlogr',ng.meanlogr)
             self.write_h5(path,'ngxi',ng.xi)
             self.write_h5(path,'ngxim',ng.xi_im)
@@ -662,7 +662,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/wtheta/'+str(ipix)+'/'+str(jpix)+'/'+str(i)+'/'+str(j)
+            path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.write_h5(path,'meanlogr',nn.meanlogr)
             self.write_h5(path,'nnnpairs',nn.npairs)
             self.write_h5(path,'nnweight',nn.weight)
