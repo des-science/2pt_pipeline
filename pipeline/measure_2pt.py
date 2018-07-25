@@ -323,7 +323,7 @@ class Measure2Point(PipelineStage):
 
             # Get healpix list for lenses
             pix = self.get_lhpix()
-            assert np.diff(pix)>=0
+            assert np.diff(pix).min()>=0
 
             # Get index matching of gold to lens catalog (smaller than gold)
             gmask = cal.selector.get_match()
@@ -362,7 +362,7 @@ class Measure2Point(PipelineStage):
 
             # Get healpix list for sources
             pix = self.get_hpix()
-            assert np.diff(pix)>=0
+            assert np.diff(pix).min()>=0
 
             # Get tomographic bin masks for sources, and responses/weights
             R1,R2,mask,w      = self.get_zbins_R(i,cal)
