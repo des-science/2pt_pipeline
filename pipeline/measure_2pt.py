@@ -178,6 +178,14 @@ class Measure2Point(PipelineStage):
         #         print 'done calcs'
         #         return calcs
 
+        # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
+        if pool is None:
+            self.rank=0
+            self.size=1
+        else:
+            self.rank = pool.rank
+            self.size = pool.size
+
         print 'done calcs'
 
         return calcs
