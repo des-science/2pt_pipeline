@@ -351,7 +351,7 @@ class Measure2Point(PipelineStage):
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
             pix     = hp.ang2pix(self.get_nside(),np.pi/2.-np.radians(ran_dec),np.radians(ran_ra),nest=True)
             # print 'pix.....',pix,np.diff(pix).min()
-            assert np.diff(pix)>=0
+            assert np.diff(pix).min()>=0
 
             # Get ranges for ipix
             rpixrange = self.get_pix_subset(ipix,pix,return_neighbor)
