@@ -178,18 +178,6 @@ class Measure2Point(PipelineStage):
         #         print 'done calcs'
         #         return calcs
 
-        # Pre-format output h5 file to contain all the necessary paths based on the final calculation list
-        if pool is None:
-            self.rank=0
-            self.size=1
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')
-        else:
-            self.rank = pool.rank
-            self.size = pool.size
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
-        f.create_group('2pt')
-        f.close()
-
         print 'done calcs'
 
         return calcs
@@ -386,7 +374,11 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for shear-shear calculations.
         """
-        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+
+        try:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+        except:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i,ipix)
@@ -475,7 +467,11 @@ class Measure2Point(PipelineStage):
         """
         Treecorr wrapper for pos-shear calculations.
         """
-        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+
+        try:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+        except:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -561,6 +557,7 @@ class Measure2Point(PipelineStage):
             self.write_h5(f,path,'ngweight',ng.weight)
             self.write_h5(f,path,'rgnpairs',rg.npairs)
             self.write_h5(f,path,'rgweight',rg.weight)
+
         f.close()
         return 
 
@@ -569,7 +566,10 @@ class Measure2Point(PipelineStage):
         Treecorr wrapper for pos-pos calculations.
         """
 
-        f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+        try:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+        except:
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
