@@ -306,7 +306,7 @@ class nofz(PipelineStage):
                         mask_2p = (xbins0[3] == i)
                         mask_2m = (xbins0[4] == i)
 
-                        weight_ = self.source_calibrator.calibrate('e1',mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
                         print 'weight',weight_
                         
                     else:
@@ -509,7 +509,7 @@ class nofz(PipelineStage):
 
             # Calculate n_eff
             self.neff.append( sum_w**2 / sum_w2 / ( self.area * 60. * 60. ) )
-            print '.......',sum_w**2,sum_w2,self.area * 60. * 60.,self.area
+            print '.......',w,np.sum(mask),sum_w**2,sum_w2,self.area * 60. * 60.,self.area
             self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 ) 
                                  / np.sum( w**2 * ( s**2 * self.sigma_ec[i]**2 + var / 2. ) )
                                / self.area / 60**2 
