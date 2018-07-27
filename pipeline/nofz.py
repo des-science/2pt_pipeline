@@ -455,7 +455,7 @@ class nofz(PipelineStage):
                 mask_2m = (zbin[4] == i)
 
                 # Calculate mean reponse in tomographic bin i and get weight vector
-                R,c,w = self.source_calibrator.calibrate('e1',mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
+                R,c,w = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 if type(w) is list:
                     w = w[0]
 
