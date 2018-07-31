@@ -490,8 +490,6 @@ class Measure2Point(PipelineStage):
         if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             sys.stdout.flush()
-            for x in range(9):
-                f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
             return
 
         icat = treecorr.Catalog( ra = ra, dec  = dec, 
@@ -507,8 +505,6 @@ class Measure2Point(PipelineStage):
         if np.sum(w_)==0:
             print 'gammat not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
-            for x in range(9):
-                f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
             return
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
@@ -530,7 +526,6 @@ class Measure2Point(PipelineStage):
             if np.sum(w_)==0:
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
-                f['2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/ngtot'][:] = 0.
                 return 
 
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
@@ -589,7 +584,8 @@ class Measure2Point(PipelineStage):
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             sys.stdout.flush()
             for x in range(9):
-                f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+                self.write_h5(f,path,'nntot',0.,size=1)
             return 
 
         icat = treecorr.Catalog( ra = ra, dec  = dec, 
@@ -609,7 +605,8 @@ class Measure2Point(PipelineStage):
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
             for x in range(9):
-                f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+                self.write_h5(f,path,'nntot',0.,size=1)
             return
 
         ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
@@ -622,6 +619,7 @@ class Measure2Point(PipelineStage):
 
         # Loop over pixels
         for x in range(9):
+            path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
 
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
@@ -629,8 +627,7 @@ class Measure2Point(PipelineStage):
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
-                for x in range(9):
-                    f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                self.write_h5(f,path,'nntot',0.,size=1)
                 return 
 
             jcat = treecorr.Catalog( ra = ra, dec  = dec, 
@@ -644,8 +641,7 @@ class Measure2Point(PipelineStage):
             if np.sum(w_)==0:
                 print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
                 sys.stdout.flush()
-                for x in range(9):
-                    f['2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/nntot'][:] = 0.
+                self.write_h5(f,path,'nntot',0.,size=1)
                 return 
 
             jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
@@ -670,7 +666,6 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             self.write_h5(f,path,'meanlogr',nn.meanlogr)
             self.write_h5(f,path,'nnnpairs',nn.npairs)
             self.write_h5(f,path,'nnweight',nn.weight)
@@ -688,8 +683,8 @@ class Measure2Point(PipelineStage):
 
         return
 
-    def write_h5(self,f,path,name,value):
-        f.create_dataset( path+name, shape=(self.params['tbins'],), dtype=float )
+    def write_h5(self,f,path,name,value,size=self.params['tbins']):
+        f.create_dataset( path+name, shape=(size,), dtype=float )
         f[path+name][:] = value
 
     def write(self):
