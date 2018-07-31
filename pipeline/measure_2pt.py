@@ -205,14 +205,18 @@ class Measure2Point(PipelineStage):
             self.comm.Barrier()
             if not pool.is_master():
                 # Workers load h5 file (necessary for parallel writing later), wait, then enter queue for jobs
-                # f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+                f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
+                f.create_group('2pt')
+                f.close()
                 # self.comm.Barrier()
                 pool.wait()
                 print 'slave done',pool.rank
                 sys.stdout.flush()
                 sys.exit(0)
             # Master opens h5 file (necessary for parallel writing later) and waits for all workers to hit the comm barrier.
-            # f = h5py.File('2pt.h5',mode='r+', driver='mpio', comm=self.comm)
+            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
+            f.create_group('2pt')
+            f.close()
             # self.comm.Barrier()
             # Master distributes calculations across nodes.
             pool.map(task, calcs)
