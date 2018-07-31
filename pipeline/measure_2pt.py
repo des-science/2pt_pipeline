@@ -592,15 +592,15 @@ class Measure2Point(PipelineStage):
                                  w  = w_, wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
 
-        print i,j,ipix,np.sum(w_),pixrange
-        print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
-        print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
+        # print i,j,ipix,np.sum(w_),pixrange
+        # print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
+        # print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
 
         w_ = np.zeros(len(ran_ra))
         w_[rpixrange] = 1. # Set used object's weight
-        print i,j,ipix,np.sum(w_),rpixrange
-        print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
-        print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
+        # print i,j,ipix,np.sum(w_),rpixrange
+        # print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
+        # print ran_dec[pixrange].min(),ran_dec[pixrange].max(),ran_dec[pixrange].mean()
         if np.sum(w_)==0:
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
@@ -633,8 +633,8 @@ class Measure2Point(PipelineStage):
             jcat = treecorr.Catalog( ra = ra, dec  = dec, 
                                      w  = w_,  wpos = np.ones(len(ra)), 
                                      ra_units='deg', dec_units='deg')
-            print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
-            print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
+            # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
+            # print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
 
             w_ = np.zeros(len(ran_ra))
             w_[rpixrange[x]] = 1. # Set used object's weight
@@ -647,8 +647,8 @@ class Measure2Point(PipelineStage):
             jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
                                       w  = w_,  wpos = np.ones(len(ran_ra)), 
                                       ra_units='deg', dec_units='deg')
-            print ran_ra[pixrange[x]].min(),ran_ra[pixrange[x]].max(),ran_ra[pixrange[x]].mean()
-            print ran_dec[pixrange[x]].min(),ran_dec[pixrange[x]].max(),ran_dec[pixrange[x]].mean()
+            # print ran_ra[pixrange[x]].min(),ran_ra[pixrange[x]].max(),ran_ra[pixrange[x]].mean()
+            # print ran_dec[pixrange[x]].min(),ran_dec[pixrange[x]].max(),ran_dec[pixrange[x]].mean()
             print 'wtheta doing '+str(np.sum(icat.w))+' '+str(np.sum(jcat.w))+' objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)
             sys.stdout.flush()
 
