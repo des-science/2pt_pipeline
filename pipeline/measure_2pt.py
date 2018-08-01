@@ -586,7 +586,7 @@ class Measure2Point(PipelineStage):
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in ipix.'
             sys.stdout.flush()
             for x in range(9):
-                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
                 self.write_h5(f,path,'nntot',0.,size=1)
             return 
 
@@ -607,7 +607,7 @@ class Measure2Point(PipelineStage):
             print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random ipix.'
             sys.stdout.flush()
             for x in range(9):
-                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+                path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
                 self.write_h5(f,path,'nntot',0.,size=1)
             return
 
@@ -677,10 +677,11 @@ class Measure2Point(PipelineStage):
             self.write_h5(f,path,'rnweight',rn.weight,size=self.params['tbins'])
             self.write_h5(f,path,'rrnpairs',rr.npairs,size=self.params['tbins'])
             self.write_h5(f,path,'rrweight',rr.weight,size=self.params['tbins'])
-            self.write_h5(f,path,'nntot',nn.tot,size=self.params['tbins'])
-            self.write_h5(f,path,'nrtot',nr.tot,size=self.params['tbins'])
-            self.write_h5(f,path,'rntot',rn.tot,size=self.params['tbins'])
-            self.write_h5(f,path,'rrtot',rr.tot,size=self.params['tbins'])
+            self.write_h5(f,path,'nntot',nn.tot,size=1)
+            self.write_h5(f,path,'nrtot',nr.tot,size=1)
+            self.write_h5(f,path,'rntot',rn.tot,size=1)
+            self.write_h5(f,path,'rrtot',rr.tot,size=1)
+            
         f.close()
 
         return
