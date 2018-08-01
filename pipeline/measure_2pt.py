@@ -462,7 +462,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            path = '2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
             self.write_h5(f,path,'meanlogr',gg.meanlogr,size=self.params['tbins'])
             self.write_h5(f,path,'xip',gg.xip,size=self.params['tbins'])
             self.write_h5(f,path,'xim',gg.xim,size=self.params['tbins'])
@@ -552,7 +552,7 @@ class Measure2Point(PipelineStage):
             # Write output to h5 file
             print 'writing 2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
             sys.stdout.flush()
-            path = '2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            path = '2pt/gammat/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
             self.write_h5(f,path,'meanlogr',ng.meanlogr,size=self.params['tbins'])
             self.write_h5(f,path,'ngxi',ng.xi,size=self.params['tbins'])
             self.write_h5(f,path,'ngxim',ng.xi_im,size=self.params['tbins'])
@@ -621,7 +621,7 @@ class Measure2Point(PipelineStage):
 
         # Loop over pixels
         for x in range(9):
-            path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)
+            path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
 
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
