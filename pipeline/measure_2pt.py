@@ -436,7 +436,7 @@ class Measure2Point(PipelineStage):
                 sys.stdout.flush()
                 # f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 # f.close()
-                return 
+                continue 
 
             # print i,j,ipix,x,np.sum(w_),pixrange[x]
             # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
@@ -530,7 +530,7 @@ class Measure2Point(PipelineStage):
             if np.sum(w_)==0:
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
-                return 
+                continue 
 
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
@@ -629,10 +629,10 @@ class Measure2Point(PipelineStage):
             w_ = np.zeros(len(ra))
             w_[pixrange[x]] = w # Set used object's weight
             if np.sum(w_)==0:
-                print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
+                print 'wtheta not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
                 self.write_h5(f,path,'nntot',0.,size=1)
-                return 
+                continue
 
             jcat = treecorr.Catalog( ra = ra, dec  = dec, 
                                      w  = w_,  wpos = np.ones(len(ra)), 
@@ -643,10 +643,10 @@ class Measure2Point(PipelineStage):
             w_ = np.zeros(len(ran_ra))
             w_[rpixrange[x]] = 1. # Set used object's weight
             if np.sum(w_)==0:
-                print 'wtheta not doing objects for '+str(ipix)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
+                print 'wtheta not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in random jpix.'
                 sys.stdout.flush()
                 self.write_h5(f,path,'nntot',0.,size=1)
-                return 
+                continue
 
             jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
                                       w  = w_,  wpos = np.ones(len(ran_ra)), 
