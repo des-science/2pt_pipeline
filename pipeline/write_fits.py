@@ -123,9 +123,8 @@ class WriteFits(PipelineStage):
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
-        if self.params['lensfile'] != 'None':
-            self.strip_wtheta(fits)
-            self.strip_missing_gglensing(fits)
+        self.strip_wtheta(fits)
+        self.strip_missing_gglensing(fits)
 
         length=self.get_cov_lengths(fits)
 
@@ -236,9 +235,6 @@ class WriteFits(PipelineStage):
                 exts[1].value       = np.append(exts[1].value,xim/weight)
                 exts[1].npairs      = np.append(exts[1].npairs,npairs)
                 exts[1].weight      = np.append(exts[1].weight,weight)
-
-        if self.params['lensfile'] == 'None':
-            return
 
         # Get pixel list from output
         pixels = self.get_pixels('gammat')
@@ -449,18 +445,12 @@ class WriteFits(PipelineStage):
                 angle=None,
                 angle_unit='arcmin')) # units
 
-        if self.params['lensfile'] == 'None':
-            self.exts=self.exts[:2]
 
         return 
 
     def get_cov_lengths(self,fits):
 
         # Calculate length of covariance blocks. Exception for gammat, which reads a file that stores which bin combinations have been rejected in the covariance calcultion.
-        if self.params['lensfile'] != 'None':
-            names = TWO_POINT_NAMES
-        else:
-            names = TWO_POINT_NAMES[:2]
 
         # Make cov lengths
         length=np.array([])
@@ -487,10 +477,6 @@ class WriteFits(PipelineStage):
 
         # Sorts 2pt data to match covariance (might duplicate what Joe did in load_twopt_data?)
 
-        if self.params['lensfile'] != 'None':
-            names = TWO_POINT_NAMES
-        else:
-            names = TWO_POINT_NAMES[:2]
 
         for iname,name in enumerate(names):
             twopt=fits.get_spectrum(name)
