@@ -152,7 +152,7 @@ class WriteFits(PipelineStage):
         self.zbins = len(np.array(data['source_bins'])) - 1
         self.lens_zbins = len(np.array(data['lens_bins'])) - 1
 
-    def get_pixels(self,cf):
+    def get_pixels(self,f.cf):
 
         pixels=np.array([],dtype=int)
         for f_ in f:
@@ -160,7 +160,7 @@ class WriteFits(PipelineStage):
 
         return np.unique(pixels)
 
-    def test_nbin(self,cf,i_true,j_true):
+    def test_nbin(self,f,cf,i_true,j_true):
 
         ibins=np.array([],dtype=int)
         ibins=np.array([],dtype=int)
@@ -182,9 +182,9 @@ class WriteFits(PipelineStage):
             f.append(h5py.File(f_,mode='r'))
 
         # Get pixel list from output
-        pixels = self.get_pixels('ximp')
+        pixels = self.get_pixels(f,'ximp')
         # Test that tomographic bins match expectation
-        self.test_nbin('ximp',self.zbins,self.zbins)
+        self.test_nbin(f,'ximp',self.zbins,self.zbins)
 
         # Do loop to read in xipm
         exts[0].bin1        = []
@@ -237,9 +237,9 @@ class WriteFits(PipelineStage):
                 exts[1].weight      = np.append(exts[1].weight,weight)
 
         # Get pixel list from output
-        pixels = self.get_pixels('gammat')
+        pixels = self.get_pixels(f,'gammat')
         # Test that tomographic bins match expectation
-        self.test_nbin('gammat',self.lens_zbins,self.zbins)
+        self.test_nbin(f,'gammat',self.lens_zbins,self.zbins)
 
         # Do loop to read in gammat/gammax
         exts[2].bin1        = []
@@ -306,9 +306,9 @@ class WriteFits(PipelineStage):
                 exts[3].random_weight = np.append(exts[3].random_weight,rgweight)
 
         # Get pixel list from output
-        pixels = self.get_pixels('gammat')
+        pixels = self.get_pixels(f,'wtheta')
         # Test that tomographic bins match expectation
-        self.test_nbin('gammat',self.lens_zbins,self.zbins)
+        self.test_nbin(f,'wtheta',self.lens_zbins,self.zbins)
 
         # Do loop to read in wtheta
         exts[4].bin1          = []
