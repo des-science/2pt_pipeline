@@ -8,6 +8,8 @@ import collections
 import blind_2pt_usingcosmosis as blind
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 
+print 'Imported modules'
+
 class WriteFits(PipelineStage):
     name = "2pt_fits"
     inputs = {
@@ -152,7 +154,7 @@ class WriteFits(PipelineStage):
         self.zbins = len(np.array(data['source_bins'])) - 1
         self.lens_zbins = len(np.array(data['lens_bins'])) - 1
 
-    def get_pixels(self,f.cf):
+    def get_pixels(self,f,cf):
 
         pixels=np.array([],dtype=int)
         for f_ in f:
