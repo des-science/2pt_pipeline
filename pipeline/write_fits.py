@@ -176,8 +176,8 @@ class WriteFits(PipelineStage):
                 tomo_ = tomo[key]
                 jbins=np.append(jbins,np.array(tomo_.keys(),dtype=int))
 
-        assert (np.unique(ibins)==np.arange(i_true)),'Number of i tomographic bins in '+cf+' different from expectation from stage nofz.'
-        assert (np.unique(jbins)==np.arange(j_true)),'Number of j tomographic bins in '+cf+' different from expectation from stage nofz.'
+        assert np.all(np.unique(ibins)==np.arange(i_true)),'Number of i tomographic bins in '+cf+' different from expectation from stage nofz.'
+        assert np.all(np.unique(jbins)==np.arange(j_true)),'Number of j tomographic bins in '+cf+' different from expectation from stage nofz.'
 
     def load_twopt_data(self):
 
