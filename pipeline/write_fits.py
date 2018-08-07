@@ -128,10 +128,10 @@ class WriteFits(PipelineStage):
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
-        # self.strip_wtheta(fits)
-        # self.strip_missing_gglensing(fits)
-
-        length=self.get_cov_lengths(fits)
+        if self.covmat is not None:
+            self.strip_wtheta(fits)
+            self.strip_missing_gglensing(fits)
+            length=self.get_cov_lengths(fits)
 
         # self.sort_2pt(fits,length) # Now fixed sorting to match cosmolike
 
