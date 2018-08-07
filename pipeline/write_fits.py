@@ -398,6 +398,7 @@ class WriteFits(PipelineStage):
         except:
             self.covmat = None
             print 'Skipping covariance, since output file missing.'
+            return
 
         # Replace theta values with bin numbers.
         theta=np.sort(np.unique(covdata[:,2]))
