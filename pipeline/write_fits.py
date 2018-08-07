@@ -168,7 +168,7 @@ class WriteFits(PipelineStage):
     def test_nbin(self,f,cf,i_true,j_true):
 
         ibins=np.array([],dtype=int)
-        ibins=np.array([],dtype=int)
+        jbins=np.array([],dtype=int)
         for f_ in f:
             tomo = f_['2pt/'+cf][f_['2pt/'+cf].keys()[0]]['0']
             ibins=np.append(ibins,np.array(tomo.keys(),dtype=int))
