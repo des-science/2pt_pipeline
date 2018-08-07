@@ -187,9 +187,9 @@ class WriteFits(PipelineStage):
             f.append(h5py.File(f_,mode='r'))
 
         # Get pixel list from output
-        pixels = self.get_pixels(f,'ximp')
+        pixels = self.get_pixels(f,'xipm')
         # Test that tomographic bins match expectation
-        self.test_nbin(f,'ximp',self.zbins,self.zbins)
+        self.test_nbin(f,'xipm',self.zbins,self.zbins)
 
         # Do loop to read in xipm
         exts[0].bin1        = []
