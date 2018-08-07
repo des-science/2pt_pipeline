@@ -22,6 +22,7 @@ class WriteFits(PipelineStage):
         "xim"                   : ("2pt", "*_xim.txt"),
         "gammat"                : ("2pt", "*_gammat.txt"),
         "wtheta"                : ("2pt", "*_wtheta.txt"),
+        "nofz_meta"     : ("nofz", "metadata.yaml")       ,
     }
     outputs = {
         "2pt_extended"          : "2pt_extended_data.fits",
