@@ -460,7 +460,7 @@ class WriteFits(PipelineStage):
 
         # Make cov lengths
         length=np.array([])
-        for name in names:
+        for name in TWO_POINT_NAMES:
             twopt=fits.get_spectrum(name)
             if twopt.name==TWO_POINT_NAMES[2]: # gammat
                 gglbins=np.loadtxt(self.input_path("ggl_bins"))
@@ -484,7 +484,7 @@ class WriteFits(PipelineStage):
         # Sorts 2pt data to match covariance (might duplicate what Joe did in load_twopt_data?)
 
 
-        for iname,name in enumerate(names):
+        for iname,name in enumerate(TWO_POINT_NAMES):
             twopt=fits.get_spectrum(name)
             twopt_order = np.vstack((twopt.angular_bin,twopt.bin1-1,twopt.bin2-1)).T
 
