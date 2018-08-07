@@ -64,23 +64,23 @@ class WriteFits(PipelineStage):
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
-        #ini_name = self.params['ini']
-        #seed_name = self.params['seed']
-        #btype_name = ' -b '+self.params['btype']
-        #label_name = ' -t '+self.params['label']
+        #ini_name = self.self.params['ini']
+        #seed_name = self.self.params['seed']
+        #btype_name = ' -b '+self.self.params['btype']
+        #label_name = ' -t '+self.self.params['label']
 
-        #unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
-        #source_command = 'source '+self.params['cosmosis_setup']
+        #unblinded_name = self.self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
+        #source_command = 'source '+self.self.params['cosmosis_setup']
         #os.system(source_command)
-        #blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)
+        #blind.do2ptblinding(self.self.params['seed'],self.self.params['ini'],unblinded_name,None,self.self.params['label'],self.self.params['btype'],None)
         
 
-        #unblinded_name =' -u '+self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
+        #unblinded_name =' -u '+self.self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
         #print unblinded_name
-        #ini_name = ' -i '+self.params['ini']
-        #seed_name = ' -s '+self.params['seed']
-        #btype_name = ' -b '+self.params['btype']
-        #label_name = ' -t '+self.params['label']
+        #ini_name = ' -i '+self.self.params['ini']
+        #seed_name = ' -s '+self.self.params['seed']
+        #btype_name = ' -b '+self.self.params['btype']
+        #label_name = ' -t '+self.self.params['label']
         #blinding_command = 'python pipeline/blind_2pt_usingcosmosis.py '+ seed_name + ini_name + btype_name + label_name + unblinded_name
         #print source_command+'\n'+blinding_command
         #os.system(source_command+' \n '+blinding_command)
@@ -210,11 +210,11 @@ class WriteFits(PipelineStage):
             for t2_ in range(self.zbins):
                 if t2_<t_:
                     continue
-                self.exts[0].bin1 = np.append(self.exts[0].bin1,np.ones(params['tbins'])*int(t_)+1)
-                self.exts[1].bin1 = np.append(self.exts[1].bin1,np.ones(params['tbins'])*int(t_)+1)
-                self.exts[0].bin2 = np.append(self.exts[0].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                self.exts[1].bin2 = np.append(self.exts[1].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                weight   = np.zeros(params['tbins'])
+                self.exts[0].bin1 = np.append(self.exts[0].bin1,np.ones(self.params['tbins'])*int(t_)+1)
+                self.exts[1].bin1 = np.append(self.exts[1].bin1,np.ones(self.params['tbins'])*int(t_)+1)
+                self.exts[0].bin2 = np.append(self.exts[0].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
+                self.exts[1].bin2 = np.append(self.exts[1].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
+                weight   = np.zeros(self.params['tbins'])
                 npairs   = np.zeros_like(weight)
                 meanlogr = np.zeros_like(weight)
                 xip      = np.zeros_like(weight)
@@ -231,12 +231,12 @@ class WriteFits(PipelineStage):
                             except:
                                 continue
                 self.exts[0].angle       = np.append(self.exts[0].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                self.exts[0].angular_bin = np.append(self.exts[0].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[0].angular_bin = np.append(self.exts[0].angular_bin,np.arange(self.params['tbins'],dtype=int))
                 self.exts[0].value       = np.append(self.exts[0].value,xip/weight)
                 self.exts[0].npairs      = np.append(self.exts[0].npairs,npairs)
                 self.exts[0].weight      = np.append(self.exts[0].weight,weight)
                 self.exts[1].angle       = np.append(self.exts[1].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                self.exts[1].angular_bin = np.append(self.exts[1].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[1].angular_bin = np.append(self.exts[1].angular_bin,np.arange(self.params['tbins'],dtype=int))
                 self.exts[1].value       = np.append(self.exts[1].value,xim/weight)
                 self.exts[1].npairs      = np.append(self.exts[1].npairs,npairs)
                 self.exts[1].weight      = np.append(self.exts[1].weight,weight)
@@ -267,11 +267,11 @@ class WriteFits(PipelineStage):
         self.exts[3].random_weight = []
         for t_ in range(self.lens_zbins):
             for t2_ in range(self.zbins):
-                self.exts[2].bin1 = np.append(self.exts[2].bin1,np.ones(params['tbins'])*int(t_)+1)
-                self.exts[3].bin1 = np.append(self.exts[3].bin1,np.ones(params['tbins'])*int(t_)+1)
-                self.exts[2].bin2 = np.append(self.exts[2].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                self.exts[3].bin2 = np.append(self.exts[3].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                ngweight  = np.zeros(params['tbins'])
+                self.exts[2].bin1 = np.append(self.exts[2].bin1,np.ones(self.params['tbins'])*int(t_)+1)
+                self.exts[3].bin1 = np.append(self.exts[3].bin1,np.ones(self.params['tbins'])*int(t_)+1)
+                self.exts[2].bin2 = np.append(self.exts[2].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
+                self.exts[3].bin2 = np.append(self.exts[3].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
+                ngweight  = np.zeros(self.params['tbins'])
                 ngnpairs  = np.zeros_like(ngweight)
                 rgweight  = np.zeros_like(ngweight)
                 rgnpairs  = np.zeros_like(ngweight)
@@ -296,14 +296,14 @@ class WriteFits(PipelineStage):
                             except:
                                 continue
                 self.exts[2].angle         = np.append(self.exts[2].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                self.exts[2].angular_bin   = np.append(self.exts[2].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[2].angular_bin   = np.append(self.exts[2].angular_bin,np.arange(self.params['tbins'],dtype=int))
                 self.exts[2].value         = np.append(self.exts[2].value,ngxi/ngweight-rgxi/rgweight)
                 self.exts[2].npairs        = np.append(self.exts[2].npairs,ngnpairs)
                 self.exts[2].weight        = np.append(self.exts[2].weight,ngweight)
                 self.exts[2].random_npairs = np.append(self.exts[2].random_npairs,rgnpairs)
                 self.exts[2].random_weight = np.append(self.exts[2].random_weight,rgweight)
                 self.exts[3].angle         = np.append(self.exts[3].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                self.exts[3].angular_bin   = np.append(self.exts[3].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[3].angular_bin   = np.append(self.exts[3].angular_bin,np.arange(self.params['tbins'],dtype=int))
                 self.exts[3].value         = np.append(self.exts[3].value,ngxim/ngweight-rgxim/rgweight)
                 self.exts[3].npairs        = np.append(self.exts[3].npairs,ngnpairs)
                 self.exts[3].weight        = np.append(self.exts[3].weight,ngweight)
@@ -329,9 +329,9 @@ class WriteFits(PipelineStage):
             for t2_ in range(self.lens_zbins):
                 if t_>t2_:
                     continue
-                self.exts[4].bin1 = np.append(self.exts[4].bin1,np.ones(params['tbins'])*int(t_)+1)
-                self.exts[4].bin2 = np.append(self.exts[4].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                nnweight  = np.zeros(params['tbins'])
+                self.exts[4].bin1 = np.append(self.exts[4].bin1,np.ones(self.params['tbins'])*int(t_)+1)
+                self.exts[4].bin2 = np.append(self.exts[4].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
+                nnweight  = np.zeros(self.params['tbins'])
                 nnnpairs  = np.zeros_like(nnweight)
                 nrweight  = np.zeros_like(nnweight)
                 nrnpairs  = np.zeros_like(nnweight)
@@ -373,7 +373,7 @@ class WriteFits(PipelineStage):
                             except:
                                 continue
                 self.exts[4].angle         = np.append(self.exts[4].angle,np.exp(meanlogr/nnweight)*180/np.pi*60)
-                self.exts[4].angular_bin   = np.append(self.exts[4].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[4].angular_bin   = np.append(self.exts[4].angular_bin,np.arange(self.params['tbins'],dtype=int))
                 rrw = 1.*nntot / rrtot
                 drw = 1.*nntot / rntot
                 rdw = 1.*nntot / rntot
