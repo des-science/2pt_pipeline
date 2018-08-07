@@ -125,7 +125,7 @@ class WriteFits(PipelineStage):
         fits=twopoint.TwoPointFile.from_fits(self.input_path("2pt"),covmat_name=None)
 
         # Write file without covariance (all data vectors)
-        fits.spectra=self.self.exts
+        fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
         self.strip_wtheta(fits)
@@ -436,7 +436,7 @@ class WriteFits(PipelineStage):
         nznameindex2=[0,0,0,0,1]
 
         # Setup xi extensions
-        self.self.exts=[]
+        self.exts=[]
         for i,name in enumerate(TWO_POINT_NAMES):
             self.exts.append(twopoint.SpectrumMeasurement(
                 name, # hdu name
