@@ -313,7 +313,7 @@ class WriteFits(PipelineStage):
         # Get pixel list from output
         pixels = self.get_pixels(f,'wtheta')
         # Test that tomographic bins match expectation
-        self.test_nbin(f,'wtheta',self.lens_zbins,self.zbins)
+        self.test_nbin(f,'wtheta',self.lens_zbins,self.lens_zbins)
 
         # Do loop to read in wtheta
         self.exts[4].bin1          = []
