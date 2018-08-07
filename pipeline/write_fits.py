@@ -3,6 +3,7 @@ import numpy as np
 import twopoint
 import fitsio as fio
 import glob
+import yaml
 import os
 import collections
 import blind_2pt_usingcosmosis as blind
@@ -22,7 +23,7 @@ class WriteFits(PipelineStage):
         "xim"                   : ("2pt", "*_xim.txt"),
         "gammat"                : ("2pt", "*_gammat.txt"),
         "wtheta"                : ("2pt", "*_wtheta.txt"),
-        "nofz_meta"     : ("nofz", "metadata.yaml")       ,
+        "nofz_meta"             : ("nofz", "metadata.yaml"),
     }
     outputs = {
         "2pt_extended"          : "2pt_extended_data.fits",
