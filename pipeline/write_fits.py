@@ -41,6 +41,7 @@ class WriteFits(PipelineStage):
         self.init_specs()
         
         # Load xi data
+        self.load_metadata()
         self.load_twopt_data()
 
         # Load covariance info
