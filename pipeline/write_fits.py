@@ -125,7 +125,7 @@ class WriteFits(PipelineStage):
         fits=twopoint.TwoPointFile.from_fits(self.input_path("2pt"),covmat_name=None)
 
         # Write file without covariance (all data vectors)
-        fits.spectra=self.exts
+        fits.spectra=self.self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
         self.strip_wtheta(fits)
@@ -192,28 +192,28 @@ class WriteFits(PipelineStage):
         self.test_nbin(f,'xipm',self.zbins,self.zbins)
 
         # Do loop to read in xipm
-        exts[0].bin1        = []
-        exts[0].bin2        = []
-        exts[0].angle       = []
-        exts[0].angular_bin = []
-        exts[0].value       = []
-        exts[0].npairs      = []
-        exts[0].weight      = []
-        exts[1].bin1        = []
-        exts[1].bin2        = []
-        exts[1].angle       = []
-        exts[1].angular_bin = []
-        exts[1].value       = []
-        exts[1].npairs      = []
-        exts[1].weight      = []
+        self.exts[0].bin1        = []
+        self.exts[0].bin2        = []
+        self.exts[0].angle       = []
+        self.exts[0].angular_bin = []
+        self.exts[0].value       = []
+        self.exts[0].npairs      = []
+        self.exts[0].weight      = []
+        self.exts[1].bin1        = []
+        self.exts[1].bin2        = []
+        self.exts[1].angle       = []
+        self.exts[1].angular_bin = []
+        self.exts[1].value       = []
+        self.exts[1].npairs      = []
+        self.exts[1].weight      = []
         for t_ in range(self.zbins):
             for t2_ in range(self.zbins):
                 if t2_<t_:
                     continue
-                exts[0].bin1 = np.append(exts[0].bin1,np.ones(params['tbins'])*int(t_)+1)
-                exts[1].bin1 = np.append(exts[1].bin1,np.ones(params['tbins'])*int(t_)+1)
-                exts[0].bin2 = np.append(exts[0].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                exts[1].bin2 = np.append(exts[1].bin2,np.ones(params['tbins'])*int(t2_)+1)
+                self.exts[0].bin1 = np.append(self.exts[0].bin1,np.ones(params['tbins'])*int(t_)+1)
+                self.exts[1].bin1 = np.append(self.exts[1].bin1,np.ones(params['tbins'])*int(t_)+1)
+                self.exts[0].bin2 = np.append(self.exts[0].bin2,np.ones(params['tbins'])*int(t2_)+1)
+                self.exts[1].bin2 = np.append(self.exts[1].bin2,np.ones(params['tbins'])*int(t2_)+1)
                 weight   = np.zeros(params['tbins'])
                 npairs   = np.zeros_like(weight)
                 meanlogr = np.zeros_like(weight)
@@ -230,16 +230,16 @@ class WriteFits(PipelineStage):
                                 meanlogr += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['meanlogr'][:]
                             except:
                                 continue
-                exts[0].angle       = np.append(exts[0].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                exts[0].angular_bin = np.append(exts[0].angular_bin,np.arange(params['tbins'],dtype=int))
-                exts[0].value       = np.append(exts[0].value,xip/weight)
-                exts[0].npairs      = np.append(exts[0].npairs,npairs)
-                exts[0].weight      = np.append(exts[0].weight,weight)
-                exts[1].angle       = np.append(exts[1].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                exts[1].angular_bin = np.append(exts[1].angular_bin,np.arange(params['tbins'],dtype=int))
-                exts[1].value       = np.append(exts[1].value,xim/weight)
-                exts[1].npairs      = np.append(exts[1].npairs,npairs)
-                exts[1].weight      = np.append(exts[1].weight,weight)
+                self.exts[0].angle       = np.append(self.exts[0].angle,np.exp(meanlogr/weight)*180/np.pi*60)
+                self.exts[0].angular_bin = np.append(self.exts[0].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[0].value       = np.append(self.exts[0].value,xip/weight)
+                self.exts[0].npairs      = np.append(self.exts[0].npairs,npairs)
+                self.exts[0].weight      = np.append(self.exts[0].weight,weight)
+                self.exts[1].angle       = np.append(self.exts[1].angle,np.exp(meanlogr/weight)*180/np.pi*60)
+                self.exts[1].angular_bin = np.append(self.exts[1].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[1].value       = np.append(self.exts[1].value,xim/weight)
+                self.exts[1].npairs      = np.append(self.exts[1].npairs,npairs)
+                self.exts[1].weight      = np.append(self.exts[1].weight,weight)
 
         # Get pixel list from output
         pixels = self.get_pixels(f,'gammat')
@@ -247,30 +247,30 @@ class WriteFits(PipelineStage):
         self.test_nbin(f,'gammat',self.lens_zbins,self.zbins)
 
         # Do loop to read in gammat/gammax
-        exts[2].bin1        = []
-        exts[2].bin2        = []
-        exts[2].angle       = []
-        exts[2].angular_bin = []
-        exts[2].value       = []
-        exts[2].npairs      = []
-        exts[2].weight      = []
-        exts[2].random_npairs = []
-        exts[2].random_weight = []
-        exts[3].bin1        = []
-        exts[3].bin2        = []
-        exts[3].angle       = []
-        exts[3].angular_bin = []
-        exts[3].value       = []
-        exts[3].npairs      = []
-        exts[3].weight      = []
-        exts[3].random_npairs = []
-        exts[3].random_weight = []
+        self.exts[2].bin1        = []
+        self.exts[2].bin2        = []
+        self.exts[2].angle       = []
+        self.exts[2].angular_bin = []
+        self.exts[2].value       = []
+        self.exts[2].npairs      = []
+        self.exts[2].weight      = []
+        self.exts[2].random_npairs = []
+        self.exts[2].random_weight = []
+        self.exts[3].bin1        = []
+        self.exts[3].bin2        = []
+        self.exts[3].angle       = []
+        self.exts[3].angular_bin = []
+        self.exts[3].value       = []
+        self.exts[3].npairs      = []
+        self.exts[3].weight      = []
+        self.exts[3].random_npairs = []
+        self.exts[3].random_weight = []
         for t_ in range(self.lens_zbins):
             for t2_ in range(self.zbins):
-                exts[2].bin1 = np.append(exts[2].bin1,np.ones(params['tbins'])*int(t_)+1)
-                exts[3].bin1 = np.append(exts[3].bin1,np.ones(params['tbins'])*int(t_)+1)
-                exts[2].bin2 = np.append(exts[2].bin2,np.ones(params['tbins'])*int(t2_)+1)
-                exts[3].bin2 = np.append(exts[3].bin2,np.ones(params['tbins'])*int(t2_)+1)
+                self.exts[2].bin1 = np.append(self.exts[2].bin1,np.ones(params['tbins'])*int(t_)+1)
+                self.exts[3].bin1 = np.append(self.exts[3].bin1,np.ones(params['tbins'])*int(t_)+1)
+                self.exts[2].bin2 = np.append(self.exts[2].bin2,np.ones(params['tbins'])*int(t2_)+1)
+                self.exts[3].bin2 = np.append(self.exts[3].bin2,np.ones(params['tbins'])*int(t2_)+1)
                 ngweight  = np.zeros(params['tbins'])
                 ngnpairs  = np.zeros_like(ngweight)
                 rgweight  = np.zeros_like(ngweight)
@@ -295,20 +295,20 @@ class WriteFits(PipelineStage):
                                 meanlogr   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['meanlogr'][:]
                             except:
                                 continue
-                exts[2].angle         = np.append(exts[2].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                exts[2].angular_bin   = np.append(exts[2].angular_bin,np.arange(params['tbins'],dtype=int))
-                exts[2].value         = np.append(exts[2].value,ngxi/ngweight-rgxi/rgweight)
-                exts[2].npairs        = np.append(exts[2].npairs,ngnpairs)
-                exts[2].weight        = np.append(exts[2].weight,ngweight)
-                exts[2].random_npairs = np.append(exts[2].random_npairs,rgnpairs)
-                exts[2].random_weight = np.append(exts[2].random_weight,rgweight)
-                exts[3].angle         = np.append(exts[3].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                exts[3].angular_bin   = np.append(exts[3].angular_bin,np.arange(params['tbins'],dtype=int))
-                exts[3].value         = np.append(exts[3].value,ngxim/ngweight-rgxim/rgweight)
-                exts[3].npairs        = np.append(exts[3].npairs,ngnpairs)
-                exts[3].weight        = np.append(exts[3].weight,ngweight)
-                exts[3].random_npairs = np.append(exts[3].random_npairs,rgnpairs)
-                exts[3].random_weight = np.append(exts[3].random_weight,rgweight)
+                self.exts[2].angle         = np.append(self.exts[2].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
+                self.exts[2].angular_bin   = np.append(self.exts[2].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[2].value         = np.append(self.exts[2].value,ngxi/ngweight-rgxi/rgweight)
+                self.exts[2].npairs        = np.append(self.exts[2].npairs,ngnpairs)
+                self.exts[2].weight        = np.append(self.exts[2].weight,ngweight)
+                self.exts[2].random_npairs = np.append(self.exts[2].random_npairs,rgnpairs)
+                self.exts[2].random_weight = np.append(self.exts[2].random_weight,rgweight)
+                self.exts[3].angle         = np.append(self.exts[3].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
+                self.exts[3].angular_bin   = np.append(self.exts[3].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[3].value         = np.append(self.exts[3].value,ngxim/ngweight-rgxim/rgweight)
+                self.exts[3].npairs        = np.append(self.exts[3].npairs,ngnpairs)
+                self.exts[3].weight        = np.append(self.exts[3].weight,ngweight)
+                self.exts[3].random_npairs = np.append(self.exts[3].random_npairs,rgnpairs)
+                self.exts[3].random_weight = np.append(self.exts[3].random_weight,rgweight)
 
         # Get pixel list from output
         pixels = self.get_pixels(f,'wtheta')
@@ -316,21 +316,21 @@ class WriteFits(PipelineStage):
         self.test_nbin(f,'wtheta',self.lens_zbins,self.zbins)
 
         # Do loop to read in wtheta
-        exts[4].bin1          = []
-        exts[4].bin2          = []
-        exts[4].angle         = []
-        exts[4].angular_bin   = []
-        exts[4].value         = []
-        exts[4].npairs        = []
-        exts[4].weight        = []
-        exts[4].random_npairs = []
-        exts[4].random_weight = []
+        self.exts[4].bin1          = []
+        self.exts[4].bin2          = []
+        self.exts[4].angle         = []
+        self.exts[4].angular_bin   = []
+        self.exts[4].value         = []
+        self.exts[4].npairs        = []
+        self.exts[4].weight        = []
+        self.exts[4].random_npairs = []
+        self.exts[4].random_weight = []
         for t_ in range(self.lens_zbins):
             for t2_ in range(self.lens_zbins):
                 if t_>t2_:
                     continue
-                exts[4].bin1 = np.append(exts[4].bin1,np.ones(params['tbins'])*int(t_)+1)
-                exts[4].bin2 = np.append(exts[4].bin2,np.ones(params['tbins'])*int(t2_)+1)
+                self.exts[4].bin1 = np.append(self.exts[4].bin1,np.ones(params['tbins'])*int(t_)+1)
+                self.exts[4].bin2 = np.append(self.exts[4].bin2,np.ones(params['tbins'])*int(t2_)+1)
                 nnweight  = np.zeros(params['tbins'])
                 nnnpairs  = np.zeros_like(nnweight)
                 nrweight  = np.zeros_like(nnweight)
@@ -372,17 +372,17 @@ class WriteFits(PipelineStage):
                                 rrtot      += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rrtot'][:][0]
                             except:
                                 continue
-                exts[4].angle         = np.append(exts[4].angle,np.exp(meanlogr/nnweight)*180/np.pi*60)
-                exts[4].angular_bin   = np.append(exts[4].angular_bin,np.arange(params['tbins'],dtype=int))
+                self.exts[4].angle         = np.append(self.exts[4].angle,np.exp(meanlogr/nnweight)*180/np.pi*60)
+                self.exts[4].angular_bin   = np.append(self.exts[4].angular_bin,np.arange(params['tbins'],dtype=int))
                 rrw = 1.*nntot / rrtot
                 drw = 1.*nntot / rntot
                 rdw = 1.*nntot / rntot
                 xi = (nnweight - rnweight * rdw - nrweight * drw + rrweight * rrw) / (rrweight * rrw) 
-                exts[4].value         = np.append(exts[4].value,xi)
-                exts[4].npairs        = np.append(exts[4].npairs,nnnpairs)
-                exts[4].weight        = np.append(exts[4].weight,nnweight)
-                exts[4].random_npairs = np.append(exts[4].random_npairs,rrnpairs)
-                exts[4].random_weight = np.append(exts[4].random_weight,rrweight)
+                self.exts[4].value         = np.append(self.exts[4].value,xi)
+                self.exts[4].npairs        = np.append(self.exts[4].npairs,nnnpairs)
+                self.exts[4].weight        = np.append(self.exts[4].weight,nnweight)
+                self.exts[4].random_npairs = np.append(self.exts[4].random_npairs,rrnpairs)
+                self.exts[4].random_weight = np.append(self.exts[4].random_weight,rrweight)
 
         for f_ in f:
             f_.close()
@@ -436,9 +436,9 @@ class WriteFits(PipelineStage):
         nznameindex2=[0,0,0,0,1]
 
         # Setup xi extensions
-        exts=[]
+        self.self.exts=[]
         for i,name in enumerate(TWO_POINT_NAMES):
-            exts.append(twopoint.SpectrumMeasurement(
+            self.exts.append(twopoint.SpectrumMeasurement(
                 name, # hdu name
                 ([],[]), # tomographic bins
                 (dtype1[i], dtype2[i]), # type of 2pt statistic
