@@ -61,13 +61,25 @@ class WriteFits(PipelineStage):
     def blind(self):
         #Requires sourcing a cosmosis-setup file
 
+        import pickle
+
         #os.system('source pipeline/BASHTEST.sh > BLINDING_LOG.txt')
         print 'running blinding'
-        command = ['source ~/cosmosis/LOAD_STUFF']
-        subprocess.call(command,shell=True)
-        proc = subprocess.Popen(command,shell=True)   
-        print proc.communicate()     
+        # command = ['source ~/cosmosis/LOAD_STUFF']
+        # subprocess.call(command,shell=True)
+        # proc = subprocess.Popen(command,shell=True)   
+        # print proc.communicate()     
         print 'running blinding done'
+
+        source = 'source ~/cosmosis/LOAD_STUFF'
+        dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
+        penv = os.popen('%s && %s' %(source,dump))
+        env = pickle.loads(penv.read())
+        os.environ = env
+        try:
+            import cosmosis
+        except:
+            print 'still doesnt work'
 
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
