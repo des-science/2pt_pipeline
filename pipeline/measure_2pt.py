@@ -10,7 +10,6 @@ import os
 import sys
 import yaml
 import destest
-import mpi4py.MPI
 import importlib
 import glob
 
