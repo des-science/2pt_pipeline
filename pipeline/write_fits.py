@@ -40,15 +40,15 @@ class WriteFits(PipelineStage):
         
     def run(self):
 
-        # Initialise twopoint spectrum classes
-        self.init_specs()
+        # # Initialise twopoint spectrum classes
+        # self.init_specs()
         
-        # Load xi data
-        self.load_metadata()
-        self.load_twopt_data()
+        # # Load xi data
+        # self.load_metadata()
+        # self.load_twopt_data()
 
-        # Load covariance info
-        self.load_cov()
+        # # Load covariance info
+        # self.load_cov()
 
         do_Blinding = True
         if do_Blinding:
@@ -71,15 +71,31 @@ class WriteFits(PipelineStage):
         # print proc.communicate()     
         print 'running blinding done'
 
-        source = 'source ~/cosmosis/LOAD_STUFF'
-        dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
-        penv = os.popen('%s && %s' %(source,dump))
-        env = pickle.loads(penv.read())
-        os.environ = env
         try:
-            import cosmosis
+            source = 'source ~/cosmosis/LOAD_STUFF'
+            dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
+            penv = os.popen('%s && %s' %(source,dump))
+            a=penv.read()
+            print a
+            env = pickle.loads(a)
+            os.environ = env
+            try:
+                import cosmosis
+            except:
+                print 'still doesnt work'
         except:
-            print 'still doesnt work'
+
+            import os, subprocess as sp, json
+            source = 'source init_env'
+            dump = '/usr/bin/python -c "import os, json;print json.dumps(dict(os.environ))"'
+            pipe = sp.Popen(['/bin/bash', '-c', '%s && %s' %(source,dump)], stdout=sp.PIPE)
+            a=pipe.stdout.read()
+            env = json.loads(a)
+            os.environ = env
+            try:
+                import cosmosis
+            except:
+                print 'still doesnt work b'
 
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
