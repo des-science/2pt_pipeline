@@ -86,7 +86,7 @@ class WriteFits(PipelineStage):
         except:
 
             import os, subprocess as sp, json
-            source = 'source init_env'
+            source = 'source ~/cosmosis/LOAD_STUFF'
             dump = '/usr/bin/python -c "import os, json;print json.dumps(dict(os.environ))"'
             pipe = sp.Popen(['/bin/bash', '-c', '%s && %s' %(source,dump)], stdout=sp.PIPE)
             a=pipe.stdout.read()
