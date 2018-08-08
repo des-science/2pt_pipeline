@@ -8,7 +8,8 @@ import os
 import collections
 import blind_2pt_usingcosmosis as blind
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
-import subprocess
+
+
 
 print 'Imported modules'
 
@@ -60,17 +61,32 @@ class WriteFits(PipelineStage):
 
     def blind(self):
         #Requires sourcing a cosmosis-setup file
-
+        import os
         import pickle
+        
+        print 'reading env'
+        env = pickle.load( open('pipeline/ENVIRON.p','rb'))
+        os.environ = env
+        print 'probably worked'
+        pickle.dump(os.environ,open('pipeline/ENVIRON_INSIDE_CODE.p','wb'))
+        unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']  
+        blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)    
 
         #os.system('source pipeline/BASHTEST.sh > BLINDING_LOG.txt')
-        print 'running blinding'
+        #print 'running blinding'
         # command = ['source ~/cosmosis/LOAD_STUFF']
         # subprocess.call(command,shell=True)
         # proc = subprocess.Popen(command,shell=True)   
         # print proc.communicate()     
-        print 'running blinding done'
+        #print 'running blinding done'
 
+
+        try:
+            import cosmosis
+            print 'cosmosis was imported'
+        except:
+            print 'still doesnt work'
+        
         try:
             source = 'source ~/cosmosis/LOAD_STUFF'
             dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
