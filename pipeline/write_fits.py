@@ -41,15 +41,15 @@ class WriteFits(PipelineStage):
         
     def run(self):
 
-        # # Initialise twopoint spectrum classes
-        # self.init_specs()
+        # Initialise twopoint spectrum classes
+        self.init_specs()
         
-        # # Load xi data
-        # self.load_metadata()
-        # self.load_twopt_data()
+        # Load xi data
+        self.load_metadata()
+        self.load_twopt_data()
 
-        # # Load covariance info
-        # self.load_cov()
+        # Load covariance info
+        self.load_cov()
 
         do_Blinding = True
         if do_Blinding:
