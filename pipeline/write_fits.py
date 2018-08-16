@@ -60,17 +60,21 @@ class WriteFits(PipelineStage):
         return
 
     def blind(self):
-        #Requires sourcing a cosmosis-setup file
+
         import os
-        import pickle
+
+        os.system('bash /global/homes/s/seccolf/des-science/2pt_pipeline/pipeline/BASHTEST.sh')
+        #Requires sourcing a cosmosis-setup file
+        #import os
+        #import pickle
         
-        print 'reading env'
-        env = pickle.load( open('pipeline/ENVIRON.p','rb'))
-        os.environ = env
-        print 'probably worked'
-        pickle.dump(os.environ,open('pipeline/ENVIRON_INSIDE_CODE.p','wb'))
-        unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']  
-        blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)    
+        #print 'reading env'
+        #env = pickle.load( open('pipeline/ENVIRON.p','rb'))
+        #os.environ = env
+        #print 'probably worked'
+        #pickle.dump(os.environ,open('pipeline/ENVIRON_INSIDE_CODE.p','wb'))
+        #unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']  
+        #blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)    
 
         #os.system('source pipeline/BASHTEST.sh > BLINDING_LOG.txt')
         #print 'running blinding'
@@ -81,38 +85,37 @@ class WriteFits(PipelineStage):
         #print 'running blinding done'
 
 
-        try:
-            import cosmosis
-            print 'cosmosis was imported'
-        except:
-            print 'still doesnt work'
-        
-        try:
-            source = 'source ~/cosmosis/LOAD_STUFF'
-            dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
-            penv = os.popen('%s && %s' %(source,dump))
-            a=penv.read()
-            print a
-            env = pickle.loads(a)
-            os.environ = env
-            try:
-                import cosmosis
-            except:
-                print 'still doesnt work'
-        except:
+        #try:
+        #    import cosmosis
+        #    print 'cosmosis was imported'
+        #except:
+        #    print 'still doesnt work'
+       # 
+        #try:
+        #    source = 'source ~/cosmosis/LOAD_STUFF'
+        #    dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
+        #    penv = os.popen('%s && %s' %(source,dump))
+        #    a=penv.read()
+        #    print a
+        #    env = pickle.loads(a)
+        #    os.environ = env
+        #    try:
+        #        import cosmosis
+        #    except:
+        #        print 'still doesnt work'
+        #except:
 
-            import os, subprocess as sp, json
-            source = 'source ~/cosmosis/LOAD_STUFF'
-            dump = '/usr/bin/python -c "import os, json;print json.dumps(dict(os.environ))"'
-            pipe = sp.Popen(['/bin/bash', '-c', '%s && %s' %(source,dump)], stdout=sp.PIPE)
-            a=pipe.stdout.read()
-            env = json.loads(a)
-            os.environ = env
-            try:
-                import cosmosis
-            except:
-                print 'still doesnt work b'
-
+            #import os, subprocess as sp, json
+            #source = 'source ~/cosmosis/LOAD_STUFF'
+            #dump = '/usr/bin/python -c "import os, json;print json.dumps(dict(os.environ))"'
+            #pipe = sp.Popen(['/bin/bash', '-c', '%s && %s' %(source,dump)], stdout=sp.PIPE)
+            #a=pipe.stdout.read()
+            #env = json.loads(a)
+            #os.environ = env
+            #try:
+            #    import cosmosis
+            #except:
+            #    print 'still doesnt work b'
         #uses Jessie's pipeline to blind the measurement once it's written
         #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
         #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
