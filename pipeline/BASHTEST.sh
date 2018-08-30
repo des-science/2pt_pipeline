@@ -1,2 +1,2 @@
-source /global/homes/s/seccolf/cosmosis/LOAD_STUFF
-python blind_2pt_usingcosmosis.py  -s avocado -i blinding_params_template.ini -b add -t TEST -u ../y1_mcal/2pt_fits/2pt_sim_1110_baseline_fake_unblinded.fits
+source /global/cscratch1/sd/troxel/cosmosis/config/setup-cosmosis-nersc
+python pipeline/blind_2pt_usingcosmosis.py -s NEWTEST -i pipeline/blinding_params_template.ini -b add -u y3_subsampled/2pt_fits/2pt_NG.fits

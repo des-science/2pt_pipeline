@@ -386,6 +386,7 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             xgrid = t.data['ANG']
             ygrid = t.data['VALUE']
             bin1 = t.data['BIN1']
+            print '\n\n\n JUST GOT THE VALUE \n\n\n'
             bin2 = t.data['BIN2']
             angbins = t.data['ANGBIN']
             outdict[xkey] = xgrid
@@ -596,6 +597,13 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
     z and theta values (i.e. matches up bin numbers but doesn't do
     any interpolation). Theta values will be checked, but z values won't.
     """
+    #print '\n\n TABLE is ',table,'\n\n'
+    #print '\n table.data=',table.data,'\n\n'
+    #print "\n table.data['bin1']=",table.data['bin1']
+    #print "\n table.data['BIN1']=",table.data['BIN1']
+    #print "\n table.data['ANG']=",table.data['ANG']
+
+
     if not table.header.get('2PTDATA'):
         print "Can't match dict data: this fits table doesn't contain 2pt data. Is named:",table.name
         return
