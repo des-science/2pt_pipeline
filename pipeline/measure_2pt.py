@@ -400,6 +400,7 @@ class Measure2Point(PipelineStage):
 
             # Get e1,e2, subtract mean shear, and correct with mean response
             g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask]
+            print '----------',g1,self.mean_e1[i],R1
             g1 = (g1-self.mean_e1[i])/R1
             g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask]
             g2 = (g2-self.mean_e2[i])/R2
