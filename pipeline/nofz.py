@@ -147,6 +147,7 @@ class nofz(PipelineStage):
 
         # Get the PZ binning and stacking arrays
         print self.pz_selector.source.cols
+        print self.pz_selector.params
         pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
         print 'len pzbin',len(pzbin),len(pzbin[0])
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
