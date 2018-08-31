@@ -299,15 +299,15 @@ class Measure2Point(PipelineStage):
             f = h5py.File( self.input_path("nz_source"), mode='r')
             rmask = f['nofz']['ran_zbin'][:] == i
             # Get weights
-            w = cal.calibrate('e1', weight_only=True)
+            w = cal.calibrate(self.Dict.shape_dict['e1'], weight_only=True)
             # Return lens binning mask, weights, and random binning mask
             return None, None, mask[self.Dict.ind['u']], w, rmask
 
         else: # Source catalog
 
             # Get responses
-            R1,c,w = cal.calibrate('e1', mask=mask)
-            R2,c,w = cal.calibrate('e2', mask=mask)
+            R1,c,w = cal.calibrate(self.Dict.shape_dict['e1'], mask=mask)
+            R2,c,w = cal.calibrate(self.Dict.shape_dict['e2'], mask=mask)
             # Return responses, source binning mask and weights            
             return R1, R2, mask[self.Dict.ind['u']], w
 
