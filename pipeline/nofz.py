@@ -47,12 +47,12 @@ def create_destest_yaml( filename, cal_type, group, table, select_path, name_dic
 
     return destest_dict
 
-def load_catalog(filename, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):
+def load_catalog(pipe_params, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
     # Input yaml file defining catalog
-    params = create_destest_yaml(filename, cal_type, group, table, select_path, name_dict)
+    params = create_destest_yaml(pipe_params, cal_type, group, table, select_path, name_dict)
     # Load destest source class to manage access to file
     source = destest.H5Source(params)
     # Load destest selector class to manage access to data in a structured way
@@ -96,11 +96,11 @@ class nofz(PipelineStage):
         print 'using dictionary: ',self.params['dict_file']
                 
         # Load data and calibration classes
-        self.source_selector, self.source_calibrator = load_catalog(self.params['shape_yaml'], 'mcal', params['source_group'], params['source_table'], params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
-        self.lens_selector, self.lens_calibrator     = load_catalog(self.params['lens_yaml'], None, params['lens_group'], params['lens_table'], params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
-        self.gold_selector = load_catalog(self.params['gold_yaml'], 'mcal', params['gold_group'], params['gold_table'], params['gold_path'], self.Dict, inherit=self.source_selector)
-        self.pz_selector   = load_catalog(self.params['pz_yaml'], 'mcal', params['pz_group'], params['pz_table'], params['pz_path'], self.Dict,   inherit=self.source_selector)
-        self.ran_selector  = load_catalog(self.params['random_yaml'], None, params['ran_group'], params['ran_table'], params['ran_path'], self.Dict)
+        self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', params['source_group'], params['source_table'], params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
+        self.lens_selector, self.lens_calibrator     = load_catalog(self.params, None, params['lens_group'], params['lens_table'], params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+        self.gold_selector = load_catalog(self.params, 'mcal', params['gold_group'], params['gold_table'], params['gold_path'], self.Dict, inherit=self.source_selector)
+        self.pz_selector   = load_catalog(self.params, 'mcal', params['pz_group'], params['pz_table'], params['pz_path'], self.Dict,   inherit=self.source_selector)
+        self.ran_selector  = load_catalog(self.params, None, params['ran_group'], params['ran_table'], params['ran_path'], self.Dict)
 
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
