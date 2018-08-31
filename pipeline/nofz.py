@@ -31,7 +31,7 @@ def create_destest_yaml( params, cal_type, group, table, select_path, name_dict 
     Creates the input dictionary structure from a passed dictionary rather than reading froma yaml file.
     """
 
-    destest_dict = destest_dict_
+    destest_dict = destest_dict_.copy()
     destest_dict['load_cache'] = params['load_cache']
     destest_dict['output'] = params['output']
     destest_dict['filename'] = params['datafile']
