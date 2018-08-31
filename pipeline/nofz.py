@@ -35,7 +35,7 @@ def create_destest_yaml( params, cal_type, group, table, select_path, name_dict 
     destest_dict['load_cache'] = params['load_cache']
     destest_dict['output'] = params['output']
     destest_dict['filename'] = params['datafile']
-    destest_dict['param_file'] = filename
+    destest_dict['param_file'] = params['param_file']
     destest_dict['cal_type'] = cal_type
     destest_dict['group'] = group
     destest_dict['table'] = table
