@@ -14,6 +14,7 @@ class PipelineStage(object):
     def __init__(self, param_file):
         import yaml
         self.params = yaml.load(open(param_file))
+        self.params['param_file'] = param_file
         self.base_dir = self.params['run_directory']
         self.output_dir = os.path.join(self.base_dir, self.name)
         if not os.path.exists(self.output_dir):
