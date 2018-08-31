@@ -23,7 +23,6 @@ def load_catalog(filename, inherit=None, return_calibrator=None):
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
-
     # Input yaml file defining catalog
     params = yaml.load(open(filename))
     params['param_file'] = filename
@@ -123,7 +122,7 @@ class nofz(PipelineStage):
 
         # Get the PZ binning and stacking arrays
         pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
-        print 'len pzbin',len(pzbin)
+        print 'len pzbin',len(pzbin),len(pzbin[0])
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
         if self.params['pdf_type']!='pdf': 
@@ -298,7 +297,7 @@ class nofz(PipelineStage):
             # Stack scalar values into n(z) looping over tomographic bins
             for i in range(zbins):
                 # Get array masks for the tomographic bin for unsheared and sheared catalogs
-                print i,xbins,len(xbins),np.sum(xbins == i)
+                print i,xbins,edge,len(xbins),np.sum(xbins == i),np.sum((bin_col>edge[i])&(bin_col<edge[i+1]))
                 mask        =  (xbins == i)
                 if shape:
                     if self.params['has_sheared']:
