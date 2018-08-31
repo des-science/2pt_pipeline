@@ -297,7 +297,7 @@ class nofz(PipelineStage):
             # Stack scalar values into n(z) looping over tomographic bins
             for i in range(zbins):
                 # Get array masks for the tomographic bin for unsheared and sheared catalogs
-                print i,xbins,edge,len(xbins),np.sum(xbins == i),np.sum((bin_col>edge[i])&(bin_col<edge[i+1]))
+                print i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col>edge[i])&(bin_col<edge[i+1]))
                 mask        =  (xbins == i)
                 if shape:
                     if self.params['has_sheared']:
