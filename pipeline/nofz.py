@@ -26,12 +26,10 @@ destest_dict_ = {
     'dg'            : 0.01
     }
 
-def create_destest_yaml( filename, cal_type, group, table, select_path, name_dict ):
+def create_destest_yaml( params, cal_type, group, table, select_path, name_dict ):
     """
     Creates the input dictionary structure from a passed dictionary rather than reading froma yaml file.
     """
-
-    params = yaml.load(open(filename))
 
     destest_dict = destest_dict_
     destest_dict['load_cache'] = params['load_cache']
