@@ -331,7 +331,7 @@ class Measure2Point(PipelineStage):
             pixrange = [] # List of object slices in self and neighboring pixels
             tmp = 0
             for x,jp in enumerate(jpix): # Iterate over neighboring pixels
-                if jpix>ipix:
+                if jp>ipix:
                     tmp2 = np.searchsorted(pix, jp, side='right') - np.searchsorted(pix, jp)
                     pixrange.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
                     tmp += tmp2
