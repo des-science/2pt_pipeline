@@ -311,15 +311,19 @@ class Measure2Point(PipelineStage):
             # Return responses, source binning mask and weights            
             return R1, R2, mask[self.Dict.ind['u']], w
 
+    def get_neighbors(self,ipix):
+
+        theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
+        jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
+        return np.append(ipix,jpix)
+
     def get_pix_subset(self,ipix,pix,return_neighbor):
         """
         Find the indices of the healpixel subset of the catalog for ipix and optionally all neighboring pixels. pix_ from the catalog is (or should be) pre-sorted for faster searching.
         """
 
         # Get theta,phi for a healpixel index and return indices of all neighboring pixels (including ipix for auto-correlations).
-        theta,phi = hp.pix2ang(self.get_nside(),ipix,nest=True)
-        jpix = hp.get_all_neighbours(self.get_nside(),theta,phi,nest=True)
-        jpix = np.append(ipix,jpix)
+        jpix = self.get_neighbors(ipix)
 
         if return_neighbor:
             # Return objects in pixel ipix and all neighbors 
@@ -327,9 +331,10 @@ class Measure2Point(PipelineStage):
             pixrange = [] # List of object slices in self and neighboring pixels
             tmp = 0
             for x,jp in enumerate(jpix): # Iterate over neighboring pixels
-                tmp2 = np.searchsorted(pix, jp, side='right') - np.searchsorted(pix, jp)
-                pixrange.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
-                tmp += tmp2
+                if jpix>ipix:
+                    tmp2 = np.searchsorted(pix, jp, side='right') - np.searchsorted(pix, jp)
+                    pixrange.append( np.s_[ int(tmp) : int(tmp + tmp2) ] ) # Individual slices for each neighbor.
+                    tmp += tmp2
 
         else:
             # Return objects in pixel ipix 
@@ -451,7 +456,7 @@ class Measure2Point(PipelineStage):
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)
 
         # Loop over pixels
-        for x in range(9):
+        for x in range(len(pixrange)):
 
             # Build treecorr catalog for bin i
             w_ = np.zeros(len(ra))
@@ -547,7 +552,7 @@ class Measure2Point(PipelineStage):
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,j,ipix,return_neighbor=True)
 
         # Loop over pixels
-        for x in range(9):
+        for x in range(len(pixrange)):
 
             # Build treecorr catalog for bin j
             w_ = np.zeros(len(ra))
@@ -647,7 +652,7 @@ class Measure2Point(PipelineStage):
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,ipix,return_neighbor=True)  
 
         # Loop over pixels
-        for x in range(9):
+        for x in range(len(pixrange)):
             path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
 
             # Build treecorr catalog for bin j
