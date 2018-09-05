@@ -63,7 +63,7 @@ class WriteFits(PipelineStage):
 
         import os
 
-        os.system('bash /global/homes/s/seccolf/des-science/2pt_pipeline/pipeline/BASHTEST.sh')
+        os.system('bash pipeline/BASHTEST.sh')
         #Requires sourcing a cosmosis-setup file
         #import os
         #import pickle
