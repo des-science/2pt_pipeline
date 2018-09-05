@@ -222,7 +222,7 @@ class WriteFits(PipelineStage):
 
     def get_pixels2(self,f,cf,pix):
 
-        return np.array(f_['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
+        return np.array(f['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
 
     def test_nbin(self,f,cf,i_true,j_true):
 
