@@ -285,8 +285,9 @@ class WriteFits(PipelineStage):
                 for p_ in pixels:
                     for f_ in f:
                         pix2 = self.get_pixels2(f_,'xipm',p_)
-                        if pix2 == -1:
-                            continue
+                        if not hasattr(pix2,'__len__'):
+                            if pix2 == -1:
+                                continue
                         for p2_ in pix2:
                             try:
                                 xip      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xip'][:]
