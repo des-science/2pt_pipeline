@@ -227,20 +227,20 @@ class WriteFits(PipelineStage):
 
         return np.array(f['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
 
-    def test_nbin(self,f,cf,i_true,j_true):
+    # def test_nbin(self,f,cf,i_true,j_true):
 
-        ibins=np.array([],dtype=int)
-        jbins=np.array([],dtype=int)
-        for f_ in f:
-            p_ = f_['2pt/'+cf].keys()[0]
-            tomo = f_['2pt/'+cf][p_][str(self.get_pixels2(f_,cf,p_)[0])]
-            ibins=np.append(ibins,np.array(tomo.keys(),dtype=int))
-            for key in tomo.keys():
-                tomo_ = tomo[key]
-                jbins=np.append(jbins,np.array(tomo_.keys(),dtype=int))
+    #     ibins=np.array([],dtype=int)
+    #     jbins=np.array([],dtype=int)
+    #     for f_ in f:
+    #         p_ = f_['2pt/'+cf].keys()[0]
+    #         tomo = f_['2pt/'+cf][p_][str(self.get_pixels2(f_,cf,p_)[0])]
+    #         ibins=np.append(ibins,np.array(tomo.keys(),dtype=int))
+    #         for key in tomo.keys():
+    #             tomo_ = tomo[key]
+    #             jbins=np.append(jbins,np.array(tomo_.keys(),dtype=int))
 
-        assert np.all(np.unique(ibins)==np.arange(i_true)),'Number of i tomographic bins in '+cf+' different from expectation from stage nofz.'
-        assert np.all(np.unique(jbins)==np.arange(j_true)),'Number of j tomographic bins in '+cf+' different from expectation from stage nofz.'
+    #     assert np.all(np.unique(ibins)==np.arange(i_true)),'Number of i tomographic bins in '+cf+' different from expectation from stage nofz.'
+    #     assert np.all(np.unique(jbins)==np.arange(j_true)),'Number of j tomographic bins in '+cf+' different from expectation from stage nofz.'
 
     def load_twopt_data(self):
 
@@ -252,7 +252,7 @@ class WriteFits(PipelineStage):
         # Get pixel list from output
         pixels = self.get_pixels(f,'xipm')
         # Test that tomographic bins match expectation
-        self.test_nbin(f,'xipm',self.zbins,self.zbins)
+        # self.test_nbin(f,'xipm',self.zbins,self.zbins)
 
         # Do loop to read in xipm
         self.exts[0].bin1        = []
@@ -310,7 +310,7 @@ class WriteFits(PipelineStage):
         # Get pixel list from output
         pixels = self.get_pixels(f,'gammat')
         # Test that tomographic bins match expectation
-        self.test_nbin(f,'gammat',self.lens_zbins,self.zbins)
+        # self.test_nbin(f,'gammat',self.lens_zbins,self.zbins)
 
         # Do loop to read in gammat/gammax
         self.exts[2].bin1        = []
@@ -382,7 +382,7 @@ class WriteFits(PipelineStage):
         # Get pixel list from output
         pixels = self.get_pixels(f,'wtheta')
         # Test that tomographic bins match expectation
-        self.test_nbin(f,'wtheta',self.lens_zbins,self.lens_zbins)
+        # self.test_nbin(f,'wtheta',self.lens_zbins,self.lens_zbins)
 
         # Do loop to read in wtheta
         self.exts[4].bin1          = []
