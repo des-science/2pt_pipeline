@@ -220,6 +220,10 @@ class WriteFits(PipelineStage):
 
         return np.unique(pixels)
 
+    def get_pixels2(self,f,cf,pix):
+
+        return np.array(f_['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
+
     def test_nbin(self,f,cf,i_true,j_true):
 
         ibins=np.array([],dtype=int)
@@ -275,8 +279,8 @@ class WriteFits(PipelineStage):
                 xip      = np.zeros_like(weight)
                 xim      = np.zeros_like(weight)
                 for p_ in pixels:
-                    for p2_ in range(9):
-                        for f_ in f:
+                    for f_ in f:
+                        for p2_ in self.get_pixels2(f_,'xipm',p_):
                             try:
                                 xip      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xip'][:]
                                 xim      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xim'][:]
@@ -336,8 +340,8 @@ class WriteFits(PipelineStage):
                 rgxi      = np.zeros_like(ngweight)
                 rgxim     = np.zeros_like(ngweight)
                 for p_ in pixels:
-                    for p2_ in range(9):
-                        for f_ in f:
+                    for f_ in f:
+                        for p2_ in self.get_pixels2(f_,'gammat',p_):
                             try:
                                 ngxi       += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxi'][:]
                                 ngxim      += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxim'][:]
@@ -400,8 +404,8 @@ class WriteFits(PipelineStage):
                 nrtot=0
                 rrtot=0
                 for p_ in pixels:
-                    for p2_ in range(9):
-                        for f_ in f:
+                    for f_ in f:
+                        for p2_ in self.get_pixels2(f_,'wtheta',p_):
                             try:
                                 if len(f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:])==1:
                                     if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:] ==0:
