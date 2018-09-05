@@ -229,7 +229,8 @@ class WriteFits(PipelineStage):
         ibins=np.array([],dtype=int)
         jbins=np.array([],dtype=int)
         for f_ in f:
-            tomo = f_['2pt/'+cf][f_['2pt/'+cf].keys()[0]]['0']
+            p_ = f_['2pt/'+cf].keys()[0]
+            tomo = f_['2pt/'+cf][p_][str(self.get_pixels2(f_,cf,p_)[0])]
             ibins=np.append(ibins,np.array(tomo.keys(),dtype=int))
             for key in tomo.keys():
                 tomo_ = tomo[key]
