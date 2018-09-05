@@ -222,7 +222,7 @@ class WriteFits(PipelineStage):
 
     def get_pixels2(self,f,cf,pix):
 
-        if pix not in f['2pt/'+cf].keys():
+        if pix not in np.array(f['2pt/'+cf].keys(),dtype=int):
             return -1
 
         return np.array(f['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
