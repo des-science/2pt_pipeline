@@ -222,6 +222,9 @@ class WriteFits(PipelineStage):
 
     def get_pixels2(self,f,cf,pix):
 
+        if pix not in f['2pt/'+cf].keys():
+            return -1
+
         return np.array(f['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
 
     def test_nbin(self,f,cf,i_true,j_true):
@@ -281,7 +284,10 @@ class WriteFits(PipelineStage):
                 xim      = np.zeros_like(weight)
                 for p_ in pixels:
                     for f_ in f:
-                        for p2_ in self.get_pixels2(f_,'xipm',p_):
+                        pix2 = self.get_pixels2(f_,'xipm',p_)
+                        if pix2 == -1:
+                            continue
+                        for p2_ in pix2:
                             try:
                                 xip      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xip'][:]
                                 xim      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xim'][:]
@@ -342,7 +348,10 @@ class WriteFits(PipelineStage):
                 rgxim     = np.zeros_like(ngweight)
                 for p_ in pixels:
                     for f_ in f:
-                        for p2_ in self.get_pixels2(f_,'gammat',p_):
+                        pix2 = self.get_pixels2(f_,'gammat',p_)
+                        if pix2 == -1:
+                            continue
+                        for p2_ in pix2:
                             try:
                                 ngxi       += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxi'][:]
                                 ngxim      += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxim'][:]
@@ -406,7 +415,10 @@ class WriteFits(PipelineStage):
                 rrtot=0
                 for p_ in pixels:
                     for f_ in f:
-                        for p2_ in self.get_pixels2(f_,'wtheta',p_):
+                        pix2 = self.get_pixels2(f_,'wtheta',p_)
+                        if pix2 == -1:
+                            continue
+                        for p2_ in pix2:
                             try:
                                 if len(f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:])==1:
                                     if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:] ==0:
