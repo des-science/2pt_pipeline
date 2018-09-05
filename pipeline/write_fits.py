@@ -350,8 +350,9 @@ class WriteFits(PipelineStage):
                 for p_ in pixels:
                     for f_ in f:
                         pix2 = self.get_pixels2(f_,'gammat',p_)
-                        if pix2 == -1:
-                            continue
+                        if not hasattr(pix2,'__len__'):
+                            if pix2 == -1:
+                                continue
                         for p2_ in pix2:
                             try:
                                 ngxi       += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxi'][:]
@@ -417,8 +418,9 @@ class WriteFits(PipelineStage):
                 for p_ in pixels:
                     for f_ in f:
                         pix2 = self.get_pixels2(f_,'wtheta',p_)
-                        if pix2 == -1:
-                            continue
+                        if not hasattr(pix2,'__len__'):
+                            if pix2 == -1:
+                                continue
                         for p2_ in pix2:
                             try:
                                 if len(f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:])==1:
