@@ -271,6 +271,7 @@ class Measure2Point(PipelineStage):
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
+        return
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
@@ -436,6 +437,8 @@ class Measure2Point(PipelineStage):
             # f.close()
             return 
 
+        print 'pixel counting for xipm i',i,j,ipix,len(w_),np.sum(w_),pixrange
+
         # print i,j,ipix,np.sum(w_),pixrange
         # print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
         # print dec[pixrange].min(),dec[pixrange].max(),dec[pixrange].mean()
@@ -467,6 +470,9 @@ class Measure2Point(PipelineStage):
                 # f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 # f.close()
                 continue 
+    
+            print 'pixel counting for xipm j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
+            return
 
             # print i,j,ipix,x,np.sum(w_),pixrange[x]
             # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
@@ -526,6 +532,8 @@ class Measure2Point(PipelineStage):
             sys.stdout.flush()
             return
 
+        print 'pixel counting for gammat i',i,j,ipix,len(w_),np.sum(w_),pixrange
+
         icat = treecorr.Catalog( ra = ra, dec  = dec, 
                                  w  = w_,  wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
@@ -561,7 +569,8 @@ class Measure2Point(PipelineStage):
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
                 continue 
-
+            print 'pixel counting for gammat j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
+            return
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
                                      w  = w_,  wpos = np.ones(len(ra)),
