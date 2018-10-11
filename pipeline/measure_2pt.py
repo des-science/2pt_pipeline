@@ -436,8 +436,11 @@ class Measure2Point(PipelineStage):
             #     f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
             # f.close()
             return 
+        
 
         print 'pixel counting for xipm i',i,j,ipix,len(w_),np.sum(w_),pixrange
+        print 'Found',np.sum(w_),'objects in zbin',i,'of pixel',ipix,'(total number for pixel',ipix,'accross all zbins is',len(w_),')'
+
 
         # print i,j,ipix,np.sum(w_),pixrange
         # print ra[pixrange].min(),ra[pixrange].max(),ra[pixrange].mean()
