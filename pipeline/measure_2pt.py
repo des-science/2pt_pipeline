@@ -418,9 +418,9 @@ class Measure2Point(PipelineStage):
         """
 
         try:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i,ipix)
@@ -518,9 +518,9 @@ class Measure2Point(PipelineStage):
         """
 
         try:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -613,9 +613,9 @@ class Measure2Point(PipelineStage):
         """
 
         try:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File('2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
