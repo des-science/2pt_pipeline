@@ -271,7 +271,6 @@ class Measure2Point(PipelineStage):
             self.calc_shear_shear(i,j,pix,verbose,num_threads)
         if (k==1): # gammat
             self.calc_pos_shear(i,j,pix,verbose,num_threads)
-        return
         if (k==2): # wtheta
             self.calc_pos_pos(i,j,pix,verbose,num_threads)
 
@@ -475,7 +474,6 @@ class Measure2Point(PipelineStage):
                 continue 
     
             print 'pixel counting for xipm j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
-            return
 
             # print i,j,ipix,x,np.sum(w_),pixrange[x]
             # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
@@ -497,7 +495,7 @@ class Measure2Point(PipelineStage):
             sys.stdout.flush()
 
             # Run calculation
-            gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=num_threads)
+            gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], verbose=verbose,num_threads=int(num_threads))
             gg.process_cross(icat,jcat)
 
             # Write output to h5 file
@@ -573,7 +571,6 @@ class Measure2Point(PipelineStage):
                 sys.stdout.flush()
                 continue 
             print 'pixel counting for gammat j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
-            return
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
                                      w  = w_,  wpos = np.ones(len(ra)),
