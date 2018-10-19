@@ -34,7 +34,7 @@ pz_group : 'catalog/bpz'
 pz_table : ['unsheared', 'sheared_1p', 'sheared_1m', 'sheared_2p', 'sheared_2m']
 pz_path  : 'index/select'
 
-ran_group : 'randoms/redmagic'
+ran_group : 'randoms'
 ran_table : ['redmagic']
 ran_path  : None
 
