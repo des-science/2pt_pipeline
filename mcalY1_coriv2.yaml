@@ -1,0 +1,74 @@
+# Input file for twopt_pipeline.py
+
+prefix        : y1_full
+cosmo_code    : cosmosis #cosmolike 
+run_directory : y1_full
+
+# blinding configurations
+
+cosmosis_setup: /global/homes/s/seccolf/cosmosis/LOAD_STUFF #a setup file to be sourced for cosmosis
+btype: add #choose between [add, mult], regarding how the blinding factor will be applied
+seed: avocado #any string to be used as random generator seed 
+label: TEST #an output file label
+ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding pipeline 
+
+# catalog info
+
+datafile : '/global/cscratch1/sd/troxel/finaly1cats/Y1_mastercat_10_17_18.h5'
+load_cache : False
+output : '.'
+
+source_group : 'catalog/metacal'
+source_table : ['unsheared', 'sheared_1p', 'sheared_1m', 'sheared_2p', 'sheared_2m']
+source_path  : 'index/select'
+
+gold_group : 'catalog'
+gold_table : ['gold']
+gold_path  : 'index/select'
+
+lens_group : 'catalog'
+lens_table : ['redmagic']
+lens_path  : None
+
+pz_group : 'catalog/bpz'
+pz_table : ['unsheared', 'sheared_1p', 'sheared_1m', 'sheared_2p', 'sheared_2m']
+pz_path  : 'index/select'
+
+ran_group : 'randoms/redmagic'
+ran_table : ['redmagic']
+ran_path  : None
+
+dict_file     : dict_des_y1_mcalv2
+hpix_nside    : 16384 
+
+oneplusm       : True
+has_sheared    : True
+random_seed     : 3 # Fixed seed to make things reproducible between runs.
+
+# nofz parameters
+
+zbins       : [0.2,0.43,0.63,0.9,1.3]
+lens_zbins  : [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
+zlims       : [0.2, 1.3] # None indicates to use binning column in gold file
+nzbins      : 400 # Number of n(z) array z bins
+nzmax       : 4.0 # Max z for n(z)
+pdf_type    : sample # pdf for stacking pdfs
+lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
+
+# correlation 
+
+tbins       : 20
+tbounds     : [2.5,250.]
+slop        : 0.5
+flip_e2     : False
+2pt_only    : All
+ran_factor  : 5
+cores_per_task : 64
+
+# cov parameters
+
+cov_source_dir : /global/cscratch1/sd/troxel/cosmolike/top-level/des_mpp/multi_covariances_real_mpp
+ng          : False
+area        : 418.2
+ggl_overlap_cut : 0.1
+lens_gbias : [1.54, 1.64, 1.75, 2.17, 2.05]
