@@ -76,6 +76,7 @@ from scipy.interpolate import interp1d
 
 DEFAULT_PARAM_RANGE = {'cosmological_parameters--sigma8_input':(0.834-3*.04,0.834+3*0.04),\
                        'cosmological_parameters--w':(-1.5,-.5)}
+HARD_CODED_BLINDING = 'I_desperately_need_coffee' #keyword is the one truth that unites us all
 
 def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
                     importfrom = None):
@@ -106,8 +107,12 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
     'for parameter in pipeline.parameters' in run_cosmosis_togen_2ptdict
     will work. 
     """
+    
+
+
     #do something convoluted to turn the string into a number that can be
     # used to seed numpy.random
+    seedstring = HARD_CODED_BLINDING
     seedind = int(int(hashlib.md5(seedstring).hexdigest(),16)%1.e8)
     np.random.seed(seedind)
     #do the paramter shifts
@@ -664,7 +669,8 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
         #  unblinded file
         if outftag == None or outftag =='': 
             outftag = 'BLINDED-{0:s}-defaulttag'.format(bftype)
-        outfname = origfitsfile.replace('.fits','_{0:s}.fits'.format(outftag))
+        outfname = origfitsfile.replace('.fits','_BLINDED.fits'.format(outftag))
+        #outfname = origfitsfile.replace('.fits','_{0:s}.fits'.format(outftag))
 
     if not justfname:
         shutil.copyfile(origfitsfile,outfname)
@@ -693,6 +699,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                 
                 #add new header entry to note that blinding has occurred, and what type
                 table.header['BLINDED'] = bftype
+                table.header['KEYWORD'] = HARD_CODED_BLINDING
         #print 'covscaledict is',covscaledict
         if bftype=='mult': #doc cov scaling
             covmatname = "COVMAT"
@@ -777,7 +784,7 @@ if __name__=="__main__":
     bftype = 'add' # type of blinding to use, can be 'add', 'mult', or
         # 'multNOCS' (mult with no cov scaling)
     
-    seed = 'blinded' #will translate string into some deterministed shift
+    seed = HARD_CODED_BLINDING #will translate string into some deterministed shift
        #in parameter space
        # [via command line, -s <str> or --seed <str>]
 
@@ -801,7 +808,7 @@ if __name__=="__main__":
             if opt in ('-u','--origfits'):
                 unblindedfile = arg
             elif opt in ('-s','--seed'):
-                seed = arg
+                seed = HARD_CODED_BLINDING
             elif opt in ('-i', '--ini'):
                 initemplate = arg
             elif opt in ('-o','--outfname'):
