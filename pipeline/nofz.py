@@ -99,6 +99,9 @@ class nofz(PipelineStage):
         self.gold_selector = load_catalog(self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
         self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
         self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
+        self.source_regions_selector = load_catalog(self.params, 'mcal', self.params['gold_regions_group'], self.params['gold_regions_table'], self.params['gold_regions_path'], self.Dict, inherit=self.source_selector)
+        self.lens_regions_selector = load_catalog(self.params, 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.source_selector)
+        self.lens_random_regions_selector = load_catalog(self.params, None, self.params['lens_randoms_regions_group'], self.params['lens_randoms_regions_table'], self.params['lens_randoms_regions_path'], self.Dict)
 
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
