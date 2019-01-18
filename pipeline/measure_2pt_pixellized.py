@@ -1202,8 +1202,9 @@ class Measure2Point(PipelineStage):
             
         return 
 
-  
-    def write(self):
+
+
+    def OLD_write(self): #this version of the write function is superseded by another writing function below (called write)
         import numpy as np
         import os
         
@@ -1508,3 +1509,341 @@ class Measure2Point(PipelineStage):
         return
 
  
+    def write(self): #new write function 
+        import numpy as np
+        import os
+        
+        def collect(pairs,n_jck,n_bins,type_corr,i,j):
+            shape = (n_jck, n_bins)
+            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(
+            shape),np.zeros(shape), np.zeros(
+            shape)
+            DD, DR, RD, RR,mm1,mm2 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins)
+
+
+            fact = 1.
+            FACT_0 = 0.5
+
+            for n in range(n_bins):
+                for jk1 in range(len(pairs[:, 0, 0, n])):
+                    DD[n] += (pairs[jk1, 0, 0, n]) + FACT_0 * (pairs[jk1, 1, 0, n])
+                    DR[n] += ((pairs[jk1, 0, 1, n]) + FACT_0 * (pairs[jk1, 1, 1, n]))
+                    #print DR, DD, RD
+                    RD[n] += ((pairs[jk1, 0, 2, n]) + FACT_0 * (pairs[jk1, 1, 2, n]))
+                    try:
+                        RR[n] += ((pairs[jk1, 0, 3, n]) + FACT_0 * (pairs[jk1, 1, 3, n]))
+                    except:
+                        pass
+                    try:
+                        mm1[n]+= ((pairs[jk1, 0, 4, n]) + FACT_0 * (pairs[jk1, 1, 4, n]))
+                        mm2[n]+= ((pairs[jk1, 0, 5, n]) + FACT_0 * (pairs[jk1, 1, 5, n]))
+                    except:
+                        pass
+
+                        
+            for n in range(n_bins):
+                for jk1 in range(len(pairs[:, 0, 0, n])):
+                    DD_a[jk1, n] = DD[n] - (pairs[jk1, 0, 0, n]) - fact * FACT_0 * (pairs[jk1, 1, 0, n])
+                    DR_a[jk1, n] = DR[n] - (pairs[jk1, 0, 1, n]) - fact * FACT_0 * (pairs[jk1, 1, 1, n])
+                    RD_a[jk1, n] = RD[n] - (pairs[jk1, 0, 2, n]) - fact * FACT_0 * (pairs[jk1, 1, 2, n])
+                    try:
+                        RR_a[jk1, n] = RR[n] - (pairs[jk1, 0, 3, n]) - fact * FACT_0 * (pairs[jk1, 1, 3, n])
+                    except:
+                        pass
+                    try:
+                        mm1_a[jk1, n] = mm1[n] - (pairs[jk1, 0, 4, n]) - fact * FACT_0 * (pairs[jk1, 1, 4, n])
+                        mm2_a[jk1, n] = mm2[n] - (pairs[jk1, 0, 5, n]) - fact * FACT_0 * (pairs[jk1, 1, 5, n])
+                    except:
+                        pass
+                    
+                        
+                    #print RD_a
+            if (type_corr== 'shear_shear' ):
+                xip = np.zeros(len(RD))
+                xim = np.zeros(len(RD))
+                masku = RD !=0.
+            
+                xip[masku] = DD[masku] / RD[masku]
+                xim[masku] = DR[masku] / RD[masku]
+
+                masku = RD_a !=0.
+                xip_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                xim_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                xip_j[masku] = DD_a[masku] / RD_a[masku]
+                xim_j[masku] = DR_a[masku] / RD_a[masku]
+
+
+                return xip, xim, xip_j, xim_j
+            
+            
+            if type_corr== 'pos_pos' :
+                
+                
+                ndd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
+                ndr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
+                nrd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
+                nrr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
+                    
+                #ndd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
+                #ndr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
+                #nrd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
+                #nrr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
+                norm=[1.,ndd/ndr,ndd/nrd,ndd/nrr]
+
+                xi = np.zeros(len(RD))
+                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                masku = RR !=0.
+            
+                xi[masku] = (DD[masku]-DR[masku]*norm[1]-RD[masku]*norm[2]+RR[masku]*norm[3]) / (RR[masku]*norm[3])
+
+                
+                
+                
+                for jk in range(self.jack_dict_tot['n_jck']):
+                    ndd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
+                    ndr=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,3])
+                    nrd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,2])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
+                    nrr=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,2])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,3])
+                    norm=np.array([1.,ndd/ndr,ndd/nrd,ndd/nrr])
+                    
+                    masku = RR_a[jk,:] !=0.
+                    xi_j[jk,masku] = (DD_a[jk,masku]-DR_a[jk,masku]*norm[1] -RD_a[jk,masku]*norm[2] +RR_a[jk,masku]*norm[3] ) /( RR_a[jk,masku]*norm[3])
+
+
+
+                return xi,xi_j
+
+            if type_corr== 'shear_pos' :
+                xi = np.zeros(len(RD))
+                xir = np.zeros(len(RD))
+                xi_im = np.zeros(len(RD))
+                xi_imr = np.zeros(len(RD))
+                
+                
+                masku = RD !=0.
+                xi[masku] = DD[masku]/ RD[masku]
+                xi_im[masku] =mm1[masku]/ RD[masku]
+                masku = RR !=0.
+                xir[masku] = DR[masku]/ RR[masku]
+                xi_imr[masku] = mm2[masku]/ RR[masku]
+                
+                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                xir_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                xi_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                xi_imr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                
+                masku = RD_a !=0.
+                xi_j[masku] = (DD_a[masku]) / RD_a[masku]
+                xi_im_j[masku] = (mm1_a[masku]) / RD_a[masku]
+                masku = RR_a !=0.
+                xir_j[masku] = (DR_a[masku]) / RR_a[masku]
+                xi_imr_j[masku] = (mm2_a[masku]) / RR_a[masku]
+
+
+                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j
+        
+        
+        
+        """
+        Write data to files - Collect 2pt
+        """
+        # Get max number of tomographic bins between lenses and sources
+        if self.params['lens_group'] != 'None':
+            nbin=max(self.lens_zbins,self.zbins)
+        else:
+            nbin=self.zbins
+
+        output_shear_shear = dict()
+        output_shear_pos = dict()
+        output_pos_pos = dict()
+        
+        output_shear_shear_full = dict()
+        output_shear_pos_full = dict()
+        output_pos_pos_full = dict()
+        
+        for i,j in self.all_calcs:
+            # Loop over unique healpix cells
+            if (i<=j) & (j<self.zbins) & (self.params['2pt_only'].lower() in [None,'shear-shear','all']):
+                # Loop over tomographic bin pairs
+                
+                if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                    gm = 3
+                    shape = (gm, self.params['tbins'])
+                    pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
+                    for jci,jc in enumerate(np.unique(self.b)):
+                        lla = '{0}'.format(jc)
+                        dict_m = load_obj(path+lla)
+                        pairsCC1 = dict_m['c1'][:gm]
+                        pairsCC2 = dict_m['c2'][:gm]
+                        pairs_auto = dict_m['a'][:gm]
+                        for prs in range(gm):
+                            pairsCC1[prs] += pairsCC2[prs]
+                    
+                        pairs_ring[jci][1] = pairsCC1
+                        pairs_ring[jci][0] = pairs_auto  
+                    
+                    pairs_ring = np.array(pairs_ring)
+                    self.pairs_ring = pairs_ring
+                    xip, xim, xip_j, xim_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_shear',i,j)
+                    cov_xip = covariance_jck( xip_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    cov_xim = covariance_jck( xim_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    files = dict()
+                    files.update({'xip':xip})
+                    files.update({'xip_jack':xip_j})
+                    files.update({'cov_xip_jack':cov_xip})
+                    files.update({'xim':xim})
+                    files.update({'xim_jack':xim_j})
+                    files.update({'cov_xim_jack':cov_xim})
+                    
+                    save_obj(path+'/results',files)
+                    output_shear_shear.update({'{0}_{1}'.format(i,j):files})
+                
+                if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,0)
+                    if os.path.exists(path+'.pkl'):
+                        mute = load_obj(path)
+                        xip_full = (mute[0]/mute[2])
+                        xim_full = (mute[1]/mute[2])
+                        muted = dict()
+                        muted.update({'xip':xip_full})
+                        muted.update({'xim':xim_full})
+                        output_shear_shear_full.update({'{0}_{1}'.format(i,j):muted})
+                    
+        if self.params['lens_group'] != 'None':
+            for i,j in self.all_calcs:
+                if (i<self.lens_zbins)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'pos-shear','all']):
+                    
+                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                        gm = 6
+                        shape = (gm, self.params['tbins'])
+                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
+                        for jci,jc in enumerate(np.unique(self.b)):
+                            lla = '{0}'.format(jc)
+                            dict_m = load_obj(path+lla)
+                            pairsCC1 = dict_m['c1'][:gm]
+                            pairsCC2 = dict_m['c2'][:gm]
+                            pairs_auto = dict_m['a'][:gm]
+                        
+                            for prs in range(gm):
+                     
+                                pairsCC1[prs] += pairsCC2[prs]
+
+                            pairs_ring[jci][1] = pairsCC1
+                            pairs_ring[jci][0] = pairs_auto  
+                    
+                        pairs_ring = np.array(pairs_ring)
+                        self.pairs_ring = pairs_ring
+                        xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_pos',i,j)
+                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xir = covariance_jck( xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+       
+                        cov_xi_im = covariance_jck( xi_im_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xi_imr = covariance_jck( xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+            
+                        files = dict()
+                        files.update({'gammat':xi})
+                        files.update({'gammat_jack':xi_j})
+                        files.update({'cov_gammat_jack':cov_xi})
+                        files.update({'gammat_rndm':xir})
+                        files.update({'gammat_rndm_jack':xir_j})
+                        files.update({'cov_gammat_rndm_jack':cov_xir})
+                    
+                    
+                        files.update({'gammat_im':xi_im})
+                        files.update({'gammat_im_jack':xi_im_j})
+                        files.update({'cov_gammat_im_jack':cov_xi_im})
+                        files.update({'gammat_im_rndm':xi_imr})
+                        files.update({'gammat_im_rndm_jack':xi_imr_j})
+                        files.update({'cov_gammat_im_rndm_jack':cov_xi_imr})
+                    
+                        save_obj(path+'/results',files)
+                        output_shear_pos.update({'{0}_{1}'.format(i,j):files})
+                    
+                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,1)
+                        if os.path.exists(path+'.pkl'):
+
+                            
+                            mute = load_obj(path)
+                            
+
+                            xi_full = (mute[0]/mute[2])
+                            xir_full = (mute[1]/mute[3])
+                            xi_im_full = (mute[4]/mute[2])
+                            xi_imr_full = (mute[5]/mute[3])
+                            muted= dict()
+                            muted.update({'gammat':xi_full})
+                            muted.update({'gammat_rndm':xir_full})
+                            muted.update({'gammat_im':xi_im_full})
+                            muted.update({'gammat_im_rndm':xi_imr_full})
+                            output_shear_pos_full.update({'{0}_{1}'.format(i,j):muted})
+                    
+                    
+            for i,j in self.all_calcs:
+                if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
+           
+                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                        gm = 4
+                        shape = (gm, self.params['tbins'])
+                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
+                        for jci,jc in enumerate(np.unique(self.b)):
+                            lla = '{0}'.format(jc)
+                            dict_m = load_obj(path+lla)
+                            pairsCC1 = dict_m['c1'][:gm]
+                            pairsCC2 = dict_m['c2'][:gm]
+                            pairs_auto = dict_m['a'][:gm]
+                            for prs in range(gm):
+                                pairsCC1[prs] += pairsCC2[prs]
+
+                            pairs_ring[jci][1] = pairsCC1
+                            pairs_ring[jci][0] = pairs_auto  
+                    
+                        pairs_ring = np.array(pairs_ring)
+                        self.pairs_ring = pairs_ring
+                        xi, xi_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'pos_pos',i,j)
+                    
+                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+           
+                        files = dict()
+                        files.update({'w':xi})
+                        files.update({'w_jack':xi_j})
+                        files.update({'cov_w_jack':cov_xi})
+                        save_obj(path+'/results',files)
+                        output_pos_pos.update({'{0}_{1}'.format(i,j):files})
+                        # compute_covariance & save results.
+
+                    
+                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,2)
+                        if os.path.exists(path+'.pkl'):
+                            mute = load_obj(path)
+                            xi =  (mute[0]-mute[1]-mute[2]+mute[3])/mute[3] 
+                            muted = dict()
+                            muted.update({'w':xi})
+                            output_pos_pos_full.update({'{0}_{1}'.format(i,j):muted})
+                    
+        self.output_shear_shear = output_shear_shear
+        save_obj(self.params['run_directory']+'/2pt/shear_shear_pixellized',self.output_shear_shear)
+        
+        self.output_shear_pos = output_shear_pos
+        save_obj(self.params['run_directory']+'/2pt/shear_pos_pixellized',self.output_shear_pos)
+        
+        self.output_pos_pos = output_pos_pos 
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_pixellized',self.output_pos_pos)
+        
+        # add full if present
+        self.output_shear_shear_full = output_shear_shear_full
+        save_obj(self.params['run_directory']+'/2pt/shear_shear_full',self.output_shear_shear_full)
+        
+        self.output_shear_pos_full = output_shear_pos_full
+        save_obj(self.params['run_directory']+'/2pt/shear_pos_full',self.output_shear_pos_full)
+        
+        self.output_pos_pos_full = output_pos_pos_full 
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full)
+        
+        
+        
+        return
