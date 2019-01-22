@@ -1028,7 +1028,7 @@ class Measure2Point(PipelineStage):
                 jcat = None
                 
             if (icat == None) or (jcat == None):
-                pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
+                pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
             else:
                 
         
@@ -1038,7 +1038,7 @@ class Measure2Point(PipelineStage):
                 ggm = gg.xim
                 normalization = gg.weight
                  
-                pairs = [ggp * normalization, ggm * normalization, normalization,[gg.xip,gg.xim,np.sqrt(gg.varxi)]]
+                pairs = [ggp * normalization, ggm * normalization, normalization, gg.npairs,gg.logr*gg.weight,gg.rnom*gg.weight,gg.meanr*gg.weight,gg.meanlogr*gg.weight]
                 
             end =  timeit.default_timer()
             #print "shear comp ", end-start
@@ -1101,22 +1101,41 @@ class Measure2Point(PipelineStage):
             except:
                 jcat = None
 
-            if (icat == None) or (jcat == None):
-                 pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
-            else:
-                ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
-                rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+            
+            pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
+            
+            ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
+            rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+
+            if (icat != None) and (jcat != None):
                 ng.process(icat, jcat)
-                
-                rg.process(ircat, jcat)
                 xi = ng.xi
-                xi_r = rg.xi
                 xi_im = ng.xi_im
-                xi_im_r = rg.xi_im
                 normalization_n = ng.weight
+
+
+                pairs[0] = xi * normalization_n
+                pairs[2] = normalization_n
+                pairs[4] = xi_im * normalization_n
+                pairs[6] = ng.npairs
+
+                pairs[10] = ng.logr*ng.weight
+                pairs[11] = ng.rnom*ng.weight
+                pairs[12] = ng.meanr*ng.weight
+                pairs[13] = ng.meanlogr*ng.weight
+            if (ircat != None) and (jcat != None):
+                rg.process(ircat, jcat)
+                if (icat != None) and (jcat != None):
+                    gammat,gammat_im,gammaterr=ng.calculateXi(rg)
+                    pairs[8] = gammat * normalization_n
+                    pairs[9] = gammat_im*normalization_n
+                xi_r = rg.xi
+                xi_im_r = rg.xi_im
                 normalization_r = rg.weight
-                gammat,gammat_im,gammaterr=ng.calculateXi(rg)
-                pairs = [xi * normalization_n, xi_r * normalization_r, normalization_n,normalization_r,xi_im * normalization_n, xi_im_r * normalization_r] #,[gammat,gammat_im,gammaterr]]
+                pairs[1] =  xi_r * normalization_r
+                pairs[3] = normalization_r
+                pairs[5] = xi_im_r * normalization_r
+                pairs[7] = rg.npairs
                 
             end =  timeit.default_timer()
             #print "shear comp ", end-start
@@ -1171,7 +1190,7 @@ class Measure2Point(PipelineStage):
                 jrcat = None
                 
             
-            pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
+            pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
             
             dd = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
             dr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
@@ -1181,16 +1200,24 @@ class Measure2Point(PipelineStage):
             if (icat!=None )and(jcat!=None):
                 dd.process(icat, jcat)
                 pairs[0] = dd.weight
+                pairs[4] = dd.npairs
+                pairs[8] = dd.logr*dd.weight
+                pairs[9] = dd.rnom*dd.weight
+                pairs[10] = dd.meanr*dd.weight
+                pairs[11] = dd.meanlogr*dd.weight
             if (icat!=None )and(jrcat!=None):
                 dr.process(icat, jrcat)
                 pairs[1] = dr.weight
+                pairs[5] = dr.npairs
             if (ircat!=None )and(jcat!=None):  
                 rd.process(ircat, jcat)
                 pairs[2] = rd.weight
+                pairs[6] = rd.npairs
             if (ircat!=None )and(jrcat!=None):
                 rr.process(ircat, jrcat)
                 pairs[3] = rr.weight
-                
+                pairs[7] = rr.npairs
+            
 
             
             end =  timeit.default_timer()
@@ -1202,18 +1229,15 @@ class Measure2Point(PipelineStage):
             
         return 
 
-
-
-    def OLD_write(self): #this version of the write function is superseded by another writing function below (called write)
+  
+    def write(self):
         import numpy as np
         import os
         
         def collect(pairs,n_jck,n_bins,type_corr,i,j):
             shape = (n_jck, n_bins)
-            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(
-            shape),np.zeros(shape), np.zeros(
-            shape)
-            DD, DR, RD, RR,mm1,mm2 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins)
+            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a,mm3_a,mm4_a,mm5_a,mm6_a,mm7_a,mm8_a,mm9_a,mm10_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape),np.zeros(shape),np.zeros(shape)
+            DD, DR, RD, RR,mm1,mm2,mm3,mm4,mm5,mm6,mm7,mm8,mm9,mm10 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins)
 
 
             fact = 1.
@@ -1231,11 +1255,44 @@ class Measure2Point(PipelineStage):
                         pass
                     try:
                         mm1[n]+= ((pairs[jk1, 0, 4, n]) + FACT_0 * (pairs[jk1, 1, 4, n]))
+                    except:
+                        pass
+                    try:
                         mm2[n]+= ((pairs[jk1, 0, 5, n]) + FACT_0 * (pairs[jk1, 1, 5, n]))
                     except:
                         pass
-
-                        
+                    try:
+                        mm3[n]+= ((pairs[jk1, 0, 6, n]) + FACT_0 * (pairs[jk1, 1, 6, n]))
+                    except:
+                        pass
+                    try:
+                        mm4[n]+= ((pairs[jk1, 0, 7, n]) + FACT_0 * (pairs[jk1, 1, 7, n]))
+                    except:
+                        pass
+                    try:
+                        mm5[n]+= ((pairs[jk1, 0, 8, n]) + FACT_0 * (pairs[jk1, 1, 8, n]))
+                    except:
+                        pass
+                    try:
+                        mm6[n]+= ((pairs[jk1, 0, 9, n]) + FACT_0 * (pairs[jk1, 1, 9, n]))
+                    except:
+                        pass
+                    try:
+                        mm7[n]+= ((pairs[jk1, 0, 10, n]) + FACT_0 * (pairs[jk1, 1, 10, n]))
+                    except:
+                        pass
+                    try:
+                        mm8[n]+= ((pairs[jk1, 0, 11, n]) + FACT_0 * (pairs[jk1, 1, 11, n]))
+                    except:
+                        pass    
+                    try:
+                        mm9[n]+= ((pairs[jk1, 0, 12, n]) + FACT_0 * (pairs[jk1, 1, 12, n]))
+                    except:
+                        pass    
+                    try:
+                        mm10[n]+= ((pairs[jk1, 0, 13, n]) + FACT_0 * (pairs[jk1, 1, 13, n]))
+                    except:
+                        pass          
             for n in range(n_bins):
                 for jk1 in range(len(pairs[:, 0, 0, n])):
                     DD_a[jk1, n] = DD[n] - (pairs[jk1, 0, 0, n]) - fact * FACT_0 * (pairs[jk1, 1, 0, n])
@@ -1247,15 +1304,52 @@ class Measure2Point(PipelineStage):
                         pass
                     try:
                         mm1_a[jk1, n] = mm1[n] - (pairs[jk1, 0, 4, n]) - fact * FACT_0 * (pairs[jk1, 1, 4, n])
+                    except:
+                        pass
+                    try:
                         mm2_a[jk1, n] = mm2[n] - (pairs[jk1, 0, 5, n]) - fact * FACT_0 * (pairs[jk1, 1, 5, n])
                     except:
                         pass
-                    
-                        
+                    try:
+                        mm3_a[jk1, n] = mm3[n] - (pairs[jk1, 0, 6, n]) - fact * FACT_0 * (pairs[jk1, 1, 6, n])
+                    except:
+                        pass
+                    try:
+                        mm4_a[jk1, n] = mm4[n] - (pairs[jk1, 0, 7, n]) - fact * FACT_0 * (pairs[jk1, 1, 7, n])
+                    except:
+                        pass             
+                    try:
+                        mm5_a[jk1, n] = mm5[n] - (pairs[jk1, 0, 8, n]) - fact * FACT_0 * (pairs[jk1, 1, 8, n])
+                    except:
+                        pass
+                    try:
+                        mm6_a[jk1, n] = mm6[n] - (pairs[jk1, 0, 9, n]) - fact * FACT_0 * (pairs[jk1, 1, 9, n])
+                    except:
+                        pass
+                    try:
+                        mm7_a[jk1, n] = mm7[n] - (pairs[jk1, 0, 10, n]) - fact * FACT_0 * (pairs[jk1, 1, 10, n])
+                    except:
+                        pass
+                    try:
+                        mm8_a[jk1, n] = mm8[n] - (pairs[jk1, 0, 11, n]) - fact * FACT_0 * (pairs[jk1, 1, 11, n])
+                    except:
+                        pass   
+                    try:
+                        mm9_a[jk1, n] = mm9[n] - (pairs[jk1, 0, 12, n]) - fact * FACT_0 * (pairs[jk1, 1, 12, n])
+                    except:
+                        pass  
+                    try:
+                        mm10_a[jk1, n] = mm10[n] - (pairs[jk1, 0, 13, n]) - fact * FACT_0 * (pairs[jk1, 1, 13, n])
+                    except:
+                        pass 
                     #print RD_a
             if (type_corr== 'shear_shear' ):
                 xip = np.zeros(len(RD))
                 xim = np.zeros(len(RD))
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
                 masku = RD !=0.
             
                 xip[masku] = DD[masku] / RD[masku]
@@ -1266,9 +1360,19 @@ class Measure2Point(PipelineStage):
                 xim_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xip_j[masku] = DD_a[masku] / RD_a[masku]
                 xim_j[masku] = DR_a[masku] / RD_a[masku]
+                npairs = RD
+                npairs_j = RD_a
+                weight = RR
+                weight_j = RR_a
 
+                masku = RD !=0.
+                logr[masku] = mm1[masku]/ RD[masku]
+                rnom[masku] = mm2[masku]/ RD[masku]
+                meanr[masku] = mm3[masku]/ RD[masku]
+                meanlogr[masku] = mm4[masku]/RD[masku]
+                
 
-                return xip, xim, xip_j, xim_j
+                return xip, xim, xip_j, xim_j,npairs,weight,logr,rnom,meanr,meanlogr
             
             
             if type_corr== 'pos_pos' :
@@ -1279,13 +1383,13 @@ class Measure2Point(PipelineStage):
                 nrd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
                 nrr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
                     
-                #ndd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #ndr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
-                #nrd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #nrr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
                 norm=[1.,ndd/ndr,ndd/nrd,ndd/nrr]
 
                 xi = np.zeros(len(RD))
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
                 xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 masku = RR !=0.
             
@@ -1304,9 +1408,16 @@ class Measure2Point(PipelineStage):
                     masku = RR_a[jk,:] !=0.
                     xi_j[jk,masku] = (DD_a[jk,masku]-DR_a[jk,masku]*norm[1] -RD_a[jk,masku]*norm[2] +RR_a[jk,masku]*norm[3] ) /( RR_a[jk,masku]*norm[3])
 
-
-
-                return xi,xi_j
+                npairs = mm1
+                weight = DD
+                
+                masku = DD !=0.
+                logr[masku] = mm2[masku]/ DD[masku]
+                rnom[masku] = mm3[masku]/ DD[masku]
+                meanr[masku] = mm4[masku]/ DD[masku]
+                meanlogr[masku] = mm5[masku]/ DD[masku]
+                
+                return xi,xi_j,npairs,weight,logr,rnom,meanr,meanlogr
 
             if type_corr== 'shear_pos' :
                 xi = np.zeros(len(RD))
@@ -1317,7 +1428,25 @@ class Measure2Point(PipelineStage):
                 
                 masku = RD !=0.
                 xi[masku] = DD[masku]/ RD[masku]
-                xi_im[masku] =mm1[masku]/ RD[masku]
+                xi_im[masku] = mm1[masku]/ RD[masku]
+
+               
+                
+                gammat_mr=np.zeros(len(RD))
+                gammat_mr_im =np.zeros(len(RD))
+                gammat_mr[masku] = mm5[masku]/ RD[masku]
+                gammat_mr_im[masku] = mm6[masku]/ RD[masku]
+                
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
+                logr[masku] = mm7[masku]/ RD[masku]
+                rnom[masku] = mm8[masku]/ RD[masku]
+                meanr[masku] = mm9[masku]/ RD[masku]
+                meanlogr[masku] = mm10[masku]/ RD[masku]
+                
+                
                 masku = RR !=0.
                 xir[masku] = DR[masku]/ RR[masku]
                 xi_imr[masku] = mm2[masku]/ RR[masku]
@@ -1326,6 +1455,8 @@ class Measure2Point(PipelineStage):
                 xir_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xi_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xi_imr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                gammat_mr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                gammat_mr_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 
                 masku = RD_a !=0.
                 xi_j[masku] = (DD_a[masku]) / RD_a[masku]
@@ -1333,9 +1464,28 @@ class Measure2Point(PipelineStage):
                 masku = RR_a !=0.
                 xir_j[masku] = (DR_a[masku]) / RR_a[masku]
                 xi_imr_j[masku] = (mm2_a[masku]) / RR_a[masku]
+                
+                masku = RD_a !=0.
+                gammat_mr_j[masku] =(mm5_a[masku]) / RD_a[masku]
+                gammat_mr_im_j[masku] =(mm6_a[masku]) / RD_a[masku]
+                
+                npairs = mm3
+                npairs_j = mm3_a
+                
+                npairs_im = mm4
+                npairs_im_j = mm4_a
+                
+                weight = RD
+                weight_j = RD_a
+                weight_im = RR
+                weight_im_j = RR_a  
+                
+      
 
-
-                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j
+                
+  
+                
+                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j,npairs,npairs_im,weight,weight_im,gammat_mr,gammat_mr_im,gammat_mr_j,gammat_mr_im_j,logr,rnom,meanr,meanlogr
         
         
         
@@ -1362,7 +1512,7 @@ class Measure2Point(PipelineStage):
                 # Loop over tomographic bin pairs
                 
                 if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                    gm = 3
+                    gm = 3+1+4
                     shape = (gm, self.params['tbins'])
                     pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                     path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
@@ -1380,321 +1530,22 @@ class Measure2Point(PipelineStage):
                     
                     pairs_ring = np.array(pairs_ring)
                     self.pairs_ring = pairs_ring
-                    xip, xim, xip_j, xim_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_shear',i,j)
+                    xip, xim, xip_j, xim_j,npairs,weight,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_shear',i,j)
                     cov_xip = covariance_jck( xip_j.T,self.jack_dict_tot['n_jck'],'jackknife')
                     cov_xim = covariance_jck( xim_j.T,self.jack_dict_tot['n_jck'],'jackknife')
                     files = dict()
-                    files.update({'xip':xip})
-                    files.update({'xip_j':xip_j})
-                    files.update({'cov_xip_j':cov_xip})
-                    files.update({'xim':xim})
-                    files.update({'xim_j':xim_j})
-                    files.update({'cov_xim_j':cov_xim})
-                    
-                    save_obj(path+'/results',files)
-                    output_shear_shear.update({'{0}_{1}'.format(i,j):files})
-                
-                if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,0)
-                    if os.path.exists(path+'.pkl'):
-                        mute = load_obj(path)
-                        output_shear_shear_full.update({'{0}_{1}'.format(i,j):mute})
-                    
-        if self.params['lens_group'] != 'None':
-            for i,j in self.all_calcs:
-                if (i<self.lens_zbins)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'pos-shear','all']):
-                    
-                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                        gm = 6
-                        shape = (gm, self.params['tbins'])
-                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
-                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
-                        for jci,jc in enumerate(np.unique(self.b)):
-                            lla = '{0}'.format(jc)
-                            dict_m = load_obj(path+lla)
-                            pairsCC1 = dict_m['c1'][:gm]
-                            pairsCC2 = dict_m['c2'][:gm]
-                            pairs_auto = dict_m['a'][:gm]
-                        
-                            for prs in range(gm):
-                     
-                                pairsCC1[prs] += pairsCC2[prs]
-
-                            pairs_ring[jci][1] = pairsCC1
-                            pairs_ring[jci][0] = pairs_auto  
-                    
-                        pairs_ring = np.array(pairs_ring)
-                        self.pairs_ring = pairs_ring
-                        xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_pos',i,j)
-                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-                        cov_xir = covariance_jck( xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-       
-                        cov_xi_im = covariance_jck( xi_im_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-                        cov_xi_imr = covariance_jck( xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-            
-                        files = dict()
-                        files.update({'xi':xi})
-                        files.update({'xi_j':xi_j})
-                        files.update({'cov_xi_j':cov_xi})
-                        files.update({'xir':xir})
-                        files.update({'xir_j':xir_j})
-                        files.update({'cov_xir_j':cov_xir})
-                    
-                    
-                        files.update({'xi_im':xi_im})
-                        files.update({'xi_im_j':xi_im_j})
-                        files.update({'cov_xi_im_j':cov_xi_im})
-                        files.update({'xi_imr':xi_imr})
-                        files.update({'xi_imr_j':xi_imr_j})
-                        files.update({'cov_xi_imr_j':cov_xi_imr})
-                    
-                    
-                        save_obj(path+'/results',files)
-                        output_shear_pos.update({'{0}_{1}'.format(i,j):files})
-                    
-                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
-                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,1)
-                        if os.path.exists(path+'.pkl'):
-                            mute = load_obj(path)
-                            output_shear_pos_full.update({'{0}_{1}'.format(i,j):mute})
-                    
-                    
-            for i,j in self.all_calcs:
-                if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
-           
-                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                        gm = 4
-                        shape = (gm, self.params['tbins'])
-                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
-                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
-                        for jci,jc in enumerate(np.unique(self.b)):
-                            lla = '{0}'.format(jc)
-                            dict_m = load_obj(path+lla)
-                            pairsCC1 = dict_m['c1'][:gm]
-                            pairsCC2 = dict_m['c2'][:gm]
-                            pairs_auto = dict_m['a'][:gm]
-                            for prs in range(gm):
-                                pairsCC1[prs] += pairsCC2[prs]
-
-                            pairs_ring[jci][1] = pairsCC1
-                            pairs_ring[jci][0] = pairs_auto  
-                    
-                        pairs_ring = np.array(pairs_ring)
-                        self.pairs_ring = pairs_ring
-                        xi, xi_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'pos_pos',i,j)
-                    
-                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-           
-                        files = dict()
-                        files.update({'xi':xi})
-                        files.update({'xi_j':xi_j})
-                        files.update({'cov_xi_j':cov_xi})
-                        save_obj(path+'/results',files)
-                        output_pos_pos.update({'{0}_{1}'.format(i,j):files})
-                    
-                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
-                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,2)
-                        if os.path.exists(path+'.pkl'):
-                            mute = load_obj(path)
-                            output_pos_pos_full.update({'{0}_{1}'.format(i,j):mute})
-                    
-        self.output_shear_shear = output_shear_shear
-        self.output_shear_pos = output_shear_pos
-        self.output_pos_pos = output_pos_pos 
-        # add full if present
-        self.output_shear_shear_full = output_shear_shear_full
-        self.output_shear_pos_full = output_shear_pos_full
-        self.output_pos_pos_full = output_pos_pos_full 
-        
-        return
-
- 
-    def write(self): #new write function 
-        import numpy as np
-        import os
-        
-        def collect(pairs,n_jck,n_bins,type_corr,i,j):
-            shape = (n_jck, n_bins)
-            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(
-            shape),np.zeros(shape), np.zeros(
-            shape)
-            DD, DR, RD, RR,mm1,mm2 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins)
-
-
-            fact = 1.
-            FACT_0 = 0.5
-
-            for n in range(n_bins):
-                for jk1 in range(len(pairs[:, 0, 0, n])):
-                    DD[n] += (pairs[jk1, 0, 0, n]) + FACT_0 * (pairs[jk1, 1, 0, n])
-                    DR[n] += ((pairs[jk1, 0, 1, n]) + FACT_0 * (pairs[jk1, 1, 1, n]))
-                    #print DR, DD, RD
-                    RD[n] += ((pairs[jk1, 0, 2, n]) + FACT_0 * (pairs[jk1, 1, 2, n]))
-                    try:
-                        RR[n] += ((pairs[jk1, 0, 3, n]) + FACT_0 * (pairs[jk1, 1, 3, n]))
-                    except:
-                        pass
-                    try:
-                        mm1[n]+= ((pairs[jk1, 0, 4, n]) + FACT_0 * (pairs[jk1, 1, 4, n]))
-                        mm2[n]+= ((pairs[jk1, 0, 5, n]) + FACT_0 * (pairs[jk1, 1, 5, n]))
-                    except:
-                        pass
-
-                        
-            for n in range(n_bins):
-                for jk1 in range(len(pairs[:, 0, 0, n])):
-                    DD_a[jk1, n] = DD[n] - (pairs[jk1, 0, 0, n]) - fact * FACT_0 * (pairs[jk1, 1, 0, n])
-                    DR_a[jk1, n] = DR[n] - (pairs[jk1, 0, 1, n]) - fact * FACT_0 * (pairs[jk1, 1, 1, n])
-                    RD_a[jk1, n] = RD[n] - (pairs[jk1, 0, 2, n]) - fact * FACT_0 * (pairs[jk1, 1, 2, n])
-                    try:
-                        RR_a[jk1, n] = RR[n] - (pairs[jk1, 0, 3, n]) - fact * FACT_0 * (pairs[jk1, 1, 3, n])
-                    except:
-                        pass
-                    try:
-                        mm1_a[jk1, n] = mm1[n] - (pairs[jk1, 0, 4, n]) - fact * FACT_0 * (pairs[jk1, 1, 4, n])
-                        mm2_a[jk1, n] = mm2[n] - (pairs[jk1, 0, 5, n]) - fact * FACT_0 * (pairs[jk1, 1, 5, n])
-                    except:
-                        pass
-                    
-                        
-                    #print RD_a
-            if (type_corr== 'shear_shear' ):
-                xip = np.zeros(len(RD))
-                xim = np.zeros(len(RD))
-                masku = RD !=0.
-            
-                xip[masku] = DD[masku] / RD[masku]
-                xim[masku] = DR[masku] / RD[masku]
-
-                masku = RD_a !=0.
-                xip_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                xim_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                xip_j[masku] = DD_a[masku] / RD_a[masku]
-                xim_j[masku] = DR_a[masku] / RD_a[masku]
-
-
-                return xip, xim, xip_j, xim_j
-            
-            
-            if type_corr== 'pos_pos' :
-                
-                
-                ndd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
-                ndr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
-                nrd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
-                nrr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
-                    
-                #ndd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #ndr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
-                #nrd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #nrr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
-                norm=[1.,ndd/ndr,ndd/nrd,ndd/nrr]
-
-                xi = np.zeros(len(RD))
-                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                masku = RR !=0.
-            
-                xi[masku] = (DD[masku]-DR[masku]*norm[1]-RD[masku]*norm[2]+RR[masku]*norm[3]) / (RR[masku]*norm[3])
-
-                
-                
-                
-                for jk in range(self.jack_dict_tot['n_jck']):
-                    ndd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
-                    ndr=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,3])
-                    nrd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,2])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
-                    nrr=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,2])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,3])
-                    norm=np.array([1.,ndd/ndr,ndd/nrd,ndd/nrr])
-                    
-                    masku = RR_a[jk,:] !=0.
-                    xi_j[jk,masku] = (DD_a[jk,masku]-DR_a[jk,masku]*norm[1] -RD_a[jk,masku]*norm[2] +RR_a[jk,masku]*norm[3] ) /( RR_a[jk,masku]*norm[3])
-
-
-
-                return xi,xi_j
-
-            if type_corr== 'shear_pos' :
-                xi = np.zeros(len(RD))
-                xir = np.zeros(len(RD))
-                xi_im = np.zeros(len(RD))
-                xi_imr = np.zeros(len(RD))
-                
-                
-                masku = RD !=0.
-                xi[masku] = DD[masku]/ RD[masku]
-                xi_im[masku] =mm1[masku]/ RD[masku]
-                masku = RR !=0.
-                xir[masku] = DR[masku]/ RR[masku]
-                xi_imr[masku] = mm2[masku]/ RR[masku]
-                
-                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                xir_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                xi_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                xi_imr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
-                
-                masku = RD_a !=0.
-                xi_j[masku] = (DD_a[masku]) / RD_a[masku]
-                xi_im_j[masku] = (mm1_a[masku]) / RD_a[masku]
-                masku = RR_a !=0.
-                xir_j[masku] = (DR_a[masku]) / RR_a[masku]
-                xi_imr_j[masku] = (mm2_a[masku]) / RR_a[masku]
-
-
-                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j
-        
-        
-        
-        """
-        Write data to files - Collect 2pt
-        """
-        # Get max number of tomographic bins between lenses and sources
-        if self.params['lens_group'] != 'None':
-            nbin=max(self.lens_zbins,self.zbins)
-        else:
-            nbin=self.zbins
-
-        output_shear_shear = dict()
-        output_shear_pos = dict()
-        output_pos_pos = dict()
-        
-        output_shear_shear_full = dict()
-        output_shear_pos_full = dict()
-        output_pos_pos_full = dict()
-        
-        for i,j in self.all_calcs:
-            # Loop over unique healpix cells
-            if (i<=j) & (j<self.zbins) & (self.params['2pt_only'].lower() in [None,'shear-shear','all']):
-                # Loop over tomographic bin pairs
-                
-                if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                    gm = 3
-                    shape = (gm, self.params['tbins'])
-                    pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
-                    for jci,jc in enumerate(np.unique(self.b)):
-                        lla = '{0}'.format(jc)
-                        dict_m = load_obj(path+lla)
-                        pairsCC1 = dict_m['c1'][:gm]
-                        pairsCC2 = dict_m['c2'][:gm]
-                        pairs_auto = dict_m['a'][:gm]
-                        for prs in range(gm):
-                            pairsCC1[prs] += pairsCC2[prs]
-                    
-                        pairs_ring[jci][1] = pairsCC1
-                        pairs_ring[jci][0] = pairs_auto  
-                    
-                    pairs_ring = np.array(pairs_ring)
-                    self.pairs_ring = pairs_ring
-                    xip, xim, xip_j, xim_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_shear',i,j)
-                    cov_xip = covariance_jck( xip_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-                    cov_xim = covariance_jck( xim_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-                    files = dict()
+                    files.update({'logr':logr})
+                    files.update({'rnom':rnom})
+                    files.update({'meanr':meanr})
+                    files.update({'meanlogr':meanlogr})   
                     files.update({'xip':xip})
                     files.update({'xip_jack':xip_j})
                     files.update({'cov_xip_jack':cov_xip})
                     files.update({'xim':xim})
                     files.update({'xim_jack':xim_j})
                     files.update({'cov_xim_jack':cov_xim})
+                    files.update({'npairs':npairs})
+                    files.update({'weight':weight})
                     
                     save_obj(path+'/results',files)
                     output_shear_shear.update({'{0}_{1}'.format(i,j):files})
@@ -1706,8 +1557,14 @@ class Measure2Point(PipelineStage):
                         xip_full = (mute[0]/mute[2])
                         xim_full = (mute[1]/mute[2])
                         muted = dict()
+                        muted.update({'logr':mute[4]/mute[2]})
+                        muted.update({'rnom':mute[5]/mute[2]})
+                        muted.update({'meanr':mute[6]/mute[2]})
+                        muted.update({'meanlogr':mute[7]/mute[2]})  
                         muted.update({'xip':xip_full})
                         muted.update({'xim':xim_full})
+                        muted.update({'npairs':mute[3]})
+                        muted.update({'weight':mute[2]})
                         output_shear_shear_full.update({'{0}_{1}'.format(i,j):muted})
                     
         if self.params['lens_group'] != 'None':
@@ -1715,7 +1572,7 @@ class Measure2Point(PipelineStage):
                 if (i<self.lens_zbins)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'pos-shear','all']):
                     
                     if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                        gm = 6
+                        gm = 6+2+6
                         shape = (gm, self.params['tbins'])
                         pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                         path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
@@ -1735,14 +1592,28 @@ class Measure2Point(PipelineStage):
                     
                         pairs_ring = np.array(pairs_ring)
                         self.pairs_ring = pairs_ring
-                        xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_pos',i,j)
+                        xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j,npairs,npairs_im,weight,weight_im,gammat_mr,gammat_mr_im,gammat_mr_j,gammat_mr_im_j,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_pos',i,j)
+                        
                         cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
                         cov_xir = covariance_jck( xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
        
                         cov_xi_im = covariance_jck( xi_im_j.T,self.jack_dict_tot['n_jck'],'jackknife')
                         cov_xi_imr = covariance_jck( xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
-            
+                        
+                        cov_xi_mr = covariance_jck(xi_j.T-xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xi_mr_im = covariance_jck( xi_im_j.T-xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    
                         files = dict()
+                        files.update({'logr':logr})
+                        files.update({'rnom':rnom})
+                        files.update({'meanr':meanr})
+                        files.update({'meanlogr':meanlogr})                   
+                        
+                        files.update({'gammat_compens':xi-xir})
+                        files.update({'gammat_compens_jack':cov_xi_mr})
+                        files.update({'gammat_compens_im':xi_im-xi_imr})
+                        files.update({'gammat_compens_im_jack':cov_xi_mr_im})
+                        
                         files.update({'gammat':xi})
                         files.update({'gammat_jack':xi_j})
                         files.update({'cov_gammat_jack':cov_xi})
@@ -1758,6 +1629,10 @@ class Measure2Point(PipelineStage):
                         files.update({'gammat_im_rndm_jack':xi_imr_j})
                         files.update({'cov_gammat_im_rndm_jack':cov_xi_imr})
                     
+                        files.update({'npairs':npairs})
+                        files.update({'npairs_rndm':npairs_im})
+                        files.update({'weight':weight})
+                        files.update({'weight_rndm':weight_im})
                         save_obj(path+'/results',files)
                         output_shear_pos.update({'{0}_{1}'.format(i,j):files})
                     
@@ -1768,16 +1643,32 @@ class Measure2Point(PipelineStage):
                             
                             mute = load_obj(path)
                             
-
                             xi_full = (mute[0]/mute[2])
                             xir_full = (mute[1]/mute[3])
                             xi_im_full = (mute[4]/mute[2])
                             xi_imr_full = (mute[5]/mute[3])
+          
                             muted= dict()
+            
+ 
+                
+                            muted.update({'logr':mute[10]/mute[2]})
+                            muted.update({'rnom':mute[11]/mute[2]})
+                            muted.update({'meanr':mute[12]/mute[2]})
+                            muted.update({'meanlogr':mute[13]/mute[2]})                   
+                        
+                            muted.update({'gammat_compens':mute[8]/mute[2]})
+                    
+                            muted.update({'gammat_compens_im':mute[9]/mute[2]})
+    
                             muted.update({'gammat':xi_full})
                             muted.update({'gammat_rndm':xir_full})
                             muted.update({'gammat_im':xi_im_full})
                             muted.update({'gammat_im_rndm':xi_imr_full})
+                            muted.update({'npairs':mute[6]})
+                            muted.update({'npairs_rndm':mute[7]})
+                            muted.update({'weight':mute[2]})
+                            muted.update({'weight_rndm':mute[3]})
                             output_shear_pos_full.update({'{0}_{1}'.format(i,j):muted})
                     
                     
@@ -1785,7 +1676,7 @@ class Measure2Point(PipelineStage):
                 if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
            
                     if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                        gm = 4
+                        gm = 4+4+1
                         shape = (gm, self.params['tbins'])
                         pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                         path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
@@ -1803,14 +1694,21 @@ class Measure2Point(PipelineStage):
                     
                         pairs_ring = np.array(pairs_ring)
                         self.pairs_ring = pairs_ring
-                        xi, xi_j = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'pos_pos',i,j)
+                        xi, xi_j,npairs,weight,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'pos_pos',i,j)
                     
                         cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
            
                         files = dict()
+                        files.update({'logr':logr})
+                        files.update({'rnom':rnom})
+                        files.update({'meanr':meanr})
+                        files.update({'meanlogr':meanlogr})  
                         files.update({'w':xi})
                         files.update({'w_jack':xi_j})
                         files.update({'cov_w_jack':cov_xi})
+                        
+                        files.update({'npairs':npairs})
+                        files.update({'weight':weight})
                         save_obj(path+'/results',files)
                         output_pos_pos.update({'{0}_{1}'.format(i,j):files})
                         # compute_covariance & save results.
@@ -1823,6 +1721,12 @@ class Measure2Point(PipelineStage):
                             xi =  (mute[0]-mute[1]-mute[2]+mute[3])/mute[3] 
                             muted = dict()
                             muted.update({'w':xi})
+                            muted.update({'npairs':mute[4]})
+                            muted.update({'weight':mute[0]})
+                            muted.update({'logr':mute[5]/mute[0]})
+                            muted.update({'rnom':mute[6]/mute[0]})
+                            muted.update({'meanr':mute[7]/mute[0]})
+                            muted.update({'meanlogr':mute[8]/mute[0]})    
                             output_pos_pos_full.update({'{0}_{1}'.format(i,j):muted})
                     
         self.output_shear_shear = output_shear_shear
@@ -1847,3 +1751,5 @@ class Measure2Point(PipelineStage):
         
         
         return
+
+ 
