@@ -1,7 +1,8 @@
 import yaml
 import numpy as np
 from .compute_covariance import ComputeCovariance
-from .measure_2pt import Measure2Point
+#from .measure_2pt import Measure2Point #uncomment for Troxel's original version
+from .measure_2pt_pixellized import Measure2Point #current version, which can do direct as well as pixelized measurement
 from .nofz import nofz 
 from .text_2pt import Text2Point
 from .cosmology import ParameterEstimation
