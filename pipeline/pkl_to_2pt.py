@@ -86,16 +86,16 @@ if 'pos_pos_full.pkl' in all_pkl:
 def create_fits_FULL(template_name,output_name):
     xip,header_xip = fits.getdata(template_name,'xip',header=True)
     xim,header_xim = fits.getdata(template_name,'xim',header=True)
-    xip['value'] = ang_xip_f
-    xip['ang'] = xip_f
-    xim['value'] = ang_xim_f
-    xim['ang'] = xim_f
+    xip['value'] = xip_f
+    xip['ang'] = ang_xip_f
+    xim['value'] = xim_f
+    xim['ang'] = ang_xim_f
     gammat,header_gammat = fits.getdata(template_name,'gammat',header=True)
-    gammat['value'] = ang_gammat_f
-    gammat['ang'] = gammat_f
+    gammat['value'] = gammat_f
+    gammat['ang'] = ang_gammat_f
     wtheta,header_wtheta = fits.getdata(template_name,'wtheta',header=True)
-    wtheta['value'] = ang_wtheta_f
-    wtheta['ang'] = wtheta_f
+    wtheta['value'] = wtheta_f
+    wtheta['ang'] = ang_wtheta_f
     #the sources and lenses should remain as the baseline?
     source,header_source = fits.getdata(template_name,'nz_source',header=True)
     #header_source['EXTNAME']='nz_source'
@@ -146,16 +146,16 @@ if 'pos_pos_pixellized.pkl' in all_pkl:
 def create_fits_PIX(template_name,output_name):
     xip,header_xip = fits.getdata(template_name,'xip',header=True)
     xim,header_xim = fits.getdata(template_name,'xim',header=True)
-    xip['value'] = ang_xip_p
-    xip['ang'] = xip_p
-    xim['value'] = ang_xim_p
-    xim['ang'] = xim_p
+    xip['value'] = xip_p
+    xip['ang'] = ang_xip_p
+    xim['value'] = xim_p
+    xim['ang'] = ang_xim_p
     gammat,header_gammat = fits.getdata(template_name,'gammat',header=True)
-    gammat['value'] = ang_gammat_p
-    gammat['ang'] = gammat_p
+    gammat['value'] = gammat_p
+    gammat['ang'] = ang_gammat_p
     wtheta,header_wtheta = fits.getdata(template_name,'wtheta',header=True)
-    wtheta['value'] = ang_wtheta_p
-    wtheta['ang'] = wtheta_p
+    wtheta['value'] = wtheta_p
+    wtheta['ang'] = ang_wtheta_p
     #the sources and lenses should remain as the baseline?
     source,header_source = fits.getdata(template_name,'nz_source',header=True)
     #header_source['EXTNAME']='nz_source'
