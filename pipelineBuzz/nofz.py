@@ -1,3 +1,4 @@
+#nofy.py for buzzard runs
 import numpy as np
 import twopoint
 import fitsio as fio
