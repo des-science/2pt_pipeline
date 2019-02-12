@@ -1,0 +1,57 @@
+# Input file for twopt_pipeline.py
+
+pipeline    : all
+probes      : all
+prefix      : 3x2pt_test
+
+# output file
+
+twoptfile   : 3x2pt_test.fits
+twoptfile2d : 3x2pt_test_2d.fits
+twoptnames  : ['xip', 'xim', 'gammat', 'wtheta'] # xip, xim, gt, wtheta
+nzname      : ['nz_source','nz_lens'] # source, lens
+covname     : covmat
+
+# catalog files
+photozfile  : /scratch2/scratchdirs/troxel/buzzard_3_photoz_v0.fits
+goldfile    : /scratch2/scratchdirs/troxel/buzzard_3_gold_v0.fits
+shapefile   : /scratch2/scratchdirs/troxel/buzzard_3_shape_v0.fits
+redmagicfile: /global/cscratch1/sd/troxel/redmagicv6.4.11/y1a1_gold_1.0.2b-full_redmapper_v6.4.11_redmagic_highdens_0.5-10.fit
+randomfile  : /global/cscratch1/sd/troxel/redmagicv6.4.11/y1a1_gold_1.0.2b-full_redmapper_v6.4.11_redmagic_highdens_0.5-10_randoms.fit
+shape_cols  : ['e1','e2']
+
+# nofz parameters
+
+zbins       : 5
+lens_zbins  : 5
+zlims       : [0.2, 1.2] # None indicates to use binning column in gold file
+bin_col     : mean_z
+stack_col   : sample_z
+pdf_type    : sample # pdf for stacking pdfs
+lens_bin_col : ZREDMAGIC
+lens_stack_col   : ZREDMAGIC
+lens_pdf_type    : rm # rm for stacking rm gaussians of 0.01
+ran_bin_col : ZREDMAGIC
+
+# correlation 
+
+tbins       : 10
+tbounds     : [0.1,500.]
+slop        : 0.01
+cross_clustering : True
+
+# cov parameters
+
+cov_source_dir : /home/troxel/cosmolike/top-level/troxel/multi_covariances_real
+inifile     : 3x2pt_test.ini
+source_nzfile : 3x2pt_test_source.nz
+lens_nzfile   : 3x2pt_test_lens.nz
+outdir      : /home/troxel/des-mpp/pipeline/
+bash_name   : runcov.sh
+area        : 1000.0
+ggl_overlap_cut : 0.1
+
+# general
+
+plot        : False
+
