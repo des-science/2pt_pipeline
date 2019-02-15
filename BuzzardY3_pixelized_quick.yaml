@@ -1,8 +1,8 @@
 # Input file for twopt_pipeline.py
 
-prefix        : y3_buzzard_e2flip #y3_subsampled
+prefix        : y3_buzzard_quick #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : y3_buzzard_e2flip
+run_directory : y3_buzzard_quick
 
 # blinding configurations
 
@@ -66,7 +66,7 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 
 # nofz parameters
 
-zbins       : [0.2,0.43,0.63,0.9,1.3]
+zbins       : [0.63,0.9] #[0.2,0.43,0.63,0.9,1.3]
 lens_zbins  : [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
 zlims       : [0.2, 1.3] # None indicates to use binning column in gold file
 nzbins      : 400 # Number of n(z) array z bins
@@ -79,7 +79,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 tbins       : 20
 tbounds     : [0.5,250.]
 slop        : 0.01
-flip_e2     : False
+flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
 2pt_only    : shear-shear  #shear-shear pos
 ran_factor  : 10
