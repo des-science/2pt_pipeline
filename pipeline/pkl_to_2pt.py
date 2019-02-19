@@ -58,7 +58,7 @@ sp_bin_to_index = {'0_0':range(20),
 
 #################################################################################
 # FULL 
-
+"""
 if 'shear_shear_full.pkl' in all_pkl:
     print 'taking data from shear_shear_full'
     ssf = p.load(open(root_dir+'shear_shear_full.pkl', 'rb'))
@@ -113,7 +113,7 @@ def create_fits_FULL(template_name,output_name):
 
 create_fits_FULL('template.fits','mcalY3_full_subsampled.fits')
 print 'Created full measurement datavector!'
-
+"""
 #################################################################################
 
 #################################################################################
@@ -171,7 +171,7 @@ def create_fits_PIX(template_name,output_name):
     t.close()
     return 0
 
-create_fits_FULL('template.fits','mcalY3_pixellized_subsampled.fits')
+create_fits_PIX('template.fits','mcalY3_pixellized_subsampled.fits')
 print 'Created pixelized measurement datavector!'
 #################################################################################
 
