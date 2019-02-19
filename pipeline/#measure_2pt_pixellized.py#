@@ -814,6 +814,7 @@ class Measure2Point(PipelineStage):
                     color_i.append('m')
                     color_i.append('y')
                     color_i.append('k')
+
                 fig= plt.figure()
                 ax = fig.add_subplot(111)
                 for j in range(len(np.unique(jack_info['hpix_jackknife']))):
@@ -1750,3 +1751,5 @@ class Measure2Point(PipelineStage):
         
         
         return
+
+ 

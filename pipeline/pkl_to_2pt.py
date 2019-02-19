@@ -3,8 +3,8 @@ import numpy as np
 import os
 import pickle as p
 
-root_dir = '2pt_pickles/complete_subsampled/'
-    
+root_dir = '../y3_full/2pt/' #'2pt_pickles/complete_subsampled/'
+#'y3_full'
 def get_pkl_files(some_dir):
     filename_list = []
     for name in os.listdir(some_dir):
@@ -57,7 +57,7 @@ sp_bin_to_index = {'0_0':range(20),
 
 
 #################################################################################
-# FULL 
+"""# FULL 
 
 if 'shear_shear_full.pkl' in all_pkl:
     print 'taking data from shear_shear_full'
@@ -110,9 +110,9 @@ def create_fits_FULL(template_name,output_name):
     fits.append(output_name,lens,header_lens)
     t.close()
     return 0
-
-create_fits_FULL('template.fits','mcalY3_full_subsampled.fits')
-print 'Created full measurement datavector!'
+"""
+#create_fits_FULL('template.fits','mcalY3_full_subsampled.fits')
+#print 'Created full measurement datavector!'
 
 #################################################################################
 
@@ -171,7 +171,7 @@ def create_fits_PIX(template_name,output_name):
     t.close()
     return 0
 
-create_fits_FULL('template.fits','mcalY3_pixellized_subsampled.fits')
+create_fits_PIX('template.fits','../mcalY3_pixellized_full.fits')
 print 'Created pixelized measurement datavector!'
 #################################################################################
 
