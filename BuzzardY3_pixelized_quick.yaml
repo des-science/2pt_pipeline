@@ -1,8 +1,9 @@
 # Input file for twopt_pipeline.py
 
-prefix        : y3_buzzard_quick #y3_subsampled
+prefix        : y3_buzzard_quick_e2flip #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : y3_buzzard_quick
+run_directory : y3_buzzard_quick_e2flip
+
 
 # blinding configurations
 

@@ -79,7 +79,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 tbins       : 20
 tbounds     : [0.5,250.]
 slop        : 0.01
-flip_e2     : False
+flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
 2pt_only    : shear-shear  #shear-shear pos
 ran_factor  : 10
