@@ -988,7 +988,10 @@ class Measure2Point(PipelineStage):
             g2 = cal.selector.get_col(self.Dict.shape_dict['e2'])[
                 self.Dict.ind['u']][mask]
             g2 = (g2 - self.mean_e2[i]) / R2
-
+            if self.params['flip_e2']==True:
+                print('flipping e2')
+                g2*=-1
+            
             w = w_ * np.ones(len(ra))
 
             end = timeit.default_timer()
