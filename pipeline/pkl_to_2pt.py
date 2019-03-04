@@ -2,9 +2,11 @@ from astropy.io import fits
 import numpy as np
 import os
 import pickle as p
+import sys
 
-root_dir = '2pt_pickles/complete_subsampled/'
-    
+root_dir = sys.argv[1] #'../y3_full/2pt/'
+print(root_dir)    
+quit()
 def get_pkl_files(some_dir):
     filename_list = []
     for name in os.listdir(some_dir):
@@ -171,7 +173,7 @@ def create_fits_PIX(template_name,output_name):
     t.close()
     return 0
 
-create_fits_PIX('template.fits','mcalY3_pixellized_subsampled.fits')
+create_fits_PIX('template.fits','mcalY3_pixellized_full.fits')
 print 'Created pixelized measurement datavector!'
 #################################################################################
 
