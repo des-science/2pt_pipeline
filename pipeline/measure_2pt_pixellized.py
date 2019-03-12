@@ -1414,10 +1414,10 @@ class Measure2Point(PipelineStage):
                 weight = DD
                 
                 masku = DD !=0.
-                logr[masku] = mm2[masku]/ DD[masku]
-                rnom[masku] = mm3[masku]/ DD[masku]
-                meanr[masku] = mm4[masku]/ DD[masku]
-                meanlogr[masku] = mm5[masku]/ DD[masku]
+                logr[masku] = mm5[masku]/ DD[masku]
+                rnom[masku] = mm6[masku]/ DD[masku]
+                meanr[masku] = mm7[masku]/ DD[masku]
+                meanlogr[masku] = mm8[masku]/ DD[masku]
                 
                 return xi,xi_j,npairs,weight,logr,rnom,meanr,meanlogr
 
@@ -1678,7 +1678,7 @@ class Measure2Point(PipelineStage):
                 if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
            
                     if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                        gm = 4+4+1
+                        gm = 12
                         shape = (gm, self.params['tbins'])
                         pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                         path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
