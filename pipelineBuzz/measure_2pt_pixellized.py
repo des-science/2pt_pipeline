@@ -1556,10 +1556,10 @@ class Measure2Point(PipelineStage):
                 weight = DD
 
                 masku = DD != 0.
-                logr[masku] = mm2[masku] / DD[masku]
-                rnom[masku] = mm3[masku] / DD[masku]
-                meanr[masku] = mm4[masku] / DD[masku]
-                meanlogr[masku] = mm5[masku] / DD[masku]
+                logr[masku] = mm5[masku] / DD[masku]
+                rnom[masku] = mm6[masku] / DD[masku]
+                meanr[masku] = mm7[masku] / DD[masku]
+                meanlogr[masku] = mm8[masku] / DD[masku]
 
                 return xi, xi_j, npairs, weight, logr, rnom, meanr, meanlogr
 
