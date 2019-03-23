@@ -1,8 +1,8 @@
 # Input file for twopt_pipeline.py
 
-prefix        : y3_buzzard_4truez #y3_subsampled
+prefix        : y3_buzzard_PS #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : y3_buzzard_4truez
+run_directory : y3_buzzard_PS
 
 # blinding configurations
 
@@ -14,7 +14,7 @@ ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding 
 
 # catalog info
 
-datafile : '/global/cscratch1/sd/jderose/BCC/Chinchilla/Herd/Chinchilla-3/sampleselection/Y3/Y3_mastercat_w_rmg_b3_v1.9.2.h5'
+datafile : '/global/cscratch1/sd/jderose/BCC/Chinchilla/Herd/Chinchilla-3/sampleselection/Y3/Y3_mastercat_w_y3rmg_b3_v1.9.2.h5'
 load_cache : False
 output : '.'
 
@@ -82,7 +82,7 @@ tbounds     : [0.5,250.]
 slop        : 0.01
 flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
-2pt_only    : shear-shear  #shear-shear pos
+2pt_only    : pos-shear  #shear-shear pos
 ran_factor  : 10
 cores_per_task : 64
 separation_factor : 4.
