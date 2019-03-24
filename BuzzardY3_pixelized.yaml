@@ -1,8 +1,8 @@
 # Input file for twopt_pipeline.py
 
-prefix        : y3_buzzard_PS #y3_subsampled
+prefix        : y3_buzzard_PP #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : y3_buzzard_PS
+run_directory : y3_buzzard_PP
 
 # blinding configurations
 
@@ -82,7 +82,7 @@ tbounds     : [0.5,250.]
 slop        : 0.01
 flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
-2pt_only    : pos-shear  #shear-shear pos
+2pt_only    : pos-pos  #shear-shear pos
 ran_factor  : 10
 cores_per_task : 64
 separation_factor : 4.
