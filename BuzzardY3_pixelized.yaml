@@ -82,7 +82,7 @@ tbounds     : [0.5,250.]
 slop        : 0.01
 flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
-2pt_only    : pos-pos  #shear-shear pos
+2pt_only    : all  #shear-shear pos
 ran_factor  : 10
 cores_per_task : 64
 separation_factor : 4.
