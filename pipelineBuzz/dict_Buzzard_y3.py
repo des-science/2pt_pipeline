@@ -32,7 +32,7 @@ pz_bin_dict = {
 pz_dict = {
     'objid' : 'coadd_object_id',
     'pzbin' : 'zmean_sof', #this will only work for 'catalog/bpz/unsheared'
-    'pzstack' : 'zmc_sof'
+    'pzstack' : 'zmc_sof' #z for truth
     #'pz_1p' : 'bpz_zmean_sof_1p',
     #'pz_1m' : 'bpz_zmean_sof_1m',
     #'pz_2p' : 'bpz_zmean_sof_2p',
@@ -49,7 +49,7 @@ pz_stack_dict = {
 lens_pz_dict = {
     'objid'         : 'coadd_object_id',
     'pzbin'         : 'zredmagic',
-    'pzstack'       : 'zredmagic',
+    'pzstack'       : 'zredmagic',  #for truth we want zspec
     'pzerr'         : 'zredmagic_e',
     'weight'        : None
     }
