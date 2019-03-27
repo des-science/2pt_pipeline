@@ -12,7 +12,7 @@ import yaml
 import destest
 import importlib
 import glob
-
+import timeit
 
 import pickle
 import kmeans_radec
@@ -69,7 +69,32 @@ def load_catalog(pipe_params, cal_type, group, table, select_path, name_dict, in
     else:
         return sel
 
+def task_full(ijk):
 
+        def save_obj1(name, obj):
+            with open(name + '.pkl', 'wb') as f:
+                pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        i,j,[o1,o2,jc],k = ijk 
+        
+        if 1==1:
+            path_save = global_measure_2_point.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,k)
+            if not os.path.exists(path_save):
+                os.mkdir(path_save)
+            if not os.path.exists(path_save+'_full.pkl'):
+                xx = global_measure_2_point.calc_correlation(i,j,k,full = True)
+                
+                if k ==2:
+                    ndd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
+                    ndr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
+                    nrd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
+                    nrr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
+                    norm=[1.,ndd/ndr,ndd/nrd,ndd/nrr]
+                    for ei in range(4):
+                        xx[ei] = xx[ei]*norm[ei]
+                save_obj1(path_save+'_full',xx)
+
+
+            
 def task(ijk):
 
         def save_obj1(name, obj):
@@ -196,12 +221,20 @@ class Measure2Point(PipelineStage):
         self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
         self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
 
+        
+        # Added!
+        self.source_regions_selector = load_catalog(self.params, 'mcal', self.params['gold_regions_group'], self.params['gold_regions_table'], self.params['gold_regions_path'], self.Dict, inherit=self.source_selector)
+        self.lens_regions_selector = load_catalog(self.params, 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.source_selector)
+        self.lens_random_regions_selector = load_catalog(self.params, None, self.params['lens_randoms_regions_group'], self.params['lens_randoms_regions_table'], self.params['lens_randoms_regions_path'], self.Dict)
+
+        
+        
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
         
         
         
-        self.make_jackknife_regions()
-        
+        #self.make_jackknife_regions()
+        self.setup_jaccknife()
         global global_measure_2_point
         global_measure_2_point = self
 
@@ -218,6 +251,68 @@ class Measure2Point(PipelineStage):
         self.lens_zbins = len(np.array(data['lens_bins'])) - 1
 
 
+    def setup_jaccknife(self):
+        cals =[]
+        if self.params['lens_group'] != 'None':
+            cals.append(self.lens_calibrator)
+        if self.params['source_group'] != 'None':
+            cals.append(self.source_calibrator)
+            
+        jack_info_tot = dict()
+        for cal in cals:
+            if type(cal)==destest.NoCalib:
+                nbin=self.lens_zbins
+            else:
+                nbin=self.zbins
+
+            for i in range(nbin):
+                
+                jack_info = dict()
+                if type(cal)==destest.NoCalib:
+                    gmask = cal.selector.get_match()
+                    R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
+                    region_lenses =   self.lens_regions_selector.source.read('region')[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                    
+                    
+                        
+                    jack_info.update({'hpix' : region_lenses})
+                    #jack_info.update({'n_jck' : self.jack_dict_tot['n_jck']}) 
+                    #print (len(self.ran_selector.get_col(self.Dict.regions_random_dict['ra'])[self.Dict.ind['u']]))
+                    
+                    
+                    
+                    #print (len(self.lens_random_regions_selector.source.read('region')[self.Dict.ind['u']]))
+                    
+                   # print (len(self.lens_random_regions_selector.get_col((self.Dict.regions_random_dict['region'])[self.Dict.ind['u']]))
+                    
+                    region_lenses_randoms  = (self.lens_random_regions_selector.get_col(self.Dict.regions_dict['region'])[self.Dict.ind['u']][rmask])
+                    
+                    jack_info.update({'hpix_randoms' : region_lenses_randoms})
+                    jack_info_tot.update({'{0}_lens'.format(i):jack_info})
+                else:
+                    R1,R2,mask,w = self.get_zbins_R(i,cal)
+                    region_sources =self.source_regions_selector.get_col(self.Dict.regions_dict['region'])[self.Dict.ind['u']][mask]
+                    #jack_info.update({'n_jck' :  self.jack_dict_tot['n_jck']})                                   
+                    jack_info.update({'hpix' : region_sources})
+                    jack_info_tot.update({'{0}_shears'.format(i):jack_info})
+                    #jack_info.update({'hpix_jackknife' : hpix})
+                    #jack_info.update({'ra' : ra_mask})
+                    #jack_info.update({'dec' : dec_mask})
+                    #jack_info.update({'centers' : centers})
+                    #jack_info.update({'centers_tree' : centers_tree})
+                                
+        # compute distance between centers ******
+        try:
+            f = h5py.File(self.lens_calibrator.params['filename'],'r')
+        except:
+            f = h5py.File(self.source_calibrator.params['filename'],'r')
+        ra_regions = f['regions']['centers']['ra']
+        dec_regions = f['regions']['centers']['dec']
+        centers =np.array(zip(ra_regions,dec_regions))
+        jack_info_tot.update({'max_distance':np.array(f['regions']['centers']['dist'])})
+        jack_info_tot.update({'n_jck':np.array(f['regions']['centers']['number'][0])})
+        jack_info_tot.update({'centers':centers})
+        self.jack_dict_tot = jack_info_tot
     def setup_jobs(self,pool):
         """
         Set up the list of jobs that must be distributed across nodes.
@@ -247,10 +342,10 @@ class Measure2Point(PipelineStage):
             """Angular distance between two centers (units: degrees). Makes use of spherical law of cosines.
             """
             todeg = np.pi/180.
-            a = a*1./60. #ASSUMES INPUT IN ARCMIN
-            b = b*1./60. #ASSUMES INPUT IN ARCMIN
+            a = a* todeg
+            b = b* todeg
             cos = np.sin(a[1])*np.sin(b[1]) + np.cos(a[1])*np.cos(b[1])*np.cos(a[0]-b[0])
-            return np.arccos(cos)/(1./60.)
+            return np.arccos(cos)/( todeg)
 
     
         def load_max_distance_region(distance_file):
@@ -272,31 +367,27 @@ class Measure2Point(PipelineStage):
 
         print 'setting up ',nbin,'tomographic bins'
         
-        # you need to perform this once, since all the tomographic bins 
-        # share the same jackknife regions.
-        
-        #load centers
-        print ('load centers')
-        path_jackknife = self.params['run_directory']+'/jackknife/jackknife_centers_{0}_{1}.txt'.format(self.params['hpix_nside'],self.params['n_jck_regions'])
-        cnt = np.loadtxt(path_jackknife )    
+
+        cnt = self.jack_dict_tot['centers']
         
         #compute distances between centers
         print ('compute distance between centers')
         center_min_dis = distance(cnt)
         
-        #load the previously computed maximum distance between galaxies and jackknife center within a jackknife region
-        print ('load maximum distance within jackknife regions')
-        path_distance = self.params['run_directory']+'/jackknife/jackknife_distance_{0}_{1}'.format(self.params['hpix_nside'],self.params['n_jck_regions'])
-        max_dist_region = load_max_distance_region(path_distance)
-        
+
+        max_dist_region = self.jack_dict_tot['max_distance']        
         max_sep = self.params['tbounds'][1] * 1./60. #ASSUMES INPUT IN ARCMIN!
         
         # define wich jackknife region pairs need to be included in the correlation computation
         print ("jackknife pairs selection")
-        a=np.concatenate((np.array([[(i,j) for i in range(self.params['n_jck_regions'])] for j in range(self.params['n_jck_regions'])])))
-        sel = np.array([max([0.,(dist_cent(cnt[i],cnt[j]) - (max_dist_region[i]+max_dist_region[j]))]) < (3. * max_sep )for (i,j) in a])
+        a=np.concatenate((np.array([[(i,j) for i in range(self.jack_dict_tot['n_jck'])] for j in range(self.jack_dict_tot['n_jck'])])))
+        
+        sel = np.array([max([0.,(dist_cent(cnt[i],cnt[j]) - (max_dist_region[i]+max_dist_region[j]))]) < (self.params['separation_factor'] * max_sep )for (i,j) in a])
         b = a[sel]  
         b1 = []
+
+        
+
         
         # this is to set up the jackknife pairs when correlation functions are computed
         for jc in (np.unique(b[:, 1])):
@@ -339,6 +430,23 @@ class Measure2Point(PipelineStage):
         self.b1 = b1
         self.b = b
         self.all_calcs = all_calcs
+        self.calcs=calcs
+        
+        # I should also load into memory ra,dec,weights and hpix..loading them for every jackknife region takes too long.
+        bins_dict = dict()
+        for i in xrange(nbin):
+            # Loop over tomographic bin pairs
+            if (i<self.zbins) & (self.params['2pt_only'].lower() in ['pos-shear','shear-shear','all']):
+                ra,dec,g1,g2,w= self.build_catalogs_tot(self.source_calibrator,i)
+                bins_dict.update({'shear_{0}'.format(i):[ra,dec,g1,g2,w]})
+        if self.params['lens_group'] != 'None':
+            for i in xrange(nbin):
+                if (i<self.lens_zbins)&(self.params['2pt_only'].lower() in ['pos-pos','pos-shear','all']):
+                    ra,dec,ran_ra,ran_dec,w,down = self.build_catalogs_tot(self.lens_calibrator,i)
+                    bins_dict.update({'lens_{0}'.format(i):[ra,dec,ran_ra,ran_dec,w,down]})
+
+        self.bins_dict = bins_dict         
+                        
         
         if pool is None:
             self.rank=0
@@ -346,7 +454,7 @@ class Measure2Point(PipelineStage):
         else:
             self.rank = pool.rank
             self.size = pool.size
-
+        
         print 'done calcs'
 
         return calcs
@@ -385,9 +493,9 @@ class Measure2Point(PipelineStage):
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
             jck_fold = self.jack_dict_tot['{0}_lens'.format(i)]
-            _ , hpix_ran = jck_fold['centers_tree'].query(np.array(zip(ran_ra,ran_dec)))
+           # _ , hpix_ran = jck_fold['centers_tree'].query(np.array(zip(ran_ra,ran_dec)))
 
-            return jck_fold['hpix'],hpix_ran,w,np.ones(len(ran_ra))
+            return jck_fold['hpix'],jck_fold['hpix_randoms'][downsample],w,np.ones(len(ran_ra))
             
             #return 0,0,w,np.ones(len(ran_ra))
 
@@ -403,11 +511,12 @@ class Measure2Point(PipelineStage):
         pix_b,pixr_b, w_b,w_rb = self.get_weights(j)
             
         NA,NB,NRA,NRB = np.sum(w_a),np.sum(w_b),np.sum(w_ra),np.sum(w_rb)
-        n_jck  = self.params['n_jck_regions']
+        n_jck  = self.jack_dict_tot['n_jck']
+
         def NN(ind,weight):
             lengths=np.zeros(n_jck)
-            for n in range(n_jck):
-                lengths[n]=np.sum(weight[ind==n])
+            for i,n in enumerate(range(self.jack_dict_tot['n_jck'])):
+                lengths[i]=np.sum(weight[ind==n])
             return lengths
 
         Na, Nb, Nra, Nrb = NN(pix_a,w_a), NN(pix_b,w_b), NN(pixr_a,w_ra), NN(pixr_b,w_rb)
@@ -427,27 +536,50 @@ class Measure2Point(PipelineStage):
         
         """
 
-        if self.comm:
-            # Parallel execution
-            from .mpi_pool import MPIPool
-            # Setup mpi pool
-            pool = MPIPool(self.comm)
-            # Get job list
-            calcs = self.setup_jobs(pool)
-            self.comm.Barrier()
+        # run full ************************************     
+        if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+            if self.comm:
+                # Parallel execution
+                from .mpi_pool import MPIPool
+                # Setup mpi pool
+                pool = MPIPool(self.comm)
+                # Get job list
+                calcs = self.setup_jobs(pool)
+                self.comm.Barrier()
             
-            # Master distributes calculations across nodes.
-            #calcs = [[0],[1],[2],[3]]
-            pool.map(task, calcs)
+                # Master distributes calculations across nodes.
+               
+                pool.map(task_full, calcs)
 
-            print 'out of main loop',pool.rank
-            sys.stdout.flush()
-            pool.close()
-        else:
-            # Serial execution
-            calcs = self.setup_jobs(None)
-            #f = h5py.File('2pt.h5',mode='r+')
-            map(task, calcs)
+                print 'out of main loop',pool.rank
+                sys.stdout.flush()
+                pool.close()
+            else:
+                # Serial execution
+                calcs = self.setup_jobs(None)
+                map(task_full, calcs)
+                
+        if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+            if self.comm:
+                # Parallel execution
+                from .mpi_pool import MPIPool
+                # Setup mpi pool
+                pool = MPIPool(self.comm)
+                # Get job list
+                calcs = self.setup_jobs(pool)
+                self.comm.Barrier()
+            
+                # Master distributes calculations across nodes.
+               
+                pool.map(task, calcs)
+
+                print 'out of main loop',pool.rank
+                sys.stdout.flush()
+                pool.close()
+            else:
+                # Serial execution
+                calcs = self.setup_jobs(None)
+                map(task, calcs)
 
     def get_zbins_R(self,i,cal):
         """
@@ -662,6 +794,7 @@ class Measure2Point(PipelineStage):
                 else:
                     centers_tree, hpix, centers = jaccknife_regions(ra_mask,dec_mask,self.params['n_jck_regions'],path_jackknife)
 
+                    
                 jack_info = dict()
                 jack_info.update({'hpix_jackknife' : hpix})
                 jack_info.update({'ra' : ra_mask})
@@ -716,14 +849,76 @@ class Measure2Point(PipelineStage):
 
         self.jack_dict_tot = jack_info_tot
 
+    def build_catalogs_tot(self,cal,i):
+        """
+        Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
+        """
+        start = timeit.default_timer()
+        if type(cal)==destest.NoCalib: # lens catalog
 
+
+            # Get index matching of gold to lens catalog (smaller than gold)
+            gmask = cal.selector.get_match()
+
+            # Get tomographic bin masks for lenses and randoms, and weights
+            R1,R2,mask,w_,rmask = self.get_zbins_R(i,cal)
+
+            # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
+            ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            
+            
+            if not np.isscalar(w_):
+                w   = w_[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            else:
+                w = w_*np.ones(len(ra))
+            
+            if np.sum(rmask)>self.params['ran_factor']*np.sum(mask): # Calculate if downsampling is possible
+                # Set fixed random seed to make results reproducible
+                np.random.seed(seed=self.params['random_seed'])
+                # Downsample random catalog to be ran_factor times larger than lenses
+                downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample 
+
+            # Load random ra,dec and calculate healpix values
+            ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
+            ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
+            end =  timeit.default_timer()
+            
+            print "full load ", end-start
+            return ra,dec,ran_ra,ran_dec,w,downsample
+
+        else: # source catalog
+
+            # Get tomographic bin masks for sources, and responses/weights
+            R1,R2,mask,w_ = self.get_zbins_R(i,cal)
+
+            # Load ra,dec from gold catalog
+            ra=self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][mask]
+            dec=self.gold_selector.get_col(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][mask]
+
+            # Get e1,e2, subtract mean shear, and correct with mean response
+            g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask]
+            print '----------',g1,self.mean_e1[i],R1
+            g1 = (g1-self.mean_e1[i])/R1
+            g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask]
+            g2 = (g2-self.mean_e2[i])/R2
+            if self.params['flip_e2']==True:
+                print('flipping e2')
+                g2*=-1
+
+            w = w_*np.ones(len(ra))
+            
+            end =  timeit.default_timer()
+            
+            print "full load " ,end-start
+            return ra,dec,g1,g2,w
 
         
     def build_catalogs2(self,cal,i,jck_fold,pix1):
         """
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration. It selects only galaxies in a given jackknife region specified by pix1.
         """
-
+        start = timeit.default_timer()
         if type(cal)==destest.NoCalib: # lens catalog
 
 
@@ -753,12 +948,11 @@ class Measure2Point(PipelineStage):
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
             
-            
-            _ , hpix_ran = jck_fold['centers_tree'].query(np.array(zip(ran_ra,ran_dec)))
-            
             mask_jck = np.in1d(jck_fold['hpix'],pix1)
-            mask_jck_ran = np.in1d(hpix_ran,pix1)
-          
+            mask_jck_ran = np.in1d(jck_fold['hpix_randoms'][downsample],pix1)
+            end =  timeit.default_timer()
+            
+            print "small load ", end-start
             return ra[mask_jck],dec[mask_jck],ran_ra[mask_jck_ran],ran_dec[mask_jck_ran],w[mask_jck]
 
         else: # source catalog
@@ -779,14 +973,20 @@ class Measure2Point(PipelineStage):
             
             mask_jck = np.in1d(jck_fold['hpix'],pix1)
             w = w_*np.ones(len(ra))
+            end =  timeit.default_timer()
+            
+            print "small load " ,end-start
             return ra[mask_jck],dec[mask_jck],g1[mask_jck],g2[mask_jck],w[mask_jck]
+       
+    
         
-
-        
-    def calc_correlation(self,i,j,k,pix1=None,pix2=None):
+    def calc_correlation(self,i,j,k,pix1=None,pix2=None,full=False):
+        start =  timeit.default_timer()
         """
         Treecorr wrapper for shear-shear,shear-pos,pos-pos calculations.
         """
+        
+        #print ("slope",self.params['slop'])
         num_threads = self.params['cores_per_task']
 
         if k ==0:
@@ -794,9 +994,15 @@ class Measure2Point(PipelineStage):
 
             # shear cat i
             jck_fold = self.jack_dict_tot['{0}_shears'.format(i)]
-
-            ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,i,jck_fold,pix1)
-
+            if not full:
+                #ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,i,jck_fold,pix1)
+                mask_jck = np.in1d(jck_fold['hpix'],pix1)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)][0][mask_jck],self.bins_dict['shear_{0}'.format(i)][1][mask_jck],self.bins_dict['shear_{0}'.format(i)][2][mask_jck],self.bins_dict['shear_{0}'.format(i)][3][mask_jck],self.bins_dict['shear_{0}'.format(i)][4][mask_jck]
+            else:
+                #ra,dec,g1,g2,w= self.build_catalogs_tot(self.source_calibrator,i)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)]
+                
+           
             try:
                 icat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
@@ -807,9 +1013,14 @@ class Measure2Point(PipelineStage):
                 
             # shear cat j 
             jck_fold = self.jack_dict_tot['{0}_shears'.format(j)]
-
-            ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,j,jck_fold,pix2)
-
+            if not full:
+                #ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,i,jck_fold,pix1)
+                mask_jck = np.in1d(jck_fold['hpix'],pix2)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
+            else:
+                #ra,dec,g1,g2,w= self.build_catalogs_tot(self.source_calibrator,i)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
+               
             try:
                 jcat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
@@ -819,7 +1030,7 @@ class Measure2Point(PipelineStage):
                 jcat = None
                 
             if (icat == None) or (jcat == None):
-                pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
+                pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
             else:
                 
         
@@ -829,7 +1040,10 @@ class Measure2Point(PipelineStage):
                 ggm = gg.xim
                 normalization = gg.weight
                  
-                pairs = [ggp * normalization, ggm * normalization, normalization,[gg.xip,gg.xim,np.sqrt(gg.varxi)]]
+                pairs = [ggp * normalization, ggm * normalization, normalization, gg.npairs,gg.logr*gg.weight,gg.rnom*gg.weight,gg.meanr*gg.weight,gg.meanlogr*gg.weight]
+                
+            end =  timeit.default_timer()
+            #print "shear comp ", end-start
             return pairs
 
         
@@ -837,14 +1051,28 @@ class Measure2Point(PipelineStage):
         elif k ==1:
             type_corr = 'shear_pos'
             
+            
+            
+                
             # pos cat i (+random!)
             jck_fold = self.jack_dict_tot['{0}_lens'.format(i)]
-            ra,dec,ran_ra,ran_dec,w = self.build_catalogs2(self.lens_calibrator,i,jck_fold,pix1)
-
+            if not full:
+                mask_jck = np.in1d(jck_fold['hpix'],pix1)
+                downsample = [self.bins_dict['lens_{0}'.format(i)][5]]
+                
+                mask_jck_rndm = np.in1d(jck_fold['hpix_randoms'][downsample],pix1)
+                
+                ra,dec,ran_ra,ran_dec,w = self.bins_dict['lens_{0}'.format(i)][0][mask_jck],self.bins_dict['lens_{0}'.format(i)][1][mask_jck],self.bins_dict['lens_{0}'.format(i)][2][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][3][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][4]
+                
+               
+            else:
+                ra,dec,ran_ra,ran_dec,w,_ = self.bins_dict['lens_{0}'.format(i)]
+                
             try:
                 icat = treecorr.Catalog(ra = ra, dec  = dec, 
                                  w  = w, wpos = np.ones(len(ra)), 
                                  ra_units='deg', dec_units='deg')
+                
             except:
                 icat = None
             try:
@@ -857,8 +1085,15 @@ class Measure2Point(PipelineStage):
             
             # shear cat j 
             jck_fold = self.jack_dict_tot['{0}_shears'.format(j)]
-            ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,j,jck_fold,pix2)
-
+            if not full:
+                #ra,dec,g1,g2,w= self.build_catalogs2(self.source_calibrator,i,jck_fold,pix1)
+                mask_jck = np.in1d(jck_fold['hpix'],pix2)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
+            else:
+                #ra,dec,g1,g2,w= self.build_catalogs_tot(self.source_calibrator,i)
+                ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
+               
+     
             try:
                 jcat = treecorr.Catalog( g1 = g1, g2   = g2, 
                                  ra = ra, dec  = dec, 
@@ -868,22 +1103,44 @@ class Measure2Point(PipelineStage):
             except:
                 jcat = None
 
-            if (icat == None) or (jcat == None):
-                 pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
-            else:
-                ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
-                rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+            
+            pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
+            
+            ng = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
+            rg = treecorr.NGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+
+            if (icat != None) and (jcat != None):
                 ng.process(icat, jcat)
-                
-                rg.process(ircat, jcat)
                 xi = ng.xi
-                xi_r = rg.xi
                 xi_im = ng.xi_im
-                xi_im_r = rg.xi_im
                 normalization_n = ng.weight
+
+
+                pairs[0] = xi * normalization_n
+                pairs[2] = normalization_n
+                pairs[4] = xi_im * normalization_n
+                pairs[6] = ng.npairs
+
+                pairs[10] = ng.logr*ng.weight
+                pairs[11] = ng.rnom*ng.weight
+                pairs[12] = ng.meanr*ng.weight
+                pairs[13] = ng.meanlogr*ng.weight
+            if (ircat != None) and (jcat != None):
+                rg.process(ircat, jcat)
+                if (icat != None) and (jcat != None):
+                    gammat,gammat_im,gammaterr=ng.calculateXi(rg)
+                    pairs[8] = gammat * normalization_n
+                    pairs[9] = gammat_im*normalization_n
+                xi_r = rg.xi
+                xi_im_r = rg.xi_im
                 normalization_r = rg.weight
-                gammat,gammat_im,gammaterr=ng.calculateXi(rg)
-                pairs = [xi * normalization_n, xi_r * normalization_r, normalization_n,normalization_r,xi_im * normalization_n, xi_im_r * normalization_r,[gammat,gammat_im,gammaterr]]
+                pairs[1] =  xi_r * normalization_r
+                pairs[3] = normalization_r
+                pairs[5] = xi_im_r * normalization_r
+                pairs[7] = rg.npairs
+                
+            end =  timeit.default_timer()
+            #print "shear comp ", end-start
             return pairs
         
         elif k ==2:
@@ -891,8 +1148,14 @@ class Measure2Point(PipelineStage):
             
             # pos cat i (+random!)
             jck_fold = self.jack_dict_tot['{0}_lens'.format(i)]
-            ra,dec,ran_ra,ran_dec,w = self.build_catalogs2(self.lens_calibrator,i,jck_fold,pix1)
-
+            if not full:
+                mask_jck = np.in1d(jck_fold['hpix'],pix1)
+                downsample = self.bins_dict['lens_{0}'.format(i)][5]
+                mask_jck_rndm = np.in1d(jck_fold['hpix_randoms'][downsample],pix1)
+                
+                ra,dec,ran_ra,ran_dec,w = self.bins_dict['lens_{0}'.format(i)][0][mask_jck],self.bins_dict['lens_{0}'.format(i)][1][mask_jck],self.bins_dict['lens_{0}'.format(i)][2][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][3][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][4][mask_jck]
+            else:
+                ra,dec,ran_ra,ran_dec,w,_ = self.bins_dict['lens_{0}'.format(i)]
             try:
                 icat = treecorr.Catalog(ra = ra, dec  = dec, 
                                  w  = w, wpos = np.ones(len(ra)), 
@@ -908,8 +1171,13 @@ class Measure2Point(PipelineStage):
             
             # pos cat j (+random!)
             jck_fold = self.jack_dict_tot['{0}_lens'.format(j)]
-            ra,dec,ran_ra,ran_dec,w = self.build_catalogs2(self.lens_calibrator,j,jck_fold,pix2)
-
+            if not full:
+                mask_jck = np.in1d(jck_fold['hpix'],pix2)
+                downsample = [self.bins_dict['lens_{0}'.format(j)][5]]
+                mask_jck_rndm = np.in1d(jck_fold['hpix_randoms'][downsample],pix2)
+                ra,dec,ran_ra,ran_dec,w = self.bins_dict['lens_{0}'.format(j)][0][mask_jck],self.bins_dict['lens_{0}'.format(j)][1][mask_jck],self.bins_dict['lens_{0}'.format(j)][2][mask_jck_rndm],self.bins_dict['lens_{0}'.format(j)][3][mask_jck_rndm],self.bins_dict['lens_{0}'.format(j)][4][mask_jck]
+            else:
+                ra,dec,ran_ra,ran_dec,w,_ = self.bins_dict['lens_{0}'.format(j)]
             try:
                 jcat = treecorr.Catalog(ra = ra, dec  = dec, 
                                  w  = w, wpos = np.ones(len(ra)), 
@@ -923,23 +1191,39 @@ class Measure2Point(PipelineStage):
             except:
                 jrcat = None
                 
-            if (icat == None) or (jcat == None):
-                 pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins'])]
-            else:
-                dd = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
-                dr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
-                rd = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
-                rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
             
+            pairs = [np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']), np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins']),np.zeros(self.params['tbins'])]
+            
+            dd = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+            dr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'],num_threads=num_threads)
+            rd = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+            rr = treecorr.NNCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+            
+            if (icat!=None )and(jcat!=None):
                 dd.process(icat, jcat)
+                pairs[0] = dd.weight
+                pairs[4] = dd.npairs
+                pairs[8] = dd.logr*dd.weight
+                pairs[9] = dd.rnom*dd.weight
+                pairs[10] = dd.meanr*dd.weight
+                pairs[11] = dd.meanlogr*dd.weight
+            if (icat!=None )and(jrcat!=None):
                 dr.process(icat, jrcat)
+                pairs[1] = dr.weight
+                pairs[5] = dr.npairs
+            if (ircat!=None )and(jcat!=None):  
                 rd.process(ircat, jcat)
+                pairs[2] = rd.weight
+                pairs[6] = rd.npairs
+            if (ircat!=None )and(jrcat!=None):
                 rr.process(ircat, jrcat)
-                wtheta,wthetaerr=nn.calculateXi(rr,dr=nr,rd=rn)
-                wthetaerr=np.sqrt(wthetaerr)
-                pairs = [dd.weight,  dr.weight, rd.weight,  rr.weight,[wtheta,wthetaerr]]
+                pairs[3] = rr.weight
+                pairs[7] = rr.npairs
             
+
             
+            end =  timeit.default_timer()
+            #print "shear comp " ,end-start
             return pairs   
             
         elif k ==3:
@@ -954,10 +1238,8 @@ class Measure2Point(PipelineStage):
         
         def collect(pairs,n_jck,n_bins,type_corr,i,j):
             shape = (n_jck, n_bins)
-            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(
-            shape),np.zeros(shape), np.zeros(
-            shape)
-            DD, DR, RD, RR,mm1,mm2 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins)
+            DD_a, DR_a, RD_a, RR_a,mm1_a,mm2_a,mm3_a,mm4_a,mm5_a,mm6_a,mm7_a,mm8_a,mm9_a,mm10_a = np.zeros(shape), np.zeros(shape), np.zeros(shape), np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape),np.zeros(shape), np.zeros(shape),np.zeros(shape),np.zeros(shape),np.zeros(shape)
+            DD, DR, RD, RR,mm1,mm2,mm3,mm4,mm5,mm6,mm7,mm8,mm9,mm10 = np.zeros(n_bins),  np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins),np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins)
 
 
             fact = 1.
@@ -968,32 +1250,108 @@ class Measure2Point(PipelineStage):
                     DD[n] += (pairs[jk1, 0, 0, n]) + FACT_0 * (pairs[jk1, 1, 0, n])
                     DR[n] += ((pairs[jk1, 0, 1, n]) + FACT_0 * (pairs[jk1, 1, 1, n]))
                     #print DR, DD, RD
-                    if (type_corr== 'shear_shear') or  (type_corr== 'pos_pos') or  (type_corr== 'shear_pos'):
-                        RD[n] += ((pairs[jk1, 0, 2, n]) + FACT_0 * (pairs[jk1, 1, 2, n]))
-                    if (type_corr== 'pos_pos') or  (type_corr== 'shear_pos'):
+                    RD[n] += ((pairs[jk1, 0, 2, n]) + FACT_0 * (pairs[jk1, 1, 2, n]))
+                    try:
                         RR[n] += ((pairs[jk1, 0, 3, n]) + FACT_0 * (pairs[jk1, 1, 3, n]))
-                    if (type_corr== 'shear_pos'):
+                    except:
+                        pass
+                    try:
                         mm1[n]+= ((pairs[jk1, 0, 4, n]) + FACT_0 * (pairs[jk1, 1, 4, n]))
+                    except:
+                        pass
+                    try:
                         mm2[n]+= ((pairs[jk1, 0, 5, n]) + FACT_0 * (pairs[jk1, 1, 5, n]))
-
-                        
+                    except:
+                        pass
+                    try:
+                        mm3[n]+= ((pairs[jk1, 0, 6, n]) + FACT_0 * (pairs[jk1, 1, 6, n]))
+                    except:
+                        pass
+                    try:
+                        mm4[n]+= ((pairs[jk1, 0, 7, n]) + FACT_0 * (pairs[jk1, 1, 7, n]))
+                    except:
+                        pass
+                    try:
+                        mm5[n]+= ((pairs[jk1, 0, 8, n]) + FACT_0 * (pairs[jk1, 1, 8, n]))
+                    except:
+                        pass
+                    try:
+                        mm6[n]+= ((pairs[jk1, 0, 9, n]) + FACT_0 * (pairs[jk1, 1, 9, n]))
+                    except:
+                        pass
+                    try:
+                        mm7[n]+= ((pairs[jk1, 0, 10, n]) + FACT_0 * (pairs[jk1, 1, 10, n]))
+                    except:
+                        pass
+                    try:
+                        mm8[n]+= ((pairs[jk1, 0, 11, n]) + FACT_0 * (pairs[jk1, 1, 11, n]))
+                    except:
+                        pass    
+                    try:
+                        mm9[n]+= ((pairs[jk1, 0, 12, n]) + FACT_0 * (pairs[jk1, 1, 12, n]))
+                    except:
+                        pass    
+                    try:
+                        mm10[n]+= ((pairs[jk1, 0, 13, n]) + FACT_0 * (pairs[jk1, 1, 13, n]))
+                    except:
+                        pass          
             for n in range(n_bins):
                 for jk1 in range(len(pairs[:, 0, 0, n])):
                     DD_a[jk1, n] = DD[n] - (pairs[jk1, 0, 0, n]) - fact * FACT_0 * (pairs[jk1, 1, 0, n])
                     DR_a[jk1, n] = DR[n] - (pairs[jk1, 0, 1, n]) - fact * FACT_0 * (pairs[jk1, 1, 1, n])
-                    if (type_corr== 'shear_shear') or  (type_corr== 'pos_pos') or ( type_corr== 'shear_pos'):
-                        RD_a[jk1, n] = RD[n] - (pairs[jk1, 0, 2, n]) - fact * FACT_0 * (pairs[jk1, 1, 2, n])
-                    if  (type_corr== 'pos_pos') or  (type_corr== 'shear_pos'):
+                    RD_a[jk1, n] = RD[n] - (pairs[jk1, 0, 2, n]) - fact * FACT_0 * (pairs[jk1, 1, 2, n])
+                    try:
                         RR_a[jk1, n] = RR[n] - (pairs[jk1, 0, 3, n]) - fact * FACT_0 * (pairs[jk1, 1, 3, n])
-                    if (type_corr== 'shear_pos'):
+                    except:
+                        pass
+                    try:
                         mm1_a[jk1, n] = mm1[n] - (pairs[jk1, 0, 4, n]) - fact * FACT_0 * (pairs[jk1, 1, 4, n])
+                    except:
+                        pass
+                    try:
                         mm2_a[jk1, n] = mm2[n] - (pairs[jk1, 0, 5, n]) - fact * FACT_0 * (pairs[jk1, 1, 5, n])
-
-                        
+                    except:
+                        pass
+                    try:
+                        mm3_a[jk1, n] = mm3[n] - (pairs[jk1, 0, 6, n]) - fact * FACT_0 * (pairs[jk1, 1, 6, n])
+                    except:
+                        pass
+                    try:
+                        mm4_a[jk1, n] = mm4[n] - (pairs[jk1, 0, 7, n]) - fact * FACT_0 * (pairs[jk1, 1, 7, n])
+                    except:
+                        pass             
+                    try:
+                        mm5_a[jk1, n] = mm5[n] - (pairs[jk1, 0, 8, n]) - fact * FACT_0 * (pairs[jk1, 1, 8, n])
+                    except:
+                        pass
+                    try:
+                        mm6_a[jk1, n] = mm6[n] - (pairs[jk1, 0, 9, n]) - fact * FACT_0 * (pairs[jk1, 1, 9, n])
+                    except:
+                        pass
+                    try:
+                        mm7_a[jk1, n] = mm7[n] - (pairs[jk1, 0, 10, n]) - fact * FACT_0 * (pairs[jk1, 1, 10, n])
+                    except:
+                        pass
+                    try:
+                        mm8_a[jk1, n] = mm8[n] - (pairs[jk1, 0, 11, n]) - fact * FACT_0 * (pairs[jk1, 1, 11, n])
+                    except:
+                        pass   
+                    try:
+                        mm9_a[jk1, n] = mm9[n] - (pairs[jk1, 0, 12, n]) - fact * FACT_0 * (pairs[jk1, 1, 12, n])
+                    except:
+                        pass  
+                    try:
+                        mm10_a[jk1, n] = mm10[n] - (pairs[jk1, 0, 13, n]) - fact * FACT_0 * (pairs[jk1, 1, 13, n])
+                    except:
+                        pass 
                     #print RD_a
             if (type_corr== 'shear_shear' ):
                 xip = np.zeros(len(RD))
                 xim = np.zeros(len(RD))
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
                 masku = RD !=0.
             
                 xip[masku] = DD[masku] / RD[masku]
@@ -1004,9 +1362,19 @@ class Measure2Point(PipelineStage):
                 xim_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xip_j[masku] = DD_a[masku] / RD_a[masku]
                 xim_j[masku] = DR_a[masku] / RD_a[masku]
+                npairs = RD
+                npairs_j = RD_a
+                weight = RR
+                weight_j = RR_a
 
+                masku = RD !=0.
+                logr[masku] = mm1[masku]/ RD[masku]
+                rnom[masku] = mm2[masku]/ RD[masku]
+                meanr[masku] = mm3[masku]/ RD[masku]
+                meanlogr[masku] = mm4[masku]/RD[masku]
+                
 
-                return xip, xim, xip_j, xim_j
+                return xip, xim, xip_j, xim_j,npairs,weight,logr,rnom,meanr,meanlogr
             
             
             if type_corr== 'pos_pos' :
@@ -1017,22 +1385,22 @@ class Measure2Point(PipelineStage):
                 nrd=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1]))
                 nrr=(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2]))*(np.sum(global_measure_2_point.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3]))
                     
-                #ndd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #ndr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,0]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
-                #nrd=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,1]))
-                #nrr=(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,2]))*(np.sum(self.jck_N['{0}_{1}'.format(i,j)][:,3]))
                 norm=[1.,ndd/ndr,ndd/nrd,ndd/nrr]
 
                 xi = np.zeros(len(RD))
-
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
+                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 masku = RR !=0.
             
                 xi[masku] = (DD[masku]-DR[masku]*norm[1]-RD[masku]*norm[2]+RR[masku]*norm[3]) / (RR[masku]*norm[3])
 
                 
-                xi_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 
-                for jk in range(self.params['n_jck_regions']):
+                
+                for jk in range(self.jack_dict_tot['n_jck']):
                     ndd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
                     ndr=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,0])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,0])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,3])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,3])
                     nrd=(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,2])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,2])*(np.sum(self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][:,1])-self.Npairs['{0}_{1}'.format(i,j)]['jck_N'][jk,1])
@@ -1042,9 +1410,16 @@ class Measure2Point(PipelineStage):
                     masku = RR_a[jk,:] !=0.
                     xi_j[jk,masku] = (DD_a[jk,masku]-DR_a[jk,masku]*norm[1] -RD_a[jk,masku]*norm[2] +RR_a[jk,masku]*norm[3] ) /( RR_a[jk,masku]*norm[3])
 
-
-
-                return xi,xi_j
+                npairs = mm1
+                weight = DD
+                
+                masku = DD !=0.
+                logr[masku] = mm5[masku]/ DD[masku]
+                rnom[masku] = mm6[masku]/ DD[masku]
+                meanr[masku] = mm7[masku]/ DD[masku]
+                meanlogr[masku] = mm8[masku]/ DD[masku]
+                
+                return xi,xi_j,npairs,weight,logr,rnom,meanr,meanlogr
 
             if type_corr== 'shear_pos' :
                 xi = np.zeros(len(RD))
@@ -1055,7 +1430,25 @@ class Measure2Point(PipelineStage):
                 
                 masku = RD !=0.
                 xi[masku] = DD[masku]/ RD[masku]
-                xi_im[masku] =mm1[masku]/ RD[masku]
+                xi_im[masku] = mm1[masku]/ RD[masku]
+
+               
+                
+                gammat_mr=np.zeros(len(RD))
+                gammat_mr_im =np.zeros(len(RD))
+                gammat_mr[masku] = mm5[masku]/ RD[masku]
+                gammat_mr_im[masku] = mm6[masku]/ RD[masku]
+                
+                logr =  np.zeros(len(RD))
+                rnom =  np.zeros(len(RD))
+                meanr = np.zeros(len(RD))
+                meanlogr = np.zeros(len(RD))
+                logr[masku] = mm7[masku]/ RD[masku]
+                rnom[masku] = mm8[masku]/ RD[masku]
+                meanr[masku] = mm9[masku]/ RD[masku]
+                meanlogr[masku] = mm10[masku]/ RD[masku]
+                
+                
                 masku = RR !=0.
                 xir[masku] = DR[masku]/ RR[masku]
                 xi_imr[masku] = mm2[masku]/ RR[masku]
@@ -1064,6 +1457,8 @@ class Measure2Point(PipelineStage):
                 xir_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xi_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 xi_imr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                gammat_mr_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
+                gammat_mr_im_j = np.zeros((RD_a.shape[0],RD_a.shape[1]))
                 
                 masku = RD_a !=0.
                 xi_j[masku] = (DD_a[masku]) / RD_a[masku]
@@ -1071,9 +1466,28 @@ class Measure2Point(PipelineStage):
                 masku = RR_a !=0.
                 xir_j[masku] = (DR_a[masku]) / RR_a[masku]
                 xi_imr_j[masku] = (mm2_a[masku]) / RR_a[masku]
+                
+                masku = RD_a !=0.
+                gammat_mr_j[masku] =(mm5_a[masku]) / RD_a[masku]
+                gammat_mr_im_j[masku] =(mm6_a[masku]) / RD_a[masku]
+                
+                npairs = mm3
+                npairs_j = mm3_a
+                
+                npairs_im = mm4
+                npairs_im_j = mm4_a
+                
+                weight = RD
+                weight_j = RD_a
+                weight_im = RR
+                weight_im_j = RR_a  
+                
+      
 
-
-                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j
+                
+  
+                
+                return xi,xi_j,xir,xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j,npairs,npairs_im,weight,weight_im,gammat_mr,gammat_mr_im,gammat_mr_j,gammat_mr_im_j,logr,rnom,meanr,meanlogr
         
         
         
@@ -1098,144 +1512,245 @@ class Measure2Point(PipelineStage):
             # Loop over unique healpix cells
             if (i<=j) & (j<self.zbins) & (self.params['2pt_only'].lower() in [None,'shear-shear','all']):
                 # Loop over tomographic bin pairs
-                gm = 3
-                shape = (gm, self.params['tbins'])
-                pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.params['n_jck_regions'])]
-                path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
-                for jc in np.unique(self.b):
-                    lla = '{0}'.format(jc)
-                    dict_m = load_obj(path+lla)
-                    pairsCC1 = dict_m['c1']
-                    pairsCC2 = dict_m['c2']
-                    pairs_auto = dict_m['a']
-                    for prs in range(gm):
-                        pairsCC1[prs] += pairsCC2[prs]
-                    
-                    pairs_ring[jc][1] = pairsCC1
-                    pairs_ring[jc][0] = pairs_auto  
-                    
-                pairs_ring = np.array(pairs_ring)
-                xip, xim, xip_j, xim_j = collect(pairs_ring,self.params['n_jck_regions'],self.params['tbins'],'shear_shear',i,j)
-                cov_xip = covariance_jck( xip_j.T,self.params['n_jck_regions'],'jackknife')
-                cov_xim = covariance_jck( xim_j.T,self.params['n_jck_regions'],'jackknife')
-                files = dict()
-                files.update({'xip':xip})
-                files.update({'xip_j':xip_j})
-                files.update({'cov_xip_j':cov_xip})
-                files.update({'xim':xim})
-                files.update({'xim_j':xim_j})
-                files.update({'cov_xim_j':cov_xim})
-                    
-                save_obj(path+'/results',files)
-                output_shear_shear.update({'{0}_{1}'.format(i,j):files})
                 
+                if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                    gm = 3+1+4
+                    shape = (gm, self.params['tbins'])
+                    pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
+                    for jci,jc in enumerate(np.unique(self.b)):
+                        lla = '{0}'.format(jc)
+                        dict_m = load_obj(path+lla)
+                        pairsCC1 = dict_m['c1'][:gm]
+                        pairsCC2 = dict_m['c2'][:gm]
+                        pairs_auto = dict_m['a'][:gm]
+                        for prs in range(gm):
+                            pairsCC1[prs] += pairsCC2[prs]
+                    
+                        pairs_ring[jci][1] = pairsCC1
+                        pairs_ring[jci][0] = pairs_auto  
+                    
+                    pairs_ring = np.array(pairs_ring)
+                    self.pairs_ring = pairs_ring
+                    xip, xim, xip_j, xim_j,npairs,weight,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_shear',i,j)
+                    cov_xip = covariance_jck( xip_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    cov_xim = covariance_jck( xim_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    files = dict()
+                    files.update({'logr':logr})
+                    files.update({'rnom':rnom})
+                    files.update({'meanr':meanr})
+                    files.update({'meanlogr':meanlogr})   
+                    files.update({'xip':xip})
+                    files.update({'xip_jack':xip_j})
+                    files.update({'cov_xip_jack':cov_xip})
+                    files.update({'xim':xim})
+                    files.update({'xim_jack':xim_j})
+                    files.update({'cov_xim_jack':cov_xim})
+                    files.update({'npairs':npairs})
+                    files.update({'weight':weight})
+                    
+                    save_obj(path+'/results',files)
+                    output_shear_shear.update({'{0}_{1}'.format(i,j):files})
                 
-                path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,0)
-                if os.path.exists(path+'.pkl'):
-                    mute = load_obj(path)
-                    output_shear_shear_full.update({'{0}_{1}'.format(i,j):mute})
+                if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,0)
+                    if os.path.exists(path+'.pkl'):
+                        mute = load_obj(path)
+                        xip_full = (mute[0]/mute[2])
+                        xim_full = (mute[1]/mute[2])
+                        muted = dict()
+                        muted.update({'logr':mute[4]/mute[2]})
+                        muted.update({'rnom':mute[5]/mute[2]})
+                        muted.update({'meanr':mute[6]/mute[2]})
+                        muted.update({'meanlogr':mute[7]/mute[2]})  
+                        muted.update({'xip':xip_full})
+                        muted.update({'xim':xim_full})
+                        muted.update({'npairs':mute[3]})
+                        muted.update({'weight':mute[2]})
+                        output_shear_shear_full.update({'{0}_{1}'.format(i,j):muted})
                     
         if self.params['lens_group'] != 'None':
             for i,j in self.all_calcs:
                 if (i<self.lens_zbins)&(j<self.zbins)&(self.params['2pt_only'].lower() in [None,'pos-shear','all']):
                     
-                    gm = 6
-                    shape = (gm, self.params['tbins'])
-                    pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.params['n_jck_regions'])]
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
-                    for jc in np.unique(self.b):
-                        lla = '{0}'.format(jc)
-                        dict_m = load_obj(path+lla)
-                        pairsCC1 = dict_m['c1']
-                        pairsCC2 = dict_m['c2']
-                        pairs_auto = dict_m['a']
+                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                        gm = 6+2+6
+                        shape = (gm, self.params['tbins'])
+                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
+                        for jci,jc in enumerate(np.unique(self.b)):
+                            lla = '{0}'.format(jc)
+                            dict_m = load_obj(path+lla)
+                            pairsCC1 = dict_m['c1'][:gm]
+                            pairsCC2 = dict_m['c2'][:gm]
+                            pairs_auto = dict_m['a'][:gm]
                         
-                        for prs in range(gm):
+                            for prs in range(gm):
                      
-                            pairsCC1[prs] += pairsCC2[prs]
+                                pairsCC1[prs] += pairsCC2[prs]
 
-                        pairs_ring[jc][1] = pairsCC1
-                        pairs_ring[jc][0] = pairs_auto  
+                            pairs_ring[jci][1] = pairsCC1
+                            pairs_ring[jci][0] = pairs_auto  
                     
-                    pairs_ring = np.array(pairs_ring)
-                    xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j = collect(pairs_ring,self.params['n_jck_regions'],self.params['tbins'],'shear_pos',i,j)
-                    cov_xi = covariance_jck( xi_j.T,self.params['n_jck_regions'],'jackknife')
-                    cov_xir = covariance_jck( xir_j.T,self.params['n_jck_regions'],'jackknife')
+                        pairs_ring = np.array(pairs_ring)
+                        self.pairs_ring = pairs_ring
+                        xi, xi_j, xir, xir_j,xi_im,xi_im_j,xi_imr,xi_imr_j,npairs,npairs_im,weight,weight_im,gammat_mr,gammat_mr_im,gammat_mr_j,gammat_mr_im_j,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'shear_pos',i,j)
+                        
+                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xir = covariance_jck( xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
        
-                    cov_xi_im = covariance_jck( xi_im_j.T,self.params['n_jck_regions'],'jackknife')
-                    cov_xi_imr = covariance_jck( xi_imr_j.T,self.params['n_jck_regions'],'jackknife')
+                        cov_xi_im = covariance_jck( xi_im_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xi_imr = covariance_jck( xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        
+                        cov_xi_mr = covariance_jck(xi_j.T-xir_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                        cov_xi_mr_im = covariance_jck( xi_im_j.T-xi_imr_j.T,self.jack_dict_tot['n_jck'],'jackknife')
+                    
+                        files = dict()
+                        files.update({'logr':logr})
+                        files.update({'rnom':rnom})
+                        files.update({'meanr':meanr})
+                        files.update({'meanlogr':meanlogr})                   
+                        
+                        files.update({'gammat_compens':xi-xir})
+                        files.update({'gammat_compens_jack':cov_xi_mr})
+                        files.update({'gammat_compens_im':xi_im-xi_imr})
+                        files.update({'gammat_compens_im_jack':cov_xi_mr_im})
+                        
+                        files.update({'gammat':xi})
+                        files.update({'gammat_jack':xi_j})
+                        files.update({'cov_gammat_jack':cov_xi})
+                        files.update({'gammat_rndm':xir})
+                        files.update({'gammat_rndm_jack':xir_j})
+                        files.update({'cov_gammat_rndm_jack':cov_xir})
+                    
+                    
+                        files.update({'gammat_im':xi_im})
+                        files.update({'gammat_im_jack':xi_im_j})
+                        files.update({'cov_gammat_im_jack':cov_xi_im})
+                        files.update({'gammat_im_rndm':xi_imr})
+                        files.update({'gammat_im_rndm_jack':xi_imr_j})
+                        files.update({'cov_gammat_im_rndm_jack':cov_xi_imr})
+                    
+                        files.update({'npairs':npairs})
+                        files.update({'npairs_rndm':npairs_im})
+                        files.update({'weight':weight})
+                        files.update({'weight_rndm':weight_im})
+                        save_obj(path+'/results',files)
+                        output_shear_pos.update({'{0}_{1}'.format(i,j):files})
+                    
+                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,1)
+                        if os.path.exists(path+'.pkl'):
+
+                            
+                            mute = load_obj(path)
+                            
+                            xi_full = (mute[0]/mute[2])
+                            xir_full = (mute[1]/mute[3])
+                            xi_im_full = (mute[4]/mute[2])
+                            xi_imr_full = (mute[5]/mute[3])
+          
+                            muted= dict()
             
-                    files = dict()
-                    files.update({'xi':xi})
-                    files.update({'xi_j':xi_j})
-                    files.update({'cov_xi_j':cov_xi})
-                    files.update({'xir':xir})
-                    files.update({'xir_j':xir_j})
-                    files.update({'cov_xir_j':cov_xir})
+ 
+                
+                            muted.update({'logr':mute[10]/mute[2]})
+                            muted.update({'rnom':mute[11]/mute[2]})
+                            muted.update({'meanr':mute[12]/mute[2]})
+                            muted.update({'meanlogr':mute[13]/mute[2]})                   
+                        
+                            muted.update({'gammat_compens':mute[8]/mute[2]})
                     
-                    
-                    files.update({'xi_im':xi_im})
-                    files.update({'xi_im_j':xi_im_j})
-                    files.update({'cov_xi_im_j':cov_xi_im})
-                    files.update({'xi_imr':xi_imr})
-                    files.update({'xi_imr_j':xi_imr_j})
-                    files.update({'cov_xi_imr_j':cov_xi_imr})
-                    
-                    
-                    save_obj(path+'/results',files)
-                    output_shear_pos.update({'{0}_{1}'.format(i,j):files})
-                    
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,1)
-                    if os.path.exists(path+'.pkl'):
-                        mute = load_obj(path)
-                        output_shear_pos_full.update({'{0}_{1}'.format(i,j):mute})
+                            muted.update({'gammat_compens_im':mute[9]/mute[2]})
+    
+                            muted.update({'gammat':xi_full})
+                            muted.update({'gammat_rndm':xir_full})
+                            muted.update({'gammat_im':xi_im_full})
+                            muted.update({'gammat_im_rndm':xi_imr_full})
+                            muted.update({'npairs':mute[6]})
+                            muted.update({'npairs_rndm':mute[7]})
+                            muted.update({'weight':mute[2]})
+                            muted.update({'weight_rndm':mute[3]})
+                            output_shear_pos_full.update({'{0}_{1}'.format(i,j):muted})
                     
                     
             for i,j in self.all_calcs:
                 if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
            
-          
-                    gm = 4
-                    shape = (gm, self.params['tbins'])
-                    pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.params['n_jck_regions'])]
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
-                    for jc in np.unique(self.b):
-                        lla = '{0}'.format(jc)
-                        dict_m = load_obj(path+lla)
-                        pairsCC1 = dict_m['c1']
-                        pairsCC2 = dict_m['c2']
-                        pairs_auto = dict_m['a']
-                        for prs in range(gm):
-                            pairsCC1[prs] += pairsCC2[prs]
+                    if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+                        gm = 12
+                        shape = (gm, self.params['tbins'])
+                        pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
+                        for jci,jc in enumerate(np.unique(self.b)):
+                            lla = '{0}'.format(jc)
+                            dict_m = load_obj(path+lla)
+                            pairsCC1 = dict_m['c1'][:gm]
+                            pairsCC2 = dict_m['c2'][:gm]
+                            pairs_auto = dict_m['a'][:gm]
+                            for prs in range(gm):
+                                pairsCC1[prs] += pairsCC2[prs]
 
-                        pairs_ring[jc][1] = pairsCC1
-                        pairs_ring[jc][0] = pairs_auto  
+                            pairs_ring[jci][1] = pairsCC1
+                            pairs_ring[jci][0] = pairs_auto  
                     
-                    pairs_ring = np.array(pairs_ring)
-                    xi, xi_j = collect(pairs_ring,self.params['n_jck_regions'],self.params['tbins'],'pos_pos',i,j)
+                        pairs_ring = np.array(pairs_ring)
+                        self.pairs_ring = pairs_ring
+                        xi, xi_j,npairs,weight,logr,rnom,meanr,meanlogr = collect(pairs_ring,self.jack_dict_tot['n_jck'],self.params['tbins'],'pos_pos',i,j)
                     
-                    cov_xi = covariance_jck( xi_j.T,self.params['n_jck_regions'],'jackknife')
+                        cov_xi = covariance_jck( xi_j.T,self.jack_dict_tot['n_jck'],'jackknife')
            
-                    files = dict()
-                    files.update({'xi':xi})
-                    files.update({'xi_j':xi_j})
-                    files.update({'cov_xi_j':cov_xi})
-                    save_obj(path+'/results',files)
-                    output_pos_pos.update({'{0}_{1}'.format(i,j):files})
-                    # compute_covariance & save results.
+                        files = dict()
+                        files.update({'logr':logr})
+                        files.update({'rnom':rnom})
+                        files.update({'meanr':meanr})
+                        files.update({'meanlogr':meanlogr})  
+                        files.update({'w':xi})
+                        files.update({'w_jack':xi_j})
+                        files.update({'cov_w_jack':cov_xi})
+                        
+                        files.update({'npairs':npairs})
+                        files.update({'weight':weight})
+                        save_obj(path+'/results',files)
+                        output_pos_pos.update({'{0}_{1}'.format(i,j):files})
+                        # compute_covariance & save results.
+
                     
-                    path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,2)
-                    if os.path.exists(path+'.pkl'):
-                        mute = load_obj(path)
-                        output_pos_pos_full.update({'{0}_{1}'.format(i,j):mute})
+                    if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
+                        path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/_full'.format(i,j,2)
+                        if os.path.exists(path+'.pkl'):
+                            mute = load_obj(path)
+                            xi =  (mute[0]-mute[1]-mute[2]+mute[3])/mute[3] 
+                            muted = dict()
+                            muted.update({'w':xi})
+                            muted.update({'npairs':mute[4]})
+                            muted.update({'weight':mute[0]})
+                            muted.update({'logr':mute[5]/mute[0]})
+                            muted.update({'rnom':mute[6]/mute[0]})
+                            muted.update({'meanr':mute[7]/mute[0]})
+                            muted.update({'meanlogr':mute[8]/mute[0]})    
+                            output_pos_pos_full.update({'{0}_{1}'.format(i,j):muted})
                     
         self.output_shear_shear = output_shear_shear
+        save_obj(self.params['run_directory']+'/2pt/shear_shear_pixellized',self.output_shear_shear)
+        
         self.output_shear_pos = output_shear_pos
+        save_obj(self.params['run_directory']+'/2pt/shear_pos_pixellized',self.output_shear_pos)
+        
         self.output_pos_pos = output_pos_pos 
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_pixellized',self.output_pos_pos)
+        
         # add full if present
         self.output_shear_shear_full = output_shear_shear_full
+        save_obj(self.params['run_directory']+'/2pt/shear_shear_full',self.output_shear_shear_full)
+        
         self.output_shear_pos_full = output_shear_pos_full
+        save_obj(self.params['run_directory']+'/2pt/shear_pos_full',self.output_shear_pos_full)
+        
         self.output_pos_pos_full = output_pos_pos_full 
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full)
+        
+        
         
         return
 

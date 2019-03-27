@@ -140,7 +140,7 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
 
 
 # Generate 2pt funcs for set of params
-def run_cosmosis_togen_2ptdict(pdict={},inifile='blinding_params_template.ini'):
+def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_template.ini'):
     """ 
     Runs cosmosis pipeline to generate 2pt functions. 
 
@@ -264,7 +264,21 @@ def get_twoptdict_from_pipelinedata(data):
         outdict[xkey]=x
         outdict[ykey]=y
         outdict[ykey+'_bins'] = bins
-            
+
+    if data.has_section('shear_xi_minus'):
+        types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins = spectrum_array_from_block(data,'shear_xi_minus',types,True)
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins
+    if data.has_section('shear_xi_plus'):
+        types = (galaxy_shear_plus_real,galaxy_shear_plus_real)
+        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+        x,y,bins = spectrum_array_from_block(data,'shear_xi_plus',types,True)
+        outdict[xkey]=x
+        outdict[ykey]=y
+        outdict[ykey+'_bins'] = bins            
     return outdict
 
 #-----------------------------------------------            
@@ -552,6 +566,7 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     as the fits file data. 
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
+    print(xkey,ykey)
     xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
 
     if 'theta' in xkey: #if realspace, put angle data into arcmin
@@ -772,11 +787,11 @@ if __name__=="__main__":
     callscript = False # if true calls script specifically as written below, 
                       # otherwise calls according to command line args
                       #  [set to true on command line with --script ]
-    unblindedfile = 'simulated_nobias_Y3cov.fits'
+    unblindedfile = 'pipeline/simulated_nobias_Y3cov.fits'
               #^contains 2pt data to be blinded
               # [set on command line with -u <fname> or --origfits <fname>]
 
-    initemplate = 'blinding_params_template.ini'
+    initemplate = 'pipeline/blinding_params_template.ini'
        #^cosmosis pipeline for generating 2pt dat 
        # ref cosmology will be set at whatever its values file is centered at
        # [set on command line with -i <fname> or --ini <fname>]

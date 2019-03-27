@@ -1,3 +1,6 @@
+regions_dict = {
+   'region' : 'region'}
+
 gold_dict = {
     'objid'         : 'coadd_objects_id',
     'ra'            : 'ra',
