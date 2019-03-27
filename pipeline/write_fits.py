@@ -53,11 +53,12 @@ class WriteFits(PipelineStage):
         # Load covariance info
         self.load_cov()
 
-        do_Blinding = True
-        if do_Blinding:
-            print '\nBlinding will be applied to the file being written\nThis is hard-coded.' 
-            print 'To unblind, set do_Blinding=False in write_fits.py'
-            self.blind()
+        if 'no_blinding' in self.params:
+            if self.params['no_blinding']:
+                return
+        print '\nBlinding will be applied to the file being written\nThis is hard-coded.' 
+        print 'To unblind, set do_Blinding=False in write_fits.py'
+        self.blind()
             
         return
 
