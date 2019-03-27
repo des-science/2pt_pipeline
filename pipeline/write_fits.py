@@ -10,6 +10,9 @@ import blind_2pt_usingcosmosis as blind
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 
 
+def load_obj(name):
+    with open(name + '.pkl', 'rb') as f:
+        return pickle.load(f)#, encoding='latin1')
 
 print 'Imported modules'
 
@@ -21,10 +24,9 @@ class WriteFits(PipelineStage):
         "covfiles"              : ("cov", "run_*"),
 
         "2pt"                   : ("nofz","2pt.fits"),
-        "xip"                   : ("2pt", "*_xip.txt"),
-        "xim"                   : ("2pt", "*_xim.txt"),
-        "gammat"                : ("2pt", "*_gammat.txt"),
-        "wtheta"                : ("2pt", "*_wtheta.txt"),
+        "xipm"                  : ("2pt", "shear_shear"),
+        "gammat"                : ("2pt", "shear_pos"),
+        "wtheta"                : ("2pt", "pos_pos"),
         "nofz_meta"             : ("nofz", "metadata.yaml"),
     }
     outputs = {
@@ -64,89 +66,14 @@ class WriteFits(PipelineStage):
         import os
 
         os.system('bash pipeline/BASHTEST.sh')
-        #Requires sourcing a cosmosis-setup file
-        #import os
-        #import pickle
-        
-        #print 'reading env'
-        #env = pickle.load( open('pipeline/ENVIRON.p','rb'))
-        #os.environ = env
-        #print 'probably worked'
-        #pickle.dump(os.environ,open('pipeline/ENVIRON_INSIDE_CODE.p','wb'))
-        #unblinded_name = self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']  
-        #blind.do2ptblinding(self.params['seed'],self.params['ini'],unblinded_name,None,self.params['label'],self.params['btype'],None)    
 
-        #os.system('source pipeline/BASHTEST.sh > BLINDING_LOG.txt')
-        #print 'running blinding'
-        # command = ['source ~/cosmosis/LOAD_STUFF']
-        # subprocess.call(command,shell=True)
-        # proc = subprocess.Popen(command,shell=True)   
-        # print proc.communicate()     
-        #print 'running blinding done'
-
-
-        #try:
-        #    import cosmosis
-        #    print 'cosmosis was imported'
-        #except:
-        #    print 'still doesnt work'
-       # 
-        #try:
-        #    source = 'source ~/cosmosis/LOAD_STUFF'
-        #    dump = '/usr/bin/python -c "import os,pickle;print pickle.dumps(os.environ)"'
-        #    penv = os.popen('%s && %s' %(source,dump))
-        #    a=penv.read()
-        #    print a
-        #    env = pickle.loads(a)
-        #    os.environ = env
-        #    try:
-        #        import cosmosis
-        #    except:
-        #        print 'still doesnt work'
-        #except:
-
-            #import os, subprocess as sp, json
-            #source = 'source ~/cosmosis/LOAD_STUFF'
-            #dump = '/usr/bin/python -c "import os, json;print json.dumps(dict(os.environ))"'
-            #pipe = sp.Popen(['/bin/bash', '-c', '%s && %s' %(source,dump)], stdout=sp.PIPE)
-            #a=pipe.stdout.read()
-            #env = json.loads(a)
-            #os.environ = env
-            #try:
-            #    import cosmosis
-            #except:
-            #    print 'still doesnt work b'
-        #uses Jessie's pipeline to blind the measurement once it's written
-        #it basically runs cosmosis twice, once at some fiducial cosmology and then at a randomly-shifted cosmology
-        #the blinding factor applied to the measurement is the difference (or ratio) between these 2 cosmologies
-        #ini_name = self.self.params['ini']
-        #seed_name = self.self.params['seed']
-        #btype_name = ' -b '+self.self.params['btype']
-        #label_name = ' -t '+self.self.params['label']
-
-        #unblinded_name = self.self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
-        #source_command = 'source '+self.self.params['cosmosis_setup']
-        #os.system(source_command)
-        #blind.do2ptblinding(self.self.params['seed'],self.self.params['ini'],unblinded_name,None,self.self.params['label'],self.self.params['btype'],None)
-        
-
-        #unblinded_name =' -u '+self.self.params['run_directory']+'/'+self.name+'/'+self.outputs['2pt_ng']
-        #print unblinded_name
-        #ini_name = ' -i '+self.self.params['ini']
-        #seed_name = ' -s '+self.self.params['seed']
-        #btype_name = ' -b '+self.self.params['btype']
-        #label_name = ' -t '+self.self.params['label']
-        #blinding_command = 'python pipeline/blind_2pt_usingcosmosis.py '+ seed_name + ini_name + btype_name + label_name + unblinded_name
-        #print source_command+'\n'+blinding_command
-        #os.system(source_command+' \n '+blinding_command)
-        
         return
 
     def strip_wtheta(self, fits):
         if self.params['cross_clustering']:
             return
 
-        wtheta = fits.get_spectrum(TWO_POINT_NAMES[3])
+        wtheta = fits.get_spectrum(TWO_POINT_NAMES[-1])
         mask = wtheta.bin1==wtheta.bin2
         print "Cutting out {} values from wtheta because no cross_clustering".format(len(mask)-mask.sum())
         wtheta.apply_mask(mask)
@@ -212,255 +139,121 @@ class WriteFits(PipelineStage):
         self.zbins = len(np.array(data['source_bins'])) - 1
         self.lens_zbins = len(np.array(data['lens_bins'])) - 1
 
-    def get_pixels(self,f,cf):
-
-        pixels=np.array([],dtype=int)
-        for f_ in f:
-            pixels=np.append(pixels,np.array(f_['2pt/'+cf].keys(),dtype=int))
-
-        return np.unique(pixels)
-
-    def get_pixels2(self,f,cf,pix):
-
-        if pix not in np.array(f['2pt/'+cf].keys(),dtype=int):
-            return -1
-
-        return np.array(f['2pt/'+cf+'/'+str(pix)].keys(),dtype=int)
-
-    # def test_nbin(self,f,cf,i_true,j_true):
-
-    #     ibins=np.array([],dtype=int)
-    #     jbins=np.array([],dtype=int)
-    #     for f_ in f:
-    #         p_ = f_['2pt/'+cf].keys()[0]
-    #         tomo = f_['2pt/'+cf][p_][str(self.get_pixels2(f_,cf,p_)[0])]
-    #         ibins=np.append(ibins,np.array(tomo.keys(),dtype=int))
-    #         for key in tomo.keys():
-    #             tomo_ = tomo[key]
-    #             jbins=np.append(jbins,np.array(tomo_.keys(),dtype=int))
-
-    #     assert np.all(np.unique(ibins)==np.arange(i_true)),'Number of i tomographic bins in '+cf+' different from expectation from stage nofz.'
-    #     assert np.all(np.unique(jbins)==np.arange(j_true)),'Number of j tomographic bins in '+cf+' different from expectation from stage nofz.'
-
     def load_twopt_data(self):
 
-        # Load links to h5 file output
-        f=[]
-        for f_ in glob.glob('2pt_*.h5'):
-            f.append(h5py.File(f_,mode='r'))
+        def get_length(n,n2=None):
+            if n2 is not None:
+                return n*n2
+            else:
+                return n*(n+1)/2
 
-        # Get pixel list from output
-        pixels = self.get_pixels(f,'xipm')
-        # Test that tomographic bins match expectation
-        # self.test_nbin(f,'xipm',self.zbins,self.zbins)
+        # Cosmic shear
+        if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+            f = load_obj(self.input_path("xipm")+'pixellized')
+            length = int(get_length(self.zbins)*self.params['tbins'])
+            self.exts[0].angular_bin = np.zeros(length)
+            self.exts[0].angle       = np.zeros(length)
+            self.exts[0].bin1        = np.zeros(length)
+            self.exts[0].bin2        = np.zeros(length)
+            self.exts[0].value       = np.zeros(length)
+            self.exts[0].npairs      = np.zeros(length)
+            self.exts[0].weight      = np.zeros(length)
+            self.exts[1].angular_bin = np.zeros(length)
+            self.exts[1].angle       = np.zeros(length)
+            self.exts[1].bin1        = np.zeros(length)
+            self.exts[1].bin2        = np.zeros(length)
+            self.exts[1].value       = np.zeros(length)
+            self.exts[1].npairs      = np.zeros(length)
+            self.exts[1].weight      = np.zeros(length)
+            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+                self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
+                self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[0].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[0].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[0].value[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]     = f[bins]['xip']
+                self.exts[0].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
+                self.exts[0].weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]    = f[bins]['weight']
+                self.exts[1].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
+                self.exts[1].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[1].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[1].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[1].value[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]     = f[bins]['xim']
+                self.exts[1].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
+                self.exts[1].weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]    = f[bins]['weight']
 
-        # Do loop to read in xipm
-        self.exts[0].bin1        = []
-        self.exts[0].bin2        = []
-        self.exts[0].angle       = []
-        self.exts[0].angular_bin = []
-        self.exts[0].value       = []
-        self.exts[0].npairs      = []
-        self.exts[0].weight      = []
-        self.exts[1].bin1        = []
-        self.exts[1].bin2        = []
-        self.exts[1].angle       = []
-        self.exts[1].angular_bin = []
-        self.exts[1].value       = []
-        self.exts[1].npairs      = []
-        self.exts[1].weight      = []
-        for t_ in range(self.zbins):
-            for t2_ in range(self.zbins):
-                if t2_<t_:
-                    continue
-                self.exts[0].bin1 = np.append(self.exts[0].bin1,np.ones(self.params['tbins'])*int(t_)+1)
-                self.exts[1].bin1 = np.append(self.exts[1].bin1,np.ones(self.params['tbins'])*int(t_)+1)
-                self.exts[0].bin2 = np.append(self.exts[0].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
-                self.exts[1].bin2 = np.append(self.exts[1].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
-                weight   = np.zeros(self.params['tbins'])
-                npairs   = np.zeros_like(weight)
-                meanlogr = np.zeros_like(weight)
-                xip      = np.zeros_like(weight)
-                xim      = np.zeros_like(weight)
-                for p_ in pixels:
-                    for f_ in f:
-                        pix2 = self.get_pixels2(f_,'xipm',p_)
-                        if not hasattr(pix2,'__len__'):
-                            if pix2 == -1:
-                                continue
-                        for p2_ in pix2:
-                            try:
-                                xip      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xip'][:]
-                                xim      += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['xim'][:]
-                                npairs   += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['npairs'][:]
-                                weight   += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['weight'][:]
-                                meanlogr += f_['2pt/xipm/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['meanlogr'][:]
-                            except:
-                                continue
-                self.exts[0].angle       = np.append(self.exts[0].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                self.exts[0].angular_bin = np.append(self.exts[0].angular_bin,np.arange(self.params['tbins'],dtype=int))
-                self.exts[0].value       = np.append(self.exts[0].value,xip/weight)
-                self.exts[0].npairs      = np.append(self.exts[0].npairs,npairs)
-                self.exts[0].weight      = np.append(self.exts[0].weight,weight)
-                self.exts[1].angle       = np.append(self.exts[1].angle,np.exp(meanlogr/weight)*180/np.pi*60)
-                self.exts[1].angular_bin = np.append(self.exts[1].angular_bin,np.arange(self.params['tbins'],dtype=int))
-                self.exts[1].value       = np.append(self.exts[1].value,xim/weight)
-                self.exts[1].npairs      = np.append(self.exts[1].npairs,npairs)
-                self.exts[1].weight      = np.append(self.exts[1].weight,weight)
+        # gammat
+        if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+            f = load_obj(self.input_path("gammat")+'pixellized')
+            length = int(get_length(self.zbins,n2=self.lens_zbins)*self.params['tbins'])
+            self.exts[2].angular_bin   = np.zeros(length)
+            self.exts[2].angle         = np.zeros(length)
+            self.exts[2].bin1          = np.zeros(length)
+            self.exts[2].bin2          = np.zeros(length)
+            self.exts[2].value         = np.zeros(length)
+            self.exts[2].npairs        = np.zeros(length)
+            self.exts[2].weight        = np.zeros(length)
+            self.exts[2].random_npairs = np.zeros(length)
+            self.exts[2].random_weight = np.zeros(length)
+            self.exts[3].angular_bin   = np.zeros(length)
+            self.exts[3].angle         = np.zeros(length)
+            self.exts[3].bin1          = np.zeros(length)
+            self.exts[3].bin2          = np.zeros(length)
+            self.exts[3].value         = np.zeros(length)
+            self.exts[3].npairs        = np.zeros(length)
+            self.exts[3].weight        = np.zeros(length)
+            self.exts[3].random_npairs = np.zeros(length)
+            self.exts[3].random_weight = np.zeros(length)
+            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+                self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
+                self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[2].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[2].value[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]     = f[bins]['gammat']
+                self.exts[2].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
+                self.exts[2].weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]    = f[bins]['weight']
+                self.exts[2].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
+                self.exts[2].random_weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]] = f[bins]['weight_rndm']
+                self.exts[3].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
+                self.exts[3].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[3].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[3].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[3].value[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]     = f[bins]['gammat_im']
+                self.exts[3].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
+                self.exts[3].weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]    = f[bins]['weight']
+                self.exts[3].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
+                self.exts[3].random_weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]] = f[bins]['weight_rndm']
 
-        # Get pixel list from output
-        pixels = self.get_pixels(f,'gammat')
-        # Test that tomographic bins match expectation
-        # self.test_nbin(f,'gammat',self.lens_zbins,self.zbins)
-
-        # Do loop to read in gammat/gammax
-        self.exts[2].bin1        = []
-        self.exts[2].bin2        = []
-        self.exts[2].angle       = []
-        self.exts[2].angular_bin = []
-        self.exts[2].value       = []
-        self.exts[2].npairs      = []
-        self.exts[2].weight      = []
-        self.exts[2].random_npairs = []
-        self.exts[2].random_weight = []
-        self.exts[3].bin1        = []
-        self.exts[3].bin2        = []
-        self.exts[3].angle       = []
-        self.exts[3].angular_bin = []
-        self.exts[3].value       = []
-        self.exts[3].npairs      = []
-        self.exts[3].weight      = []
-        self.exts[3].random_npairs = []
-        self.exts[3].random_weight = []
-        for t_ in range(self.lens_zbins):
-            for t2_ in range(self.zbins):
-                self.exts[2].bin1 = np.append(self.exts[2].bin1,np.ones(self.params['tbins'])*int(t_)+1)
-                self.exts[3].bin1 = np.append(self.exts[3].bin1,np.ones(self.params['tbins'])*int(t_)+1)
-                self.exts[2].bin2 = np.append(self.exts[2].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
-                self.exts[3].bin2 = np.append(self.exts[3].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
-                ngweight  = np.zeros(self.params['tbins'])
-                ngnpairs  = np.zeros_like(ngweight)
-                rgweight  = np.zeros_like(ngweight)
-                rgnpairs  = np.zeros_like(ngweight)
-                meanlogr  = np.zeros_like(ngweight)
-                ngxi      = np.zeros_like(ngweight)
-                ngxim     = np.zeros_like(ngweight)
-                rgxi      = np.zeros_like(ngweight)
-                rgxim     = np.zeros_like(ngweight)
-                for p_ in pixels:
-                    for f_ in f:
-                        pix2 = self.get_pixels2(f_,'gammat',p_)
-                        if not hasattr(pix2,'__len__'):
-                            if pix2 == -1:
-                                continue
-                        for p2_ in pix2:
-                            try:
-                                ngxi       += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxi'][:]
-                                ngxim      += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngxim'][:]
-                                ngnpairs   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngnpairs'][:]
-                                ngweight   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['ngweight'][:]
-                                rgxi       += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rgxi'][:]
-                                rgxim      += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rgxim'][:]
-                                rgnpairs   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rgnpairs'][:]
-                                rgweight   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rgweight'][:]
-                                meanlogr   += f_['2pt/gammat/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['meanlogr'][:]
-                            except:
-                                continue
-                self.exts[2].angle         = np.append(self.exts[2].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                self.exts[2].angular_bin   = np.append(self.exts[2].angular_bin,np.arange(self.params['tbins'],dtype=int))
-                self.exts[2].value         = np.append(self.exts[2].value,ngxi/ngweight-rgxi/rgweight)
-                self.exts[2].npairs        = np.append(self.exts[2].npairs,ngnpairs)
-                self.exts[2].weight        = np.append(self.exts[2].weight,ngweight)
-                self.exts[2].random_npairs = np.append(self.exts[2].random_npairs,rgnpairs)
-                self.exts[2].random_weight = np.append(self.exts[2].random_weight,rgweight)
-                self.exts[3].angle         = np.append(self.exts[3].angle,np.exp(meanlogr/ngweight)*180/np.pi*60)
-                self.exts[3].angular_bin   = np.append(self.exts[3].angular_bin,np.arange(self.params['tbins'],dtype=int))
-                self.exts[3].value         = np.append(self.exts[3].value,ngxim/ngweight-rgxim/rgweight)
-                self.exts[3].npairs        = np.append(self.exts[3].npairs,ngnpairs)
-                self.exts[3].weight        = np.append(self.exts[3].weight,ngweight)
-                self.exts[3].random_npairs = np.append(self.exts[3].random_npairs,rgnpairs)
-                self.exts[3].random_weight = np.append(self.exts[3].random_weight,rgweight)
-
-        # Get pixel list from output
-        pixels = self.get_pixels(f,'wtheta')
-        # Test that tomographic bins match expectation
-        # self.test_nbin(f,'wtheta',self.lens_zbins,self.lens_zbins)
-
-        # Do loop to read in wtheta
-        self.exts[4].bin1          = []
-        self.exts[4].bin2          = []
-        self.exts[4].angle         = []
-        self.exts[4].angular_bin   = []
-        self.exts[4].value         = []
-        self.exts[4].npairs        = []
-        self.exts[4].weight        = []
-        self.exts[4].random_npairs = []
-        self.exts[4].random_weight = []
-        for t_ in range(self.lens_zbins):
-            for t2_ in range(self.lens_zbins):
-                if t_>t2_:
-                    continue
-                self.exts[4].bin1 = np.append(self.exts[4].bin1,np.ones(self.params['tbins'])*int(t_)+1)
-                self.exts[4].bin2 = np.append(self.exts[4].bin2,np.ones(self.params['tbins'])*int(t2_)+1)
-                nnweight  = np.zeros(self.params['tbins'])
-                nnnpairs  = np.zeros_like(nnweight)
-                nrweight  = np.zeros_like(nnweight)
-                nrnpairs  = np.zeros_like(nnweight)
-                rnweight  = np.zeros_like(nnweight)
-                rnnpairs  = np.zeros_like(nnweight)
-                rrweight  = np.zeros_like(nnweight)
-                rrnpairs  = np.zeros_like(nnweight)
-                meanlogr  = np.zeros_like(nnweight)
-                nntot=0
-                rntot=0
-                nrtot=0
-                rrtot=0
-                for p_ in pixels:
-                    for f_ in f:
-                        pix2 = self.get_pixels2(f_,'wtheta',p_)
-                        if not hasattr(pix2,'__len__'):
-                            if pix2 == -1:
-                                continue
-                        for p2_ in pix2:
-                            try:
-                                if len(f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:])==1:
-                                    if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:] ==0:
-                                        continue
-                                    if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nrtot'][:] ==0:
-                                        continue
-                                    if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rntot'][:] ==0:
-                                        continue
-                                    if f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rrtot'][:] ==0:
-                                        continue
-                                nnnpairs   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nnnpairs'][:]
-                                nnweight   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nnweight'][:]
-                                nrnpairs   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nrnpairs'][:]
-                                nrweight   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nrweight'][:]
-                                rnnpairs   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rnnpairs'][:]
-                                rnweight   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rnweight'][:]
-                                rrnpairs   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rrnpairs'][:]
-                                rrweight   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rrweight'][:]
-                                meanlogr   += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['meanlogr'][:]
-                                nntot      += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nntot'][:]
-                                nrtot      += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['nrtot'][:][0]
-                                rntot      += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rntot'][:][0]
-                                rrtot      += f_['2pt/wtheta/'][str(int(p_))][str(int(p2_))][str(int(t_))][str(int(t2_))]['rrtot'][:][0]
-                            except:
-                                continue
-                self.exts[4].angle         = np.append(self.exts[4].angle,np.exp(meanlogr/nnweight)*180/np.pi*60)
-                self.exts[4].angular_bin   = np.append(self.exts[4].angular_bin,np.arange(self.params['tbins'],dtype=int))
-                rrw = 1.*nntot / rrtot
-                drw = 1.*nntot / rntot
-                rdw = 1.*nntot / rntot
-                xi = (nnweight - rnweight * rdw - nrweight * drw + rrweight * rrw) / (rrweight * rrw) 
-                self.exts[4].value         = np.append(self.exts[4].value,xi)
-                self.exts[4].npairs        = np.append(self.exts[4].npairs,nnnpairs)
-                self.exts[4].weight        = np.append(self.exts[4].weight,nnweight)
-                self.exts[4].random_npairs = np.append(self.exts[4].random_npairs,rrnpairs)
-                self.exts[4].random_weight = np.append(self.exts[4].random_weight,rrweight)
-
-        for f_ in f:
-            f_.close()
+        # galaxy clustering
+        if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
+            f = load_obj(self.input_path("wtheta")+'pixellized')
+            length = int(get_length(self.lens_zbins)*self.params['tbins'])
+            self.exts[4].angular_bin   = np.zeros(length)
+            self.exts[4].angle         = np.zeros(length)
+            self.exts[4].bin1          = np.zeros(length)
+            self.exts[4].bin2          = np.zeros(length)
+            self.exts[4].value         = np.zeros(length)
+            self.exts[4].npairs        = np.zeros(length)
+            self.exts[4].weight        = np.zeros(length)
+            # self.exts[4].random_npairs = np.zeros(length)
+            # self.exts[4].random_weight = np.zeros(length)
+            # self.exts[4].dr_npairs     = np.zeros(length)
+            # self.exts[4].dr_weight     = np.zeros(length)
+            # self.exts[4].rd_npairs     = np.zeros(length)
+            # self.exts[4].rd_weight     = np.zeros(length)
+            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+                self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
+                self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[4].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[4].value[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]     = f[bins]['wtheta']
+                self.exts[4].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
+                self.exts[4].weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]]    = f[bins]['weight']
+                # self.exts[4].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
+                # self.exts[4].random_weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]] = f[bins]['weight_rndm']
+                # self.exts[4].dr_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
+                # self.exts[4].dr_weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]] = f[bins]['weight_rndm']
+                # self.exts[4].rd_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
+                # self.exts[4].rd_weight[[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]] = f[bins]['weight_rndm']
 
     def load_cov(self):
         import os
@@ -525,7 +318,6 @@ class WriteFits(PipelineStage):
                 npairs=None, # pair counts
                 angle=None,
                 angle_unit='arcmin')) # units
-
 
         return 
 
