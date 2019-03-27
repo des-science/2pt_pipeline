@@ -1645,7 +1645,7 @@ class Measure2Point(PipelineStage):
                 # Loop over tomographic bin pairs
 
                 if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-                    gm = 3 + 1 + 4
+                    gm = 12
                     shape = (gm, self.params['tbins'])
                     pairs_ring = [[np.zeros(shape) for ii in range(
                         2)] for jk in range(self.jack_dict_tot['n_jck'])]
