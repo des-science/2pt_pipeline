@@ -552,7 +552,6 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     as the fits file data. 
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-    print xkey, ykey
     xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
 
     if 'theta' in xkey: #if realspace, put angle data into arcmin

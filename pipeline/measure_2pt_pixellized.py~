@@ -30,7 +30,7 @@ destest_dict_ = {
     'dg'            : 0.01
     }
 
-def create_destest_yaml( params, cal_type, group, table, select_path, name_dict ):
+def create_destest_yaml(params, cal_type, group, table, select_path, name_dict):
     """
     Creates the input dictionary structure from a passed dictionary rather than reading froma yaml file.
     """
@@ -46,6 +46,7 @@ def create_destest_yaml( params, cal_type, group, table, select_path, name_dict 
     destest_dict['select_path'] = select_path
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
+    destest_dict['extra_params'] = params
 
     return destest_dict
 
@@ -133,7 +134,8 @@ def save_obj(name, obj):
         
 def load_obj(name):
     with open(name + '.pkl', 'rb') as f:
-        return pickle.load(f)#, encoding='latin1')
+        return pickle.load(f) #, encoding='latin1')
+
 def covariance_jck(TOTAL_PHI,jk_r,type_cov):
       if type_cov=='jackknife':
           fact=(jk_r-1.)/(jk_r)
@@ -215,13 +217,19 @@ class Measure2Point(PipelineStage):
         print 'using dictionary: ',self.params['dict_file']
                 
         # Load data and calibration classes
-        self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
-        self.lens_selector, self.lens_calibrator     = load_catalog(self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
-        self.gold_selector = load_catalog(self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
-        self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
-        self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
+        if self.params['has_sheared']:
+            self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
+            self.lens_selector, self.lens_calibrator     = load_catalog(self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.gold_selector = load_catalog(self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
+            self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
+            self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
+        else:
+            self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.lens_selector, self.lens_calibrator     = load_catalog(self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.gold_selector = load_catalog(self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
+            self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
+            self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
 
-        
         # Added!
         self.source_regions_selector = load_catalog(self.params, 'mcal', self.params['gold_regions_group'], self.params['gold_regions_table'], self.params['gold_regions_path'], self.Dict, inherit=self.source_selector)
         self.lens_regions_selector = load_catalog(self.params, 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.source_selector)
@@ -250,7 +258,6 @@ class Measure2Point(PipelineStage):
         self.zbins = len(np.array(data['source_bins'])) - 1
         self.lens_zbins = len(np.array(data['lens_bins'])) - 1
 
-
     def setup_jaccknife(self):
         cals =[]
         if self.params['lens_group'] != 'None':
@@ -260,7 +267,7 @@ class Measure2Point(PipelineStage):
             
         jack_info_tot = dict()
         for cal in cals:
-            if type(cal)==destest.NoCalib:
+            if cal.params['cal_type'] is None:
                 nbin=self.lens_zbins
             else:
                 nbin=self.zbins
@@ -268,12 +275,22 @@ class Measure2Point(PipelineStage):
             for i in range(nbin):
                 
                 jack_info = dict()
-                if type(cal)==destest.NoCalib:
+                if cal.params['cal_type'] is None:
+
+                    
                     gmask = cal.selector.get_match()
                     R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
+
+                    if cal.params['extra_params']['no_gold_match']:
+                        ra_lens  = self.lens_selector.source.read(self.Dict.lens_dict['ra'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                        dec_lens = self.lens_selector.source.read(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+
+                    else:
+                        gmask = cal.selector.get_match()
+                        ra_lens  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                        dec_lens = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                    
                     region_lenses =   self.lens_regions_selector.source.read('region')[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-                    
-                    
                         
                     jack_info.update({'hpix' : region_lenses})
                     #jack_info.update({'n_jck' : self.jack_dict_tot['n_jck']}) 
@@ -313,6 +330,9 @@ class Measure2Point(PipelineStage):
         jack_info_tot.update({'n_jck':np.array(f['regions']['centers']['number'][0])})
         jack_info_tot.update({'centers':centers})
         self.jack_dict_tot = jack_info_tot
+
+
+ 
     def setup_jobs(self,pool):
         """
         Set up the list of jobs that must be distributed across nodes.
@@ -588,11 +608,17 @@ class Measure2Point(PipelineStage):
 
         # Open file from nofz stage that contains the catalog tomographic binning indices and read.
         f = h5py.File( self.input_path("nz_source"), mode='r')
-        if type(cal)==destest.NoCalib: # Lens catalog
+        if cal.params['cal_type'] is None: # Lens catalog
             binning = [f['nofz/lens_zbin'][:]]
         else: # Source catalog
             binning = []
-            for zbin_ in ['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m']: # Length 5 for unsheared and sheared metacal selections
+
+            if cal.params['extra_params']['has_sheared']:
+                zbins = ['zbin','zbin_1p','zbin_1m','zbin_2p','zbin_2m']
+            else:
+                zbins = ['zbin']
+                
+            for zbin_ in zbins: # Length 5 for unsheared and sheared metacal selections
                 binning.append(f['nofz'][zbin_][:])
 
         # Create tomographic binning mask
@@ -600,7 +626,7 @@ class Measure2Point(PipelineStage):
         for s in binning:
             mask.append( s == i )
 
-        if type(cal)==destest.NoCalib: # Lens catalog
+        if (type(cal)==destest.NoCalib) & (cal.params['cal_type'] is None):
 
             # Get random binning as well
             f = h5py.File( self.input_path("nz_source"), mode='r')
@@ -608,7 +634,12 @@ class Measure2Point(PipelineStage):
             # Get weights
             w = cal.calibrate(self.Dict.shape_dict['e1'], weight_only=True)
             # Return lens binning mask, weights, and random binning mask
-            return None, None, mask[self.Dict.ind['u']], w, rmask
+            return np.ones_like(w), np.ones_like(w), mask[self.Dict.ind['u']], w, rmask
+
+        elif (type(cal)==destest.NoCalib):
+
+            w = cal.calibrate(self.Dict.shape_dict['e1'], weight_only=True)
+            return np.ones_like(w), np.ones_like(w), mask[self.Dict.ind['u']], w
 
         else: # Source catalog
 
@@ -616,7 +647,9 @@ class Measure2Point(PipelineStage):
             R1,c,w = cal.calibrate(self.Dict.shape_dict['e1'], mask=mask)
             R2,c,w = cal.calibrate(self.Dict.shape_dict['e2'], mask=mask)
             # Return responses, source binning mask and weights            
-            return R1, R2, mask[self.Dict.ind['u']], w
+            return R1, R2, mask[self.Dict.ind['u']], w        
+
+
 
 
     def make_jackknife_regions(self):
@@ -854,19 +887,20 @@ class Measure2Point(PipelineStage):
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
         """
         start = timeit.default_timer()
-        if type(cal)==destest.NoCalib: # lens catalog
-
+        
+        if cal.params['cal_type'] is None: # lens catalog
 
             # Get index matching of gold to lens catalog (smaller than gold)
-            gmask = cal.selector.get_match()
-
-            # Get tomographic bin masks for lenses and randoms, and weights
             R1,R2,mask,w_,rmask = self.get_zbins_R(i,cal)
+        
+            if cal.params['extra_params']['no_gold_match']:
+                ra_lens  = self.lens_selector.source.read(self.Dict.lens_dict['ra'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                dec_lens = self.lens_selector.source.read(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
 
-            # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
-            ra  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-            dec = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-            
+            else:
+                gmask = cal.selector.get_match()
+                ra_lens  = self.gold_selector.source.read(self.Dict.gold_dict['ra'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                dec_lens = self.gold_selector.source.read(self.Dict.gold_dict['dec'])[self.Dict.ind['u']][gmask][cal.selector.get_mask()[self.Dict.ind['u']]][mask]        
             
             if not np.isscalar(w_):
                 w   = w_[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
@@ -1518,6 +1552,7 @@ class Measure2Point(PipelineStage):
                     path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
                     for jci,jc in enumerate(np.unique(self.b)):
                         lla = '{0}'.format(jc)
+                        print(path+lla)
                         dict_m = load_obj(path+lla)
                         pairsCC1 = dict_m['c1'][:gm]
                         pairsCC2 = dict_m['c2'][:gm]

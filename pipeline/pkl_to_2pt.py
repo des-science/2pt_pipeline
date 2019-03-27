@@ -3,7 +3,7 @@ import numpy as np
 import os
 import pickle as p
 
-root_dir = '../y3_full/2pt/' #'2pt_pickles/complete_subsampled/'
+root_dir = '/global/cscratch1/sd/aamon/y3_buzzard_BPZcutstack/2pt/' #'2pt_pickles/complete_subsampled/'
 #'y3_full'
 def get_pkl_files(some_dir):
     filename_list = []
@@ -171,7 +171,7 @@ def create_fits_PIX(template_name,output_name):
     t.close()
     return 0
 
-create_fits_PIX('template.fits','../mcalY3_pixellized_full.fits')
+create_fits_PIX('template.fits','../Buzz3x2_pixellized_BPZbinstack.fits')
 print 'Created pixelized measurement datavector!'
 #################################################################################
 
