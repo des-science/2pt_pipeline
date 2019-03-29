@@ -211,7 +211,7 @@ class Measure2Point(PipelineStage):
 
         # A dictionary to homogenize names of columns in the hdf5 master catalog 
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
-        print 'using dictionary: ',self.params['dict_file']
+        print ('using dictionary: ',self.params['dict_file'])
            
         # Load data and calibration classes
         if self.params['has_sheared']:
@@ -279,8 +279,9 @@ class Measure2Point(PipelineStage):
                 nbin=self.zbins
 
             for i in range(nbin):
+                
                 jack_info = dict()
-                if (type(cal)==destest.NoCalib) and (cal.params['cal_type'] is None):
+                if type(cal)==destest.NoCalib and (cal.params['cal_type'] is None):
                     R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
                     region_lenses =   self.lens_regions_selector.source.read('region')[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
 
@@ -314,7 +315,6 @@ class Measure2Point(PipelineStage):
         jack_info_tot.update({'n_jck':np.array(f['regions']['centers']['number'][0])})
         jack_info_tot.update({'centers':centers})
         self.jack_dict_tot = jack_info_tot
-
     def setup_jobs(self,pool):
         """
         Set up the list of jobs that must be distributed across nodes.
@@ -367,7 +367,7 @@ class Measure2Point(PipelineStage):
         else:
             nbin=self.zbins
 
-        print 'setting up ',nbin,'tomographic bins'
+        print ('setting up ',nbin,'tomographic bins')
         
 
         cnt = self.jack_dict_tot['centers']
@@ -457,7 +457,7 @@ class Measure2Point(PipelineStage):
             self.rank = pool.rank
             self.size = pool.size
         
-        print 'done calcs'
+        print ('done calcs')
 
         return calcs
 
@@ -553,7 +553,7 @@ class Measure2Point(PipelineStage):
                
                 pool.map(task_full, calcs)
 
-                print 'out of main loop',pool.rank
+                print ('out of main loop',pool.rank)
                 sys.stdout.flush()
                 pool.close()
             else:
@@ -575,7 +575,7 @@ class Measure2Point(PipelineStage):
                
                 pool.map(task, calcs)
 
-                print 'out of main loop',pool.rank
+                print ('out of main loop',pool.rank)
                 sys.stdout.flush()
                 pool.close()
             else:
@@ -587,7 +587,7 @@ class Measure2Point(PipelineStage):
         """
         Get the lens or source binning, calibration, and weights for a given tomographic bin.
         """ 
-
+        
         # Open file from nofz stage that contains the catalog tomographic binning indices and read.
         f = h5py.File( self.input_path("nz_source"), mode='r')
         if (type(cal)==destest.NoCalib) and (cal.params['cal_type'] is None):
@@ -630,6 +630,7 @@ class Measure2Point(PipelineStage):
             # Return responses, source binning mask and weights            
             return R1, R2, mask[self.Dict.ind['u']], w
 
+
     def build_catalogs_tot(self,cal,i):
         """
         Buid catalog subsets in the form of treecorr.Catalog objects for the required tomograhpic and healpixel subsets for this calculation iteration.
@@ -661,7 +662,7 @@ class Measure2Point(PipelineStage):
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
             end =  timeit.default_timer()
             
-            print "full load ", end-start
+            print ("full load ", end-start)
             return ra,dec,ran_ra,ran_dec,w,downsample
 
         else: # source catalog
@@ -675,7 +676,7 @@ class Measure2Point(PipelineStage):
 
             # Get e1,e2, subtract mean shear, and correct with mean response
             g1=cal.selector.get_col(self.Dict.shape_dict['e1'])[self.Dict.ind['u']][mask]
-            print '----------',g1,self.mean_e1[i],R1
+            print('----------',g1,self.mean_e1[i],R1)
             g1 = (g1-self.mean_e1[i])/R1
             g2=cal.selector.get_col(self.Dict.shape_dict['e2'])[self.Dict.ind['u']][mask]
             g2 = (g2-self.mean_e2[i])/R2
@@ -687,7 +688,7 @@ class Measure2Point(PipelineStage):
             
             end =  timeit.default_timer()
             
-            print "full load " ,end-start
+            print ("full load " ,end-start)
             return ra,dec,g1,g2,w
 
     def calc_correlation(self,i,j,k,pix1=None,pix2=None,full=False):
@@ -1457,5 +1458,3 @@ class Measure2Point(PipelineStage):
         
         
         return
-
- 
