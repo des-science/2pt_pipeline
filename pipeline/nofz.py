@@ -94,15 +94,30 @@ class nofz(PipelineStage):
         print 'using dictionary: ',self.params['dict_file']
                 
         # Load data and calibration classes
-        self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
-        self.lens_selector, self.lens_calibrator     = load_catalog(self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
-        self.gold_selector = load_catalog(self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
-        self.pz_selector   = load_catalog(self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict,   inherit=self.source_selector)
-        self.ran_selector  = load_catalog(self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
-        self.source_regions_selector = load_catalog(self.params, 'mcal', self.params['gold_regions_group'], self.params['gold_regions_table'], self.params['gold_regions_path'], self.Dict, inherit=self.source_selector)
-        self.lens_regions_selector = load_catalog(self.params, 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.source_selector)
-        self.lens_random_regions_selector = load_catalog(self.params, None, self.params['lens_randoms_regions_group'], self.params['lens_randoms_regions_table'], self.params['lens_randoms_regions_path'], self.Dict)
+        if self.params['has_sheared']:
+            self.source_selector, self.source_calibrator = load_catalog(
+                self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
+            self.lens_selector, self.lens_calibrator = load_catalog(
+                self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.gold_selector = load_catalog(
+                self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
+            self.pz_selector = load_catalog(
+                self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
+            self.ran_selector = load_catalog(
+                self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
+        else:
+            self.source_selector, self.source_calibrator = load_catalog(
+                self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.lens_selector, self.lens_calibrator = load_catalog(
+                self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.gold_selector = load_catalog(
+                self.params, 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
+            self.pz_selector = load_catalog(
+                self.params, 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
+            self.ran_selector = load_catalog(
+                self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
 
+        
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
         # Setup n(z) array binning for sources
