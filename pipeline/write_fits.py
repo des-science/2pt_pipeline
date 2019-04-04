@@ -150,7 +150,7 @@ class WriteFits(PipelineStage):
 
         # Cosmic shear
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-            f = load_obj(self.input_path("xipm")+'pixellized')
+            f = load_obj(self.input_path("xipm")+'_pixellized')
             length = int(get_length(self.zbins)*self.params['tbins'])
             self.exts[0].angular_bin = np.zeros(length)
             self.exts[0].angle       = np.zeros(length)
@@ -166,7 +166,7 @@ class WriteFits(PipelineStage):
             self.exts[1].value       = np.zeros(length)
             self.exts[1].npairs      = np.zeros(length)
             self.exts[1].weight      = np.zeros(length)
-            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+            for i,bins in enumerate(np.sort(f.keys())):
                 self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
                 self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[0].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -184,7 +184,7 @@ class WriteFits(PipelineStage):
 
         # gammat
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-            f = load_obj(self.input_path("gammat")+'pixellized')
+            f = load_obj(self.input_path("gammat")+'_pixellized')
             length = int(get_length(self.zbins,n2=self.lens_zbins)*self.params['tbins'])
             self.exts[2].angular_bin   = np.zeros(length)
             self.exts[2].angle         = np.zeros(length)
@@ -204,7 +204,7 @@ class WriteFits(PipelineStage):
             self.exts[3].weight        = np.zeros(length)
             self.exts[3].random_npairs = np.zeros(length)
             self.exts[3].random_weight = np.zeros(length)
-            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+            for i,bins in enumerate(np.sort(f.keys())):
                 self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
                 self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -226,7 +226,7 @@ class WriteFits(PipelineStage):
 
         # galaxy clustering
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
-            f = load_obj(self.input_path("wtheta")+'pixellized')
+            f = load_obj(self.input_path("wtheta")+'_pixellized')
             length = int(get_length(self.lens_zbins)*self.params['tbins'])
             self.exts[4].angular_bin   = np.zeros(length)
             self.exts[4].angle         = np.zeros(length)
@@ -241,7 +241,7 @@ class WriteFits(PipelineStage):
             # self.exts[4].dr_weight     = np.zeros(length)
             # self.exts[4].rd_npairs     = np.zeros(length)
             # self.exts[4].rd_weight     = np.zeros(length)
-            for i,bins in enumerate(np.sort(ss_bin_to_index.keys())):
+            for i,bins in enumerate(np.sort(f.keys())):
                 self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
                 self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -279,6 +279,7 @@ class WriteFits(PipelineStage):
         ndata=int(np.max(covdata[:,0]))+1
         ndata2=int(np.max(covdata[:,1]))+1
         assert ndata==ndata2
+
         cov=np.zeros((ndata,ndata))
         cov[:,:] = 0.0
         for i in range(0,covdata.shape[0]):
