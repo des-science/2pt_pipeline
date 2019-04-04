@@ -1430,10 +1430,10 @@ class Measure2Point(PipelineStage):
                             muted.update({'w':xi})
                             muted.update({'npairs':mute[4]})
                             muted.update({'weight':mute[0]})
-                            muted.update({'logr':mute[5]/mute[0]})
-                            muted.update({'rnom':mute[6]/mute[0]})
-                            muted.update({'meanr':mute[7]/mute[0]})
-                            muted.update({'meanlogr':mute[8]/mute[0]})    
+                            muted.update({'logr':mute[8]/mute[0]})
+                            muted.update({'rnom':mute[9]/mute[0]})
+                            muted.update({'meanr':mute[10]/mute[0]})
+                            muted.update({'meanlogr':mute[11]/mute[0]})    
                             output_pos_pos_full.update({'{0}_{1}'.format(i,j):muted})
                     
         self.output_shear_shear = output_shear_shear
