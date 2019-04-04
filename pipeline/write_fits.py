@@ -209,7 +209,7 @@ v        """
                 self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
                 self.exts[2].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
-                self.exts[2].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat']
+                self.exts[2].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens']
                 self.exts[2].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[2].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
                 self.exts[2].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
@@ -218,7 +218,7 @@ v        """
                 self.exts[3].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[3].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
                 self.exts[3].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
-                self.exts[3].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_im']
+                self.exts[3].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens_im']
                 self.exts[3].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[3].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
                 self.exts[3].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
@@ -246,7 +246,7 @@ v        """
                 self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
                 self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
                 self.exts[4].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
-                self.exts[4].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['wtheta']
+                self.exts[4].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['w']
                 self.exts[4].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[4].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
                 # self.exts[4].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
