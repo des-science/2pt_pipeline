@@ -107,7 +107,7 @@ class nofz(PipelineStage):
                 self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
         else:
             self.source_selector, self.source_calibrator = load_catalog(
-                self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.NoCalib)
+                self.params, 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
             self.lens_selector, self.lens_calibrator = load_catalog(
                 self.params, None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
             self.gold_selector = load_catalog(
