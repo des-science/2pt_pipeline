@@ -117,7 +117,6 @@ class nofz(PipelineStage):
                 self.params, None, self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
             self.ran_selector = load_catalog(
                 self.params, None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
-
         
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
@@ -355,6 +354,17 @@ class nofz(PipelineStage):
                         weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
                         print 'weight',weight_
                         
+
+                    elif (type(self.source_calibrator)==destest.NoCalib) and (self.source_calibrator.params['cal_type'] is None):
+
+                        mask_1p = (xbins0[1] == i)
+                        mask_1m = (xbins0[2] == i)
+                        mask_2p = (xbins0[3] == i)
+                        mask_2m = (xbins0[4] == i)
+
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        print 'weight',weight_
+
                     else:
 
                         raise ParamError('Not updated to support non-metacal catalogs.')
