@@ -92,7 +92,7 @@ class nofz(PipelineStage):
         
         # A dictionary to homogenize names of columns in the hdf5 master catalog 
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
-        print 'using dictionary: ',self.params['dict_file']
+        print('using dictionary: ',self.params['dict_file'])
                 
         # Load data and calibration classes
         if self.params['has_sheared']:
@@ -164,16 +164,16 @@ class nofz(PipelineStage):
         """
 
         # Get the PZ binning and stacking arrays
-        print self.pz_selector.source.cols
-        print self.pz_selector.params
+        print(self.pz_selector.source.cols)
+        print(self.pz_selector.params)
         pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
-        print 'len pzbin',len(pzbin),len(pzbin[0])
+        print('len pzbin',len(pzbin),len(pzbin[0]))
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
         if self.params['pdf_type']!='pdf': 
             # Get binning and n(z) by stacking a scalar derived from pdf
 
-            print pzbin, pzstack,self.binedges,self.tomobins
+            print(pzbin, pzstack,self.binedges,self.tomobins)
 
             zbin, self.nofz = self.build_nofz_bins(
                 self.tomobins, # Number of tomographic bins
@@ -302,7 +302,7 @@ class nofz(PipelineStage):
             data.update({ "lens_neff" : self.lens_neff,
                           "lens_tomobins" : self.lens_tomobins,
                           "lens_bins" : self.lens_binedges })
-        print data
+        print(data)
         # Save dict to yaml file.
         filename = self.output_path('metadata')
         open(filename, 'w').write(yaml.dump(data))
@@ -342,7 +342,7 @@ class nofz(PipelineStage):
             # Stack scalar values into n(z) looping over tomographic bins
             for i in range(zbins):
                 # Get array masks for the tomographic bin for unsheared and sheared catalogs
-                print i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1]))
+                print(i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1])))
                 mask        =  (xbins == i)
                 if shape:
                     if self.params['has_sheared']:
@@ -352,12 +352,13 @@ class nofz(PipelineStage):
                         mask_2m = (xbins0[4] == i)
 
                         weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
-                        print 'weight',weight_
+                        print('weight',weight_)
 
                     else:
-
-                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
-                        print 'weight',weight_
+                        print("not a metacal catalogue")
+                        weight_ = np.ones(np.shape(stack_col[mask])) #this is the line that worked in buzz pipeline
+                        #weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        print('weight',weight_)
                         # raise ParamError('Not updated to support non-metacal catalogs.')
 
                 else:
@@ -403,7 +404,7 @@ class nofz(PipelineStage):
         ist  = 0
         for j in xrange(1,nbins):
             if k[j]  < r[j-1]:
-                print 'Random weight approx. failed - attempting brute force approach'
+                print('Random weight approx. failed - attempting brute force approach')
                 fail = True
                 break
 
@@ -491,7 +492,7 @@ class nofz(PipelineStage):
 
         for i in range(tomobins):
             # Loop over source tomographic bins
-            print 'Doing sige and neff for source zbin',i
+            print('Doing sige and neff for source zbin',i)
 
             if self.params['has_sheared']:
                 # Select objects in tomographic bin i
@@ -503,9 +504,9 @@ class nofz(PipelineStage):
 
                 # Calculate mean reponse in tomographic bin i and get weight vector
                 R,c,w = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-                print 'response',R
+                print('response',R)
                 R,c,w = self.source_calibrator.calibrate(self.Dict.shape_dict['e2'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
-                print 'response',R
+                print('response',R)
                 if type(w) is list:
                     w = w[0]
 
@@ -521,8 +522,17 @@ class nofz(PipelineStage):
                 var[var>2] = 2.
             
             else:
-
-                raise ParamError('Not updated to support non-metacal catalogs.')
+                print("non-metacal catalogue")
+                mask = (zbin[0] == i)
+                e1 = self.source_selector.get_col(self.Dict.shape_dict['e1'], nosheared=True)[
+                    self.Dict.ind['u']][mask]
+                e2 = self.source_selector.get_col(self.Dict.shape_dict['e2'], nosheared=True)[
+                    self.Dict.ind['u']][mask]
+                w = 1.0
+                s = 1.0
+                var = 0.0
+                
+                #raise ParamError('Not updated to support non-metacal catalogs.')
 
             if np.isscalar(w):
                 # Calculate mean shear without calibration factor
@@ -547,7 +557,7 @@ class nofz(PipelineStage):
                 sum_w     = np.sum( w     )
                 sum_w2s2  = np.sum( w**2 * s**2 )
             
-            print 'neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2
+            #print('neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2)
 
             # Calculate sigma_e 
             self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2) 
@@ -559,7 +569,7 @@ class nofz(PipelineStage):
 
             # Calculate n_eff
             self.neff.append( sum_w**2 / sum_w2 / ( self.area * 60. * 60. ) )
-            print '.......',w,np.sum(mask),sum_w**2,sum_w2,self.area * 60. * 60.,self.area
+            print('.......',w,np.sum(mask),sum_w**2,sum_w2,self.area * 60. * 60.,self.area)
             self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 ) 
                                  / np.sum( w**2 * ( s**2 * self.sigma_ec[i]**2 + var / 2. ) )
                                / self.area / 60**2 
@@ -577,7 +587,7 @@ class nofz(PipelineStage):
         if 'area' not in self.params:
             # Area not provided in yaml - calculating with healpix.
 
-            print 'Calculating area via healpixel counting -- very inaccurate, you should be worried and provide a better effective area estimate.'
+            print ('Calculating area via healpixel counting -- very inaccurate, you should be worried and provide a better effective area estimate.')
 
             # Calculate pixel positions
             ra   = self.gold_selector.get_col(self.Dict.gold_dict['ra'])[self.Dict.ind['u']]
