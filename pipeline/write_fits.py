@@ -7,6 +7,7 @@ import yaml
 import os
 import collections
 import blind_2pt_usingcosmosis as blind
+import pickle 
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 
 

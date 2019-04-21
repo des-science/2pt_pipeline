@@ -1224,6 +1224,7 @@ class Measure2Point(PipelineStage):
                     pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                     path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,0)
                     for jci,jc in enumerate(np.unique(self.b)):
+                        print(i,j,jc)
                         lla = '{0}'.format(jc)
                         dict_m = load_obj(path+lla)
                         pairsCC1 = dict_m['c1'][:gm]
@@ -1284,6 +1285,7 @@ class Measure2Point(PipelineStage):
                         pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                         path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,1)
                         for jci,jc in enumerate(np.unique(self.b)):
+                            print("GGL: ", i,j,jc)
                             lla = '{0}'.format(jc)
                             dict_m = load_obj(path+lla)
                             pairsCC1 = dict_m['c1'][:gm]
@@ -1381,13 +1383,14 @@ class Measure2Point(PipelineStage):
                     
             for i,j in self.all_calcs:
                 if (i<=j)&(j<self.lens_zbins)&(self.params['2pt_only'].lower() in [None,'pos-pos','all']):
-           
+                    
                     if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
                         gm = 12
                         shape = (gm, self.params['tbins'])
                         pairs_ring = [[np.zeros(shape) for ii in range(2)] for jk in range(self.jack_dict_tot['n_jck'])]
                         path = self.params['run_directory']+'/2pt/{0}_{1}_{2}/'.format(i,j,2)
                         for jci,jc in enumerate(np.unique(self.b)):
+                            print("GG: ", i,j, jc)
                             lla = '{0}'.format(jc)
                             dict_m = load_obj(path+lla)
                             pairsCC1 = dict_m['c1'][:gm]
