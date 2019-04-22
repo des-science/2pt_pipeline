@@ -149,10 +149,12 @@ v        """
             else:
                 return n*(n+1)/2
 
+        
         # Cosmic shear
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
             f = load_obj(self.input_path("xipm")+'_pixellized')
             length = int(get_length(self.zbins)*self.params['tbins'])
+            print "here"
             self.exts[0].angular_bin = np.zeros(length)
             self.exts[0].angle       = np.zeros(length)
             self.exts[0].bin1        = np.zeros(length)
@@ -168,17 +170,17 @@ v        """
             self.exts[1].npairs      = np.zeros(length)
             self.exts[1].weight      = np.zeros(length)
             for i,bins in enumerate(np.sort(f.keys())):
-                self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
-                self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
+                self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[0].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
-                self.exts[0].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[0].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[0].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['xip']
                 self.exts[0].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[0].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
-                self.exts[1].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
-                self.exts[1].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[1].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
+                self.exts[1].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[1].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
-                self.exts[1].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[1].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[1].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['xim']
                 self.exts[1].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[1].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
@@ -206,19 +208,19 @@ v        """
             self.exts[3].random_npairs = np.zeros(length)
             self.exts[3].random_weight = np.zeros(length)
             for i,bins in enumerate(np.sort(f.keys())):
-                self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
-                self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
+                self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
-                self.exts[2].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[2].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[2].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens']
                 self.exts[2].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[2].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
                 self.exts[2].random_npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]   = f[bins]['npairs_rndm']
                 self.exts[2].random_weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = f[bins]['weight_rndm']
-                self.exts[3].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
-                self.exts[3].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[3].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
+                self.exts[3].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[3].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
-                self.exts[3].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[3].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[3].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens_im']
                 self.exts[3].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[3].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
@@ -243,10 +245,10 @@ v        """
             # self.exts[4].rd_npairs     = np.zeros(length)
             # self.exts[4].rd_weight     = np.zeros(length)
             for i,bins in enumerate(np.sort(f.keys())):
-                self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])
-                self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])
+                self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
+                self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
-                self.exts[4].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = f[bins]['meanlogr']
+                self.exts[4].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[4].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['w']
                 self.exts[4].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
                 self.exts[4].weight[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]    = f[bins]['weight']
