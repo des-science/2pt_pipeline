@@ -72,10 +72,13 @@ v        """
         return
 
     def strip_wtheta(self, fits):
-        if self.params['cross_clustering']:
-            return
-
+        #if self.params['cross_clustering']:
+        #    return
+        # AA: no idea what this is for?
+            
         wtheta = fits.get_spectrum(TWO_POINT_NAMES[-1])
+        print wtheta.bin1, wtheta.bin2
+
         mask = wtheta.bin1==wtheta.bin2
         print "Cutting out {} values from wtheta because no cross_clustering".format(len(mask)-mask.sum())
         wtheta.apply_mask(mask)
@@ -112,9 +115,11 @@ v        """
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
+        #if self.covmat is not None: 
+        #AA: I think these things should happen for g and ng, even if no cov
+        self.strip_wtheta(fits)
+        #self.strip_missing_gglensing(fits)  AA: I thought it was undecided whether or not we ditch these GGL combos
         if self.covmat is not None:
-            self.strip_wtheta(fits)
-            self.strip_missing_gglensing(fits)
             length=self.get_cov_lengths(fits)
 
         # self.sort_2pt(fits,length) # Now fixed sorting to match cosmolike
