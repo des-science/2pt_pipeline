@@ -1,6 +1,6 @@
 # Input file for twopt_pipeline.py
 
-prefix        : y3_buzzard_gt #y3_subsampled
+prefix        : y3_buzzard #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
 run_directory : /global/cscratch1/sd/aamon/y3_buzzard_BPZcut_zstack_Y3lensRMbins_slop0
 
