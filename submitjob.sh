@@ -21,6 +21,6 @@ source /global/common/software/des/zuntz/setup-nompi
 #PYTHONPATH=$PYTHONPATH:/global/homes/s/seccolf/des-science/destest
 export OMP_NUM_THREADS=64
 #run the application:
-srun -u -N 50 -n 160 python -s -m pipeline --mpi --stage 2pt BuzzardY3_pixelized.yaml
+srun -u -N 50 -n 160 python -s -m pipeline --mpi --stage 2pt BuzzardY3_pixelized_pp.yaml
 
 

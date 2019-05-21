@@ -2,7 +2,7 @@
 
 prefix        : y3_buzzard_gt #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /global/cscratch1/sd/aamon/y3_buzzard_BPZcut_zstack
+run_directory : /global/cscratch1/sd/aamon/y3_buzzard_BPZcut_zstack_Y3lensRMbins_slop0
 
 # blinding configurations
 
@@ -68,7 +68,8 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 
 zbins       : [0.2, 0.392, 0.553 , 0.760 , 1.3] 
 #4truez #[0.2, 0.359, 0.488, 0.625, 0.822 ,1.3] 5truez #[0.2,0.43,0.63,0.9,1.3] #fiducial
-lens_zbins  : [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
+lens_zbins  : [0.15, 0.35, 0.5, 0.65, 0.85, 0.95] 
+# Y1: [0.15, 0.3, 0.45, 0.6, 0.75, 0.9]
 zlims       : [0.2, 1.3] # None indicates to use binning column in gold file
 nzbins      : 400 # Number of n(z) array z bins
 nzmax       : 4.0 # Max z for n(z)
@@ -79,10 +80,10 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0.01
+slop        : 0
 flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
-2pt_only    : all  #shear-shear pos
+2pt_only    : all  #shear-shear pos-shear pos-pos all
 ran_factor  : 10
 cores_per_task : 64
 separation_factor : 4.
@@ -96,4 +97,4 @@ ggl_overlap_cut : 0.1
 lens_gbias : [1.54, 1.64, 1.75, 2.17, 2.05]
 
 
-no_gold_match: True
+no_gold_match: Truelens

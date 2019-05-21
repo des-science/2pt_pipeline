@@ -10,6 +10,7 @@ import blind_2pt_usingcosmosis as blind
 import pickle 
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 
+print TWO_POINT_NAMES
 
 def load_obj(name):
     with open(name + '.pkl', 'rb') as f:
@@ -72,8 +73,8 @@ v        """
         return
 
     def strip_wtheta(self, fits):
-        #if self.params['cross_clustering']:
-        #    return
+        if self.params['cross_clustering']:
+            return
         # AA: no idea what this is for?
             
         wtheta = fits.get_spectrum(TWO_POINT_NAMES[-1])
@@ -106,6 +107,13 @@ v        """
         gammat.apply_mask(mask)
 
 
+    def cut_gammax(self,fits):
+                gammax = fits.get_spectrum(TWO_POINT_NAMES[3])
+        print gammax.bin1, gammax.bin2
+
+        
+        print "Cutting out gammax vales"
+
     def write(self):
 
         # Load 2point fits file with n(z) info.
@@ -115,13 +123,12 @@ v        """
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
-        #if self.covmat is not None: 
+        if self.covmat is not None: 
         #AA: I think these things should happen for g and ng, even if no cov
-        self.strip_wtheta(fits)
-        #self.strip_missing_gglensing(fits)  AA: I thought it was undecided whether or not we ditch these GGL combos
-        if self.covmat is not None:
+            self.strip_wtheta(fits)
+            self.strip_missing_gglensing(fits) 
             length=self.get_cov_lengths(fits)
-
+        
         # self.sort_2pt(fits,length) # Now fixed sorting to match cosmolike
 
         # Writes the covariance info into a covariance object and saves to 2point fits file. 
