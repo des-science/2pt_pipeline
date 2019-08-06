@@ -1,16 +1,13 @@
 from __future__ import print_function, division
 import numpy as np
 import twopoint
-import fitsio as fio
 import healpy as hp
-from numpy.lib.recfunctions import append_fields, rename_fields
 from .stage import PipelineStage, NOFZ_NAMES
 import subprocess
 import os
 import warnings
 import destest
 import yaml
-import pdb
 import importlib
 import h5py
 
@@ -90,11 +87,11 @@ class nofz(PipelineStage):
         Produces tomographic binning, n(z)s, and metadata from input catalogs.
         """
         super(nofz,self).__init__(param_file)
-        
-        # A dictionary to homogenize names of columns in the hdf5 master catalog 
+
+        # A dictionary to homogenize names of columns in the hdf5 master catalog
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print('using dictionary: ',self.params['dict_file'])
-                
+
         # Load data and calibration classes
         if self.params['has_sheared']:
             self.source_selector, self.source_calibrator = load_catalog(
@@ -118,7 +115,7 @@ class nofz(PipelineStage):
                 self.params, 'pz', None, self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
             self.ran_selector = load_catalog(
                 self.params, 'ran', None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
-        
+
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
         # Setup n(z) array binning for sources
@@ -145,18 +142,18 @@ class nofz(PipelineStage):
             # Provided number of bins in yaml
             self.tomobins = self.params['zbins']
             self.binedges = self.find_bin_edges(self.pz_selector.get_col(self.Dict.pz_dict['pzbin']), self.tomobins, w = self.shape['weight'][self.mask])
-            
+
         # Setup tomographic bin edges for lenses
         if self.params['lens_group'] != 'None':
             if hasattr(self.params['lens_zbins'], "__len__"):
                 # Provided array of bin edges in yaml
-                self.lens_tomobins = len(self.params['lens_zbins']) - 1 
+                self.lens_tomobins = len(self.params['lens_zbins']) - 1
                 self.lens_binedges = self.params['lens_zbins']
             else:
                 # Provided number of bins in yaml
                 self.lens_tomobins = self.params['lens_zbins']
-                self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight']) 
-        
+                self.lens_binedges = self.find_bin_edges(self.lens_pz['pzbin'], self.lens_tomobins, w = self.lens['weight'])
+
         return
 
     def run(self):
@@ -171,7 +168,7 @@ class nofz(PipelineStage):
         print('len pzbin',len(pzbin),len(pzbin[0]))
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
-        if self.params['pdf_type']!='pdf': 
+        if self.params['pdf_type']!='pdf':
             # Get binning and n(z) by stacking a scalar derived from pdf
 
             print(pzbin, pzstack,self.binedges,self.tomobins)
@@ -185,7 +182,7 @@ class nofz(PipelineStage):
                 None, # Weight array: shape weight * response
                 shape=True) # Is this a source operation?
 
-        else: 
+        else:
 
             raise ParamError('Not updated to work with full pdfs.')
 
@@ -201,12 +198,12 @@ class nofz(PipelineStage):
         # Get the lens PZ binning and stacking arrays and weights
         pzbin   = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzbin'])
         pzstack = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
-        weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True) 
-                
+        weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)
+
         if self.params['lens_group'] != 'None':
             # Calculate lens n(z)s and write to file
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
-                                         self.lens_tomobins, 
+                                         self.lens_tomobins,
                                          self.lens_binedges,
                                          pzbin,
                                          pzstack,
@@ -239,9 +236,9 @@ class nofz(PipelineStage):
         # Create source twopoint number density object
         nz_source = twopoint.NumberDensity(
                      NOFZ_NAMES[0],
-                     self.binlow, 
-                     self.z, 
-                     self.binhigh, 
+                     self.binlow,
+                     self.z,
+                     self.binhigh,
                      [self.nofz[i,:] for i in range(self.tomobins)])
 
         # Add metatdata
@@ -255,10 +252,10 @@ class nofz(PipelineStage):
         if self.params['lens_group'] != 'None':
             # Create lens twopoint number density object
             nz_lens      = twopoint.NumberDensity(
-                            NOFZ_NAMES[1], 
-                            self.binlow, 
-                            self.z, 
-                            self.binhigh, 
+                            NOFZ_NAMES[1],
+                            self.binlow,
+                            self.z,
+                            self.binhigh,
                             [self.lens_nofz[i,:] for i in range(self.lens_tomobins)])
 
             # Add metatdata
@@ -352,19 +349,19 @@ class nofz(PipelineStage):
                         mask_2p = (xbins0[3] == i)
                         mask_2m = (xbins0[4] == i)
 
-                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print('weight',weight_)
 
                     else:
                         print("not a metacal catalogue")
                         weight_ = np.ones(np.shape(stack_col[mask])) #this is the line that worked in buzz pipeline
-                        #weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z) 
+                        #weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print('weight',weight_)
                         # raise ParamError('Not updated to support non-metacal catalogs.')
 
                 else:
 
-                    weight_ = weight 
+                    weight_ = weight
 
                 # Stack n(z)
                 if np.isscalar(weight_):
@@ -403,7 +400,7 @@ class nofz(PipelineStage):
         k    = k.astype(int)
         r    = np.zeros((nbins + 1))
         ist  = 0
-        for j in xrange(1,nbins):
+        for j in range(1,nbins):
             if k[j]  < r[j-1]:
                 print('Random weight approx. failed - attempting brute force approach')
                 fail = True
@@ -411,14 +408,14 @@ class nofz(PipelineStage):
 
             w0 = np.sum(w[i[ist:k[j]]])
             if w0 <= ww:
-                for l in xrange(k[j], len(x)):
+                for l in range(k[j], len(x)):
                     w0 += w[i[l]]
                     if w0 > ww:
                         r[j] = x[i[l]]
                         ist  = l
                         break
             else:
-                for l in xrange(k[j], 0, -1):
+                for l in range(k[j], 0, -1):
                     w0 -= w[i[l]]
                     if w0 < ww:
                         r[j] = x[i[l]]
@@ -428,9 +425,9 @@ class nofz(PipelineStage):
         if fail:
             ist = np.zeros((nbins+1))
             ist[0]=0
-            for j in xrange(1, nbins):
+            for j in range(1, nbins):
                 wsum = 0.
-                for k in xrange(ist[j-1].astype(int), len(x)):
+                for k in range(ist[j-1].astype(int), len(x)):
                     wsum += w[i[k]]
                     if wsum > ww:
                         r[j]   = x[i[k-1]]
@@ -471,7 +468,7 @@ class nofz(PipelineStage):
                 a    = np.sum( weight[mask]    )**2
                 b    = np.sum( weight[mask]**2 )
                 # print np.sum(weight[mask]),'objects found in this bin',weight[mask]
-                
+
                 self.lens_neff.append( np.asscalar( a / b / ( self.area * 60.**2 ) ) )
 
     def get_sige_neff(self, zbin, tomobins):
@@ -513,15 +510,15 @@ class nofz(PipelineStage):
 
                 # print np.sum(mask),'objects found in this bin'
                 # Select objects in bin and get e and e cov arrays
-                e1  = self.source_selector.get_col(self.Dict.shape_dict['e1'], 
+                e1  = self.source_selector.get_col(self.Dict.shape_dict['e1'],
                                                   nosheared=True)[self.Dict.ind['u']][mask]
-                e2  = self.source_selector.get_col(self.Dict.shape_dict['e2'], 
+                e2  = self.source_selector.get_col(self.Dict.shape_dict['e2'],
                                                   nosheared=True)[self.Dict.ind['u']][mask]
                 s   = R
                 var = self.source_selector.get_col(self.Dict.shape_dict['cov00'], nosheared=True)[self.Dict.ind['u']][mask] + self.source_selector.get_col(self.Dict.shape_dict['cov11'], nosheared=True)[self.Dict.ind['u']][mask]
                 # Regularize variance for small number of ill-defined covariances
                 var[var>2] = 2.
-            
+
             else:
                 print("non-metacal catalogue")
                 mask = (zbin[0] == i)
@@ -532,7 +529,7 @@ class nofz(PipelineStage):
                 w = 1.0
                 s = 1.0
                 var = 0.0
-                
+
                 #raise ParamError('Not updated to support non-metacal catalogs.')
 
             if np.isscalar(w):
@@ -557,23 +554,23 @@ class nofz(PipelineStage):
                 sum_ws    = np.sum( w * s )
                 sum_w     = np.sum( w     )
                 sum_w2s2  = np.sum( w**2 * s**2 )
-            
+
             #print('neffsige',i,np.sum(mask),np.sum(mask_1p),np.mean,sum_w,sum_w2)
 
-            # Calculate sigma_e 
-            self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2) 
+            # Calculate sigma_e
+            self.sigma_e.append( np.sqrt( (sum_we2_1 / sum_ws**2 + sum_we2_2 / sum_ws**2)
                                           * (sum_w**2 / sum_w2) / 2. ) )
-            self.sigma_ec.append( np.sqrt( np.sum( w**2 * (e1**2 + e2**2 - var) ) 
-                                           / ( 2. * sum_w2s2 ) 
-                                          ) 
+            self.sigma_ec.append( np.sqrt( np.sum( w**2 * (e1**2 + e2**2 - var) )
+                                           / ( 2. * sum_w2s2 )
+                                          )
                                  )
 
             # Calculate n_eff
             self.neff.append( sum_w**2 / sum_w2 / ( self.area * 60. * 60. ) )
             print('.......',w,np.sum(mask),sum_w**2,sum_w2,self.area * 60. * 60.,self.area)
-            self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 ) 
+            self.neffc.append( ( self.sigma_ec[i]**2 * sum_ws**2 )
                                  / np.sum( w**2 * ( s**2 * self.sigma_ec[i]**2 + var / 2. ) )
-                               / self.area / 60**2 
+                               / self.area / 60**2
                               )
 
     def get_area(self):
@@ -601,7 +598,7 @@ class nofz(PipelineStage):
             mask = np.bincount(pix) > 0
             # Multiple to get final area
             self.area=float( np.sum(mask) * area )
-        
+
         else:
             # Area provided in yaml
 
@@ -615,5 +612,3 @@ def find_git_hash():
         head = "UNKNOWN"
         warnings.warn("Unable to find git repository commit ID in {}".format(dirname))
     return head.split()[0]
-
-

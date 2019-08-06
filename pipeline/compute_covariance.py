@@ -6,9 +6,9 @@ import os
 import sys
 
 def run_cmd(cmd):
-    print "Running command:"
-    print cmd
-    print
+    print("Running command:")
+    print(cmd)
+    print()
     os.system(cmd)
 
 
@@ -43,10 +43,10 @@ class ComputeCovariance(PipelineStage):
 
     def run(self):
         if self.comm is None:
-            print "Running single core"
+            print("Running single core")
             self.run_single_core()
         else:
-            print "Running MPI"
+            print("Running MPI")
             self.run_mpi()
 
     def run_mpi(self):
@@ -56,12 +56,12 @@ class ComputeCovariance(PipelineStage):
         if pool.is_master():
             self.prepare_covariance_runs()
             commands = self.generate_commands()
-            print "will run these commands:"
+            print("will run these commands:")
             for command in commands:
-                print command
+                print(command)
             sys.stdout.flush()
-            print
-            print
+            print()
+            print()
         else:
             commands = None
         self.comm.Barrier()
@@ -73,7 +73,7 @@ class ComputeCovariance(PipelineStage):
     def run_single_core(self):
         self.prepare_covariance_runs()
         for command in self.generate_commands():
-            print command
+            print(command)
             status = os.system(command)
             if status!=0:
                 raise ValueError("Failed command: {}".format(command))
@@ -111,7 +111,7 @@ class ComputeCovariance(PipelineStage):
         import glob
         files = glob.glob(self.output_path("cov_chunks"))
 
-        print "final number of files = ", len(files)
+        print("final number of files = ", len(files))
         #int int double double int int int int double double
         cov_filename = self.output_path("cov")
         if os.path.exists(cov_filename):
@@ -234,7 +234,7 @@ class ComputeCovariance(PipelineStage):
         exe = self.params['cov_source_dir']
         ini = self.output_path("cov_ini")
         command = "{} {} 0".format(exe, ini, 0)
-        print "Running command:", command
+        print("Running command:", command)
         os.system(command)
 
     def load_metadata(self):

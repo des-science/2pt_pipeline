@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import h5py
 import numpy as np
 import twopoint
@@ -6,17 +7,17 @@ import glob
 import yaml
 import os
 import collections
-import blind_2pt_usingcosmosis as blind
-import pickle 
+from . import blind_2pt_usingcosmosis as blind
+import pickle
 from .stage import PipelineStage, TWO_POINT_NAMES, NOFZ_NAMES
 
-print TWO_POINT_NAMES
+print(TWO_POINT_NAMES)
 
 def load_obj(name):
     with open(name + '.pkl', 'rb') as f:
         return pickle.load(f)#, encoding='latin1')
 
-print 'Imported modules'
+print('Imported modules')
 
 class WriteFits(PipelineStage):
     name = "2pt_fits"
@@ -42,12 +43,12 @@ class WriteFits(PipelineStage):
         Initialise object.
 v        """
         super(WriteFits,self).__init__(param_file)
-        
+
     def run(self):
 
         # Initialise twopoint spectrum classes
         self.init_specs()
-        
+
         # Load xi data
         self.load_metadata()
         self.load_twopt_data()
@@ -58,10 +59,10 @@ v        """
         if 'no_blinding' in self.params:
             if self.params['no_blinding']:
                 return
-        print '\nBlinding will be applied to the file being written\nThis is hard-coded.' 
-        print 'To unblind, set do_Blinding=False in write_fits.py'
+        print('\nBlinding will be applied to the file being written\nThis is hard-coded.')
+        print('To unblind, set do_Blinding=False in write_fits.py')
         self.blind()
-            
+
         return
 
     def blind(self):
@@ -76,12 +77,12 @@ v        """
         if self.params['cross_clustering']:
             return
         # AA: no idea what this is for?
-            
+
         wtheta = fits.get_spectrum(TWO_POINT_NAMES[-1])
-        print wtheta.bin1, wtheta.bin2
+        print(wtheta.bin1, wtheta.bin2)
 
         mask = wtheta.bin1==wtheta.bin2
-        print "Cutting out {} values from wtheta because no cross_clustering".format(len(mask)-mask.sum())
+        print("Cutting out {} values from wtheta because no cross_clustering".format(len(mask)-mask.sum()))
         wtheta.apply_mask(mask)
 
     def strip_missing_gglensing(self, fits):
@@ -98,21 +99,21 @@ v        """
         accept_dict = {}
         for (b1,b2,a) in zip(bin1,bin2,accept):
             accept_dict[(b1,b2)] = a
-        
+
         mask = [accept_dict[(b1,b2)] for (b1,b2) in zip(gammat.bin1,gammat.bin2)]
         mask = np.array(mask, dtype=bool)
 
-        print "Cutting out {} values from gammat because lens behind source".format(len(mask)-mask.sum())
+        print("Cutting out {} values from gammat because lens behind source".format(len(mask)-mask.sum()))
 
         gammat.apply_mask(mask)
 
 
     def cut_gammax(self,fits):
-                gammax = fits.get_spectrum(TWO_POINT_NAMES[3])
-        print gammax.bin1, gammax.bin2
+        gammax = fits.get_spectrum(TWO_POINT_NAMES[3])
+        print(gammax.bin1, gammax.bin2)
 
-        
-        print "Cutting out gammax vales"
+
+        print("Cutting out gammax vales")
 
     def write(self):
 
@@ -123,15 +124,15 @@ v        """
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
-        if self.covmat is not None: 
+        if self.covmat is not None:
         #AA: I think these things should happen for g and ng, even if no cov
             self.strip_wtheta(fits)
-            self.strip_missing_gglensing(fits) 
+            self.strip_missing_gglensing(fits)
             length=self.get_cov_lengths(fits)
-        
+
         # self.sort_2pt(fits,length) # Now fixed sorting to match cosmolike
 
-        # Writes the covariance info into a covariance object and saves to 2point fits file. 
+        # Writes the covariance info into a covariance object and saves to 2point fits file.
         if self.covmat is not None:
             fits.covmat_info=twopoint.CovarianceMatrixInfo('COVMAT',TWO_POINT_NAMES,length,self.covmat[0])
         fits.to_fits(self.output_path("2pt_g"),clobber=True)
@@ -139,7 +140,7 @@ v        """
             fits.covmat_info=twopoint.CovarianceMatrixInfo('COVMAT',TWO_POINT_NAMES,length,self.covmat[1])
         fits.to_fits(self.output_path("2pt_ng"),clobber=True)
 
-        print "Have disabled covmat cleanup"
+        print("Have disabled covmat cleanup")
         # self.cleanup_cov()
 
     def load_metadata(self):
@@ -161,12 +162,12 @@ v        """
             else:
                 return n*(n+1)/2
 
-        
+
         # Cosmic shear
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
             f = load_obj(self.input_path("xipm")+'_pixellized')
             length = int(get_length(self.zbins)*self.params['tbins'])
-            print "here"
+            print("here")
             self.exts[0].angular_bin = np.zeros(length)
             self.exts[0].angle       = np.zeros(length)
             self.exts[0].bin1        = np.zeros(length)
@@ -181,7 +182,7 @@ v        """
             self.exts[1].value       = np.zeros(length)
             self.exts[1].npairs      = np.zeros(length)
             self.exts[1].weight      = np.zeros(length)
-            for i,bins in enumerate(np.sort(f.keys())):
+            for i,bins in enumerate(np.sort(list(f.keys()))):
                 self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[0].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -219,7 +220,7 @@ v        """
             self.exts[3].weight        = np.zeros(length)
             self.exts[3].random_npairs = np.zeros(length)
             self.exts[3].random_weight = np.zeros(length)
-            for i,bins in enumerate(np.sort(f.keys())):
+            for i,bins in enumerate(np.sort(list(f.keys()))):
                 self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -256,7 +257,7 @@ v        """
             # self.exts[4].dr_weight     = np.zeros(length)
             # self.exts[4].rd_npairs     = np.zeros(length)
             # self.exts[4].rd_weight     = np.zeros(length)
-            for i,bins in enumerate(np.sort(f.keys())):
+            for i,bins in enumerate(np.sort(list(f.keys()))):
                 self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
@@ -274,14 +275,14 @@ v        """
     def load_cov(self):
         import os
 
-        #if os.path.exists(self.input_path("cov")): 
+        #if os.path.exists(self.input_path("cov")):
         #    os.remove(self.input_path("cov"))
         #os.system("cat "+self.input_path("covfiles")+" >> "+self.input_path("cov"))
         try:
             covdata = np.loadtxt(self.input_path("cov"))
         except:
             self.covmat = None
-            print 'Skipping covariance, since output file missing.'
+            print('Skipping covariance, since output file missing.')
             return
 
         # Replace theta values with bin numbers.
@@ -299,12 +300,12 @@ v        """
         cov[:,:] = 0.0
         for i in range(0,covdata.shape[0]):
             cov[int(covdata[i,0]),int(covdata[i,1])]=covdata[i,8]
-            cov[int(covdata[i,1]),int(covdata[i,0])]=covdata[i,8] 
+            cov[int(covdata[i,1]),int(covdata[i,0])]=covdata[i,8]
         covNG=np.zeros((ndata,ndata))
         covNG[:,:] = 0.0
         for i in range(0,covdata.shape[0]):
             covNG[int(covdata[i,0]),int(covdata[i,1])]=covdata[i,8]+covdata[i,9]
-            covNG[int(covdata[i,1]),int(covdata[i,0])]=covdata[i,8]+covdata[i,9] 
+            covNG[int(covdata[i,1]),int(covdata[i,0])]=covdata[i,8]+covdata[i,9]
 
         self.covmat = (cov,covNG)
 
@@ -336,7 +337,7 @@ v        """
                 angle=None,
                 angle_unit='arcmin')) # units
 
-        return 
+        return
 
     def get_cov_lengths(self,fits):
 
@@ -357,7 +358,7 @@ v        """
                 zbins=fits.get_kernel(twopt.kernel1).nbin
                 length=np.append(length,(zbins*(zbins+1)/2)*self.params['tbins'])
             if length[-1]!=len(twopt.bin1):
-                print 'covariance and data vector mismatch in '+name, length[-1], len(twopt.bin1)
+                print('covariance and data vector mismatch in '+name, length[-1], len(twopt.bin1))
                 return
 
         return length.astype(int)
@@ -381,4 +382,3 @@ v        """
             twopt.apply_mask(mask)
 
         return
-

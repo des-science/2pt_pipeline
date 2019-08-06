@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 from .stage import PipelineStage
 import matplotlib
 matplotlib.use("agg")
@@ -75,7 +76,7 @@ class Plots(PipelineStage):
 
     def run(self):
         self.engine=chainconsumer.ChainConsumer()
-        
+
 
         self.engine.add_chain(filename, name="1", parameters=names, posterior=post)
         self.engine.configure(sigmas=[0,1,2], kde=False)
@@ -88,4 +89,3 @@ class Plots(PipelineStage):
 
     def write(self):
         pass
-        

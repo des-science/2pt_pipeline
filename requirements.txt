@@ -1,0 +1,12 @@
+scipy==1.0.0
+healpy==1.11.0
+TreeCorr==3.3.7
+numpy==1.14.3
+h5py==2.7.1
+matplotlib==2.0.2
+astropy==2.0.3
+fitsio==0.9.11
+ChainConsumer==0.26.0
+mpi4py==3.0.2
+twopoint==1.1
+PyYAML==5.1.2

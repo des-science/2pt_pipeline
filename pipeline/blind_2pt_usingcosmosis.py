@@ -1,69 +1,68 @@
-
 """"
 blind_2pt_usingcosmosis.py
 --------------------------------------------------------------------------------
-This script will apply a blinding factor to 2pt functios stored in a fits 
-file, using cosmosis to compute the blinding factors. 
+This script will apply a blinding factor to 2pt functios stored in a fits
+file, using cosmosis to compute the blinding factors.
 
-The workhorse function that puts everything together is do2ptblinding(). 
-This script can be called with command line arguments, or by calling that 
+The workhorse function that puts everything together is do2ptblinding().
+This script can be called with command line arguments, or by calling that
 function in another script.
 
-The script uses cosmosis, so you'll need to  source its setup file before 
+The script uses cosmosis, so you'll need to  source its setup file before
 running this.
 
 Currently the angle ranges for the angular bins is hard coded in; look for
- "Passed check: blinding factor and fits file have same angle values" to print 
+ "Passed check: blinding factor and fits file have same angle values" to print
 to make sure you're applying factors at the right angles.
 ............................................................
 Arguments:
   -u, --origfits : name of unblinded fits file
   -i, --ini : ini file containing template for generating 2pt functions. Should
                 -> use a binning that matches that of the origfits file
-                -> Reference a values file centered at desired reference 
+                -> Reference a values file centered at desired reference
                    cosmology
   -s, --seed: string used to seed parameter shift selection
-  -t, --bftype: blinding factor type. Can be 'add', 'mult', or 
+  -t, --bftype: blinding factor type. Can be 'add', 'mult', or
                      'multNOCS' (mult with no cov scaling)
   -o, --outfname : output filename; only set for testing,  default behavior is
                outfname = [origfits]_[seed].fits
-  -t, --outftag : string to label output filename, for testing purposes. If set 
-                  when outfname is None (default), then 
+  -t, --outftag : string to label output filename, for testing purposes. If set
+                  when outfname is None (default), then
                   outfname = [origfits]_[outftag]_[seed].fits
   -m, --paramshiftmodule : string string of a python filename (minus the .py)
-                  which can be used to import a function to draw parameter 
+                  which can be used to import a function to draw parameter
                    shifts (see draw_paramshift for more info)
 ............................................................
 
 What it does:
-1. Using a string seed, pseudo-randomly draw a shift in parameters. This 
-   will eitherbe drawn from a flat distribution in some predefined parameter 
-   ranges, or from  a distribution defined in paramshiftmodule. Return 
-   dictionary of shifts where keys are parameter names matching those expected 
+1. Using a string seed, pseudo-randomly draw a shift in parameters. This
+   will eitherbe drawn from a flat distribution in some predefined parameter
+   ranges, or from  a distribution defined in paramshiftmodule. Return
+   dictionary of shifts where keys are parameter names matching those expected
    by run_cosmosis_togen_2ptdict.
    -> See draw_paramshift
 
-2. Using a cosmosis parameter ini file template, compute 2pt functions at 
-   reference and shifted cosmologies by running the cosmosis  twice. This 
-   should work no matter what sampler shows up in the template ini file. 
+2. Using a cosmosis parameter ini file template, compute 2pt functions at
+   reference and shifted cosmologies by running the cosmosis  twice. This
+   should work no matter what sampler shows up in the template ini file.
    (If it uses the test sampler,  make sure the output is nothing, so that
-   it doesn't save the cosmology and 2pt info.) Gets the 2pt functions into 
-   dictionaries of a specific format.  
+   it doesn't save the cosmology and 2pt info.) Gets the 2pt functions into
+   dictionaries of a specific format.
    -> See run_cosmosis_togen_2ptdict
 
-4. Take ratio or difference of 2pt datavectors to get blinding factor, in same 
+4. Take ratio or difference of 2pt datavectors to get blinding factor, in same
    dictionary format.
    -> See get_factordict
 
-5. Apply blinding factor to desired datafile, saving a new fits file with 
-   string key in filename. 
+5. Apply blinding factor to desired datafile, saving a new fits file with
+   string key in filename.
    -> See apply2ptblinding_tofits
 --------------------------------------------------------------------------------
 Script maintained by Jessica Muir (jlmuir@umich.edu).
 """
-
+from __future__ import print_function, division
 import numpy as np
-import getopt, sys, shutil, os
+import getopt, sys, shutil
 from astropy.io import fits
 import hashlib
 import importlib
@@ -81,33 +80,33 @@ HARD_CODED_BLINDING = 'I_desperately_need_coffee' #keyword is the one truth that
 def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
                     importfrom = None):
     """
-    Given a string seed, pseudo-randomly draws shift in parameter space. 
+    Given a string seed, pseudo-randomly draws shift in parameter space.
 
-    By default, draws random values for all the parameters with ranges defined 
+    By default, draws random values for all the parameters with ranges defined
     in the dictionary 'ranges'. Note:
-      - parameter names should match those used by cosmosis (see 
+      - parameter names should match those used by cosmosis (see
         DEFAULT_PARAM_RANGE dict for an example)
       - ranges is a dictionary with parameter names as keys, the values are
-        tuples set up as (min,max). The parameter will be drawn from a flat 
+        tuples set up as (min,max). The parameter will be drawn from a flat
         distribution between min and max.
 
     importfrom:
-    If you'd like to draw from a different distribution, create another .py 
+    If you'd like to draw from a different distribution, create another .py
     file with an function in it called draw_paramshift, making sure it return
     a dictuionary with the same format as below:
-      - If you pass a string with that file's name as an argument importfrom, 
-        that distribution will be used instead of this one. 
-      - The returned dictionary will be expected to have key 'SHIFTS' associated 
-        with a bool to determine how the values in that dictionary are used. 
+      - If you pass a string with that file's name as an argument importfrom,
+        that distribution will be used instead of this one.
+      - The returned dictionary will be expected to have key 'SHIFTS' associated
+        with a bool to determine how the values in that dictionary are used.
            pdict['SHIFTS'] = False --> p_shift = pdict['paramname']
            pdict['SHIFTS'] = True  --> p_shift = p_ref + pdict['paramname']
 
     Make sure any parameters that are shifted here have names matching
     how cosmosis uses them, so that the code in the for loop starting with
     'for parameter in pipeline.parameters' in run_cosmosis_togen_2ptdict
-    will work. 
+    will work.
     """
-    
+
 
 
     #do something convoluted to turn the string into a number that can be
@@ -129,9 +128,9 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
     else:
         paramdraw = importlib.import_module(importfrom)
         pdict = paramdraw.draw_paramshift()
-        if 'SHIFTS' not in pdict.keys():
+        if 'SHIFTS' not in list(pdict.keys()):
             raise ValueError("Can't find key 'SHIFTS' in pdict. Set to True if the dict contains Delta params, False if it contains param values.")
-    
+
     return pdict
 
 #############################################################################
@@ -141,29 +140,29 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
 
 # Generate 2pt funcs for set of params
 def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_template.ini'):
-    """ 
-    Runs cosmosis pipeline to generate 2pt functions. 
+    """
+    Runs cosmosis pipeline to generate 2pt functions.
 
     If a parameter value is passed through the dictionary pdict...
         ...and SHIFTS = False, the param it will be set to that value.
-        ...and SHIFTS = True, the param will be shifted by that amount 
+        ...and SHIFTS = True, the param will be shifted by that amount
            from the number in the values file
     Otherwise, it will be set to whatever value is in values file.
-    
+
     Note that you'll need to source the cosmosis setup file before running this.
     """
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
     from cosmosis.datablock.cosmosis_py import block
     ini=Inifile(inifile)
-    print '     cosmosis ini object initialized from',inifile
+    print('     cosmosis ini object initialized from',inifile)
     #ini.set('fits_nz','nz_file',unblfile)
-    
+
     pipeline = LikelihoodPipeline(ini)
-    print '     cosmosis pipeline object initialized'
-    
-    
-    doshifts = len(pdict.keys())
+    print('     cosmosis pipeline object initialized')
+
+
+    doshifts = len(list(pdict.keys()))
     if doshifts:
         SHIFTS = pdict['SHIFTS']
         haveshifted = []
@@ -171,7 +170,7 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
     for parameter in pipeline.parameters:
         key = str(parameter)
         #print 'working on parameter',key
-        
+
         #set the values
         if doshifts:
             try:
@@ -183,23 +182,23 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
             except:
                 #print '  no entry in pdict'
                 pass
-            
+
         # need to set all of the parameters to be fixed for run_parameters([])
         #  to work. Doing this will effectively run things like the test sampler
         #  no matter what sampler is listed in the ini file
         pipeline.set_fixed(parameter.section, parameter.name, parameter.start)
 
     if doshifts:
-        print 'haveshifted',haveshifted
-    if doshifts and (len(haveshifted)!= len(pdict.keys()) -1):
-        print "WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE."
-        print "  asked for shifts in:",pdict.keys()
-        print "  did shifts in:",haveshifted
-    
+        print('haveshifted',haveshifted)
+    if doshifts and (len(haveshifted)!= len(list(pdict.keys())) -1):
+        print("WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE.")
+        print("  asked for shifts in:",list(pdict.keys()))
+        print("  did shifts in:",haveshifted)
+
     # run pipeline to generate 2pt functions for that cosmology
-    print "RUNNING PIPELINE=============== [{0:s}]".format(time.strftime("%Y-%m-%d %H:%M"))
+    print("RUNNING PIPELINE=============== [{0:s}]".format(time.strftime("%Y-%m-%d %H:%M")))
     data = pipeline.run_parameters([])
-    print ' at end of run_cosmosis_togen_datavec [{0:s}]'.format(time.strftime("%Y-%m-%d %H:%M"))
+    print(' at end of run_cosmosis_togen_datavec [{0:s}]'.format(time.strftime("%Y-%m-%d %H:%M")))
     twoptdict = get_twoptdict_from_pipelinedata(data)
 
     return twoptdict
@@ -217,7 +216,7 @@ def get_twoptdict_from_pipelinedata(data):
     The angular data will be returned in a format where all theory theta
     values will be stored, so the arrays will be big. We'll interpolate these
     to match the unblinded fits file's theta values when we apply the blinding
-    factors. 
+    factors.
     (previously had hardcoded angle bins, change made for more flexibility)
     """
     #these are the types
@@ -233,7 +232,7 @@ def get_twoptdict_from_pipelinedata(data):
     # with those in the unblinded fits file. So, as long as the angular and
     # z bin indices correpond to the same angles and bins, cuts will be handled
     # in that stage.
-    
+
     outdict = {}
     if data.has_section('galaxy_xi'):
         types = (galaxy_position_real,galaxy_position_real)
@@ -278,20 +277,20 @@ def get_twoptdict_from_pipelinedata(data):
         x,y,bins = spectrum_array_from_block(data,'shear_xi_plus',types,True)
         outdict[xkey]=x
         outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins            
+        outdict[ykey+'_bins'] = bins
     return outdict
 
-#-----------------------------------------------            
+#-----------------------------------------------
 def spectrum_array_from_block(block, section_name, types, real_space, bin_format = 'bin_{0}_{1}'):
     """
     Adapting this from save_2pt.py's spectrum_measurement_from_block.
     (adaptations included removing interpolation step, symmetrizing
     bin labels for is_auto=True)
 
-    No scale cutting implemented or angular sampling; 
-    that will be handled later. Since we 
-    track bin numbers and angle values, which will be checked against 
-    the unblinded fits file in get_dictdat_tomatch_fitsdat. 
+    No scale cutting implemented or angular sampling;
+    that will be handled later. Since we
+    track bin numbers and angle values, which will be checked against
+    the unblinded fits file in get_dictdat_tomatch_fitsdat.
     """
 
     # for cross correlations we must save bin_ji as well as bin_ij.
@@ -314,8 +313,8 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
 
     #This is the length of the angle array
     n_angle = len(theory_angle) #whatevers in the block
-    
-    
+
+
     #The fits format stores all the measurements
     #as one long vector.  So we build that up here from the various
     #bins that we will load in.  These are the different columns
@@ -325,14 +324,14 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
     bin2 = []
     #angular_bin = []
     angles = []
-        
+
     #Bin pairs. Varies depending on auto-correlation
-    for i in xrange(nbin_a):
+    for i in range(nbin_a):
         if is_auto:
             jmax = i+1
         else:
             jmax = nbin_b
-        for j in xrange(jmax):
+        for j in range(jmax):
             #Load and interpolate from the block
             cl = block[section_name, bin_format.format(i+1,j+1)]
 
@@ -357,30 +356,30 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
 
     return angles, value, bins
 
-#-----------------------------------------------        
+#-----------------------------------------------
 class SpectrumInterp(object):
     """
     This is copied from 2pt_like, for use in spectrum_array_from_block
     """
     def __init__(self,angle,spec,bounds_error=True):
-	if np.all(spec>0):
-	    self.interp_func=interp1d(np.log(angle),np.log(spec),bounds_error=bounds_error,fill_value=-np.inf)
-	    self.interp_type='loglog'
-	elif np.all(spec<0):
-	    self.interp_func=interp1d(np.log(angle),np.log(-spec),bounds_error=bounds_error,fill_value=-np.inf)
-	    self.interp_type='minus_loglog'
-	else:
-	    self.interp_func=interp1d(np.log(angle),spec,bounds_error=bounds_error,fill_value=0.)
-	    self.interp_type="log_ang"
+        if np.all(spec>0):
+            self.interp_func=interp1d(np.log(angle),np.log(spec),bounds_error=bounds_error,fill_value=-np.inf)
+            self.interp_type='loglog'
+        elif np.all(spec<0):
+            self.interp_func=interp1d(np.log(angle),np.log(-spec),bounds_error=bounds_error,fill_value=-np.inf)
+            self.interp_type='minus_loglog'
+        else:
+            self.interp_func=interp1d(np.log(angle),spec,bounds_error=bounds_error,fill_value=0.)
+            self.interp_type="log_ang"
 
     def __call__(self,angle):
-	if self.interp_type=='loglog':
-	    spec=np.exp(self.interp_func(np.log(angle)))
-	elif self.interp_type=='minus_loglog':
-	    spec=-np.exp(self.interp_func(np.log(angle)))
-	else:
-	    assert self.interp_type=="log_ang"
-	    spec=self.interp_func(np.log(angle))
+        if self.interp_type=='loglog':
+            spec=np.exp(self.interp_func(np.log(angle)))
+        elif self.interp_type=='minus_loglog':
+            spec=-np.exp(self.interp_func(np.log(angle)))
+        else:
+            assert self.interp_type=="log_ang"
+            spec=self.interp_func(np.log(angle))
         return spec
 
 
@@ -405,7 +404,7 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             xgrid = t.data['ANG']
             ygrid = t.data['VALUE']
             bin1 = t.data['BIN1']
-            print '\n\n\n JUST GOT THE VALUE \n\n\n'
+            print('\n\n\n JUST GOT THE VALUE \n\n\n')
             bin2 = t.data['BIN2']
             angbins = t.data['ANGBIN']
             outdict[xkey] = xgrid
@@ -413,14 +412,14 @@ def get_twoptdict_fromfits_1darrays(fitsfile):
             outdict[ykey+'_bins'] = (bin1,bin2)
             #outdict[ykey+'_angbins'] = angbins
     h.close()
-    return outdict 
+    return outdict
 #============================================================
 def get_factordict(refdict,shiftdict,bftype='add'):
     """
     Given two point dictionaries for reference and shifted cosmology,
-    returns dictionary of blinding factors. 
+    returns dictionary of blinding factors.
 
-    bftype = what kind of blinding factor is it? 
+    bftype = what kind of blinding factor is it?
              'add' : bf = - ref + shift
              'mult': bf = shift/ref
     """
@@ -429,12 +428,12 @@ def get_factordict(refdict,shiftdict,bftype='add'):
     for key in refdict:
 
         end = key[key.rfind('_')+1:]
-        print key,end
+        print(key,end)
         # don't take ratios or differences of angle/multipole info
         if end in ['ell','l','theta','bins','angbins']:
             #print '    no change'
             factordict[key] = refdict[key]
-        else: 
+        else:
             if bftype=='mult' or bftype=='multNOCS':
                 #print '    dividing!'
                 factordict[key] = shiftdict[key]/refdict[key]
@@ -449,7 +448,7 @@ def get_factordict(refdict,shiftdict,bftype='add'):
 #   HELPER FUNCTIONS FOR WORKING WITH DICTS AND FITS FILES
 #  Expects shear and number density data with specific keys. If
 #  we want to extend this script to handle other summary statistics
-#  we'd need to add appropriate keys to these next few functions. 
+#  we'd need to add appropriate keys to these next few functions.
 #===============================================================
 def get_2pttype_for_dictkey(dictkey):
     """
@@ -497,7 +496,7 @@ def get_dictkey_forcovname(covname):
 def get_covname_for2pttype(type1,type2):
     """
     (fits file 2pt table naming -> fits file covmat table naming)
-    type1 and type2 are  spectra type codes in fits file, 
+    type1 and type2 are  spectra type codes in fits file,
     under hdutable.header['quant1'] and quant2
     """
     galaxy_position_fourier = "GPF"
@@ -506,7 +505,7 @@ def get_covname_for2pttype(type1,type2):
     galaxy_position_real = "GPR"
     galaxy_shear_plus_real = "G+R"
     galaxy_shear_minus_real = "G-R"
-    
+
     if  type1==galaxy_position_real and type2 == galaxy_position_real:
         return 'wtheta'
     elif (type2==galaxy_shear_plus_real and type1 == galaxy_position_real):
@@ -531,7 +530,7 @@ def get_dictkey_for_2pttype(type1,type2):
     galaxy_position_real = "GPR"
     galaxy_shear_plus_real = "G+R"
     galaxy_shear_minus_real = "G-R"
-    
+
     if type1==galaxy_position_fourier and type2 == galaxy_position_fourier:
         ykey = 'gal_gal_cl'
         xkey = 'gal_gal_l'
@@ -557,16 +556,16 @@ def get_dictkey_for_2pttype(type1,type2):
     else:
         raise ValueError("Spectra type {0:s} - {1:s} not recognized.".format(type1,type2))
     return xkey,ykey
-#---------------------------------------     
+#---------------------------------------
 def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict):
-    """ 
+    """
     Given info about 2pt data in a fits file (spectra type, z bin numbers,
-    and angular bin numbers, extracts 2pt data from a dictionary of 
+    and angular bin numbers, extracts 2pt data from a dictionary of
     e.g. blinding factors to match, with same array format and bin ordering
-    as the fits file data. 
+    as the fits file data.
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-    print(xkey,ykey)
+    print((xkey,ykey))
     xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
 
     if 'theta' in xkey: #if realspace, put angle data into arcmin
@@ -586,14 +585,14 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     # so we don't have to keep recreating them
     Nb1fits = max(bin1fits)
     Nb2fits = max(bin2fits)
-    interpfuncs = [[None for b2f in xrange(Nb2fits)]\
-                   for b1f in xrange(Nb1fits)]
-    
-    for i in xrange(Nentries):
+    interpfuncs = [[None for b2f in range(Nb2fits)]\
+                   for b1f in range(Nb1fits)]
+
+    for i in range(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
         if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
-            #get x and y data for this bin combo, 
+            #get x and y data for this bin combo,
             whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
             tempx = xfromdict[whichinds]*xmult
             tempy = yfromdict[whichinds]
@@ -605,12 +604,12 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
         yout[i] =  yinterp(xfits[i])
     # We're returning the y data from the dictionary's array
     # interpolated to match the theta values in the fits file.
-    return yout 
+    return yout
 
 #---------------------------------------
 def get_dictdat_tomatch_fitsdat(table,dictdata):
     """
-    Given table of type fits.hdu.table.BinTableHDU containing 2pt data, 
+    Given table of type fits.hdu.table.BinTableHDU containing 2pt data,
     retrieves corresponding data from dictionary (blinding factors).
 
     Expects that same z and theta bin numbers correspond to the same
@@ -625,7 +624,7 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
 
 
     if not table.header.get('2PTDATA'):
-        print "Can't match dict data: this fits table doesn't contain 2pt data. Is named:",table.name
+        print("Can't match dict data: this fits table doesn't contain 2pt data. Is named:",table.name)
         return
     type1 = table.header['QUANT1']
     type2 = table.header['QUANT2']
@@ -635,7 +634,7 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
 
     xfromfits = table.data['ANG']
 
-    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata)    
+    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata)
     return yfromdict
 
 #############################################################################
@@ -643,46 +642,46 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
 #############################################################################
 
 def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfname = None, outftag = None, justfname = False,bftype='add'):
-    """ 
-    Given the dictionary of one set of blinding factors, 
-    the name of a  of a fits file containing unblinded 2pt data, 
-    and (optional) desired output file name or tag, 
-    multiplies 2pt data in original fits file by blinding factors and 
-    saves results (blinded data) into a new fits file. 
+    """
+    Given the dictionary of one set of blinding factors,
+    the name of a  of a fits file containing unblinded 2pt data,
+    and (optional) desired output file name or tag,
+    multiplies 2pt data in original fits file by blinding factors and
+    saves results (blinded data) into a new fits file.
 
     If argument is passed for outfname, that will be the name of output file,
     if not, will be <input filename>_<outftag>.fits. The script will check
     that the outfname is different than the original, unblinded file. If they
     match, it will revert to default behavior for naming the blinded file
-    so that the unblinded file isn't overwritten. 
+    so that the unblinded file isn't overwritten.
 
     If justfname == True, doesn't do any file manipulation, just returns
     string of output filename. (for testing)
 
     bftype can be 'add','mult' or 'mult-nocs'. For data vec d, blinding factor f
-        'add' - do additive blinding: 
+        'add' - do additive blinding:
                     d_blind = d_input + f, f = d_shift - d_ref, cov_bl = cov
         'mult' - do multiplicative blinding, scale covmat in blinded file:
                     d_blind = d_input*f, f = d_shift/d_ref, cov_bl = f^T*cov*f
         'multNOCS' - do multiplicative blinding, but without covariance scaling
                     d_blind = d_input*f, f = d_shift/d_ref, cov_bl = cov
-    """ 
-    print 'apply2ptblinding for',origfitsfile
-    print 'bftype',bftype
+    """
+    print('apply2ptblinding for',origfitsfile)
+    print('bftype',bftype)
     # check whether data is already blinded and whether Nbins match
     for table in fits.open(origfitsfile): #look through tables to find 2ptdata
-        if table.header.get('2PTDATA'): 
+        if table.header.get('2PTDATA'):
             if table.header.get('BLINDED'): #check for blinding
                 #if entry not there, or storing False -> not already blinded
                 raise ValueError('Data is already blinded!')
                 return
-            
-    # set up output file 
+
+    # set up output file
     if outfname == None or outfname==origfitsfile:
         #make sure you can't accidentaly overwrite the original
         #if output filename isn't given, add outftag onto the name of the
         #  unblinded file
-        if outftag == None or outftag =='': 
+        if outftag == None or outftag =='':
             outftag = 'BLINDED-{0:s}-defaulttag'.format(bftype)
         outfname = origfitsfile.replace('.fits','_BLINDED.fits'.format(outftag))
         #outfname = origfitsfile.replace('.fits','_{0:s}.fits'.format(outftag))
@@ -692,7 +691,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 
         hdulist = fits.open(outfname,mode='update') #update lets us write over
         covscaledict = {}
-        # apply blinding factors 
+        # apply blinding factors
         for table in hdulist: #look all tables
             if table.header.get('2PTDATA'):
                 factor = get_dictdat_tomatch_fitsdat(table, factordict)
@@ -705,13 +704,13 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                         type2 = table.header['QUANT2']
                         cname = get_covname_for2pttype(type1,type2)
                         covscaledict[cname] = factor
-                        print 'added entry to covscaledict:',cname
+                        print('added entry to covscaledict:',cname)
                 elif bftype=='add':
                     #print 'adding!'
                     table.data['value'] += factor
                 else:
                     raise ValueError('bftype {0:s} not recognized'.format(bftype))
-                
+
                 #add new header entry to note that blinding has occurred, and what type
                 table.header['BLINDED'] = bftype
                 table.header['KEYWORD'] = HARD_CODED_BLINDING
@@ -723,10 +722,10 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 
             #get covmat info:
             covmat = table.data
-            headerkeys = table.header.keys()
+            headerkeys = list(table.header.keys())
             names = []
             startinds =[]
-            for i in xrange(len(headerkeys)):
+            for i in range(len(headerkeys)):
                 key = headerkeys[i]
                 if key[:5] == 'STRT_':
                     startinds.append(table.header[key])
@@ -734,7 +733,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                     name = table.header[key]
                     names.append(name)
             startinds.append(Ndat)
-                
+
             bf = np.zeros(Ndat)
             #print names,startinds
             for i,covname in enumerate(names):
@@ -743,11 +742,11 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                 bfi = covscaledict[covname]
                 #print i,covname, endi-starti,bfi.shape
                 bf[starti:endi] = bfi
-                # Do cov_new[i,j] = cov[i,j]*bf[i]*bf[j]     
+                # Do cov_new[i,j] = cov[i,j]*bf[i]*bf[j]
             table.data = bf.reshape((bf.size,1))*table.data*bf
-        
+
         hdulist.close() # will save new data to file if 'update' was passed when opened
-        print ">>>>Stored blinded data in",outfname
+        print(">>>>Stored blinded data in",outfname)
     return outfname
 
 #############################################################################
@@ -755,13 +754,13 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 #############################################################################
 def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag = None,bftype='add',paramshift_module = None):
     """
-    This is the function that gets called using command line args. 
-    See docstring at top of file for more info. 
+    This is the function that gets called using command line args.
+    See docstring at top of file for more info.
 
-    Creates a new fits file with blinded data in it.  
+    Creates a new fits file with blinded data in it.
 
     seedstring - a string used to seed pseudo-random parameter shift selection
-    initemplate - cosmosis parameter inifile to be used as a template. 
+    initemplate - cosmosis parameter inifile to be used as a template.
     unblinded fits - fits file containing unblinded data
     outfname - if passed, will be name of output file. If not passed, will defaulted to
                 [unblinded filename]_[bftype].[seedstring].fits
@@ -779,12 +778,12 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     if outftag is not None:
         tagstr = outftag+'_'+tagstr
     apply2ptblinding_tofits(factordict, origfitsfile = unblindedfits, outfname = outfname, outftag = tagstr+seedstring, bftype = bftype)
-    
+
 ##############################################################################
 ##############################################################################
 if __name__=="__main__":
     #DEFAULT VALUES
-    callscript = False # if true calls script specifically as written below, 
+    callscript = False # if true calls script specifically as written below,
                       # otherwise calls according to command line args
                       #  [set to true on command line with --script ]
     unblindedfile = 'pipeline/simulated_nobias_Y3cov.fits'
@@ -792,13 +791,13 @@ if __name__=="__main__":
               # [set on command line with -u <fname> or --origfits <fname>]
 
     initemplate = 'pipeline/blinding_params_template.ini'
-       #^cosmosis pipeline for generating 2pt dat 
+       #^cosmosis pipeline for generating 2pt dat
        # ref cosmology will be set at whatever its values file is centered at
        # [set on command line with -i <fname> or --ini <fname>]
 
     bftype = 'add' # type of blinding to use, can be 'add', 'mult', or
         # 'multNOCS' (mult with no cov scaling)
-    
+
     seed = HARD_CODED_BLINDING #will translate string into some deterministed shift
        #in parameter space
        # [via command line, -s <str> or --seed <str>]
@@ -810,8 +809,8 @@ if __name__=="__main__":
        # By default will be [bftype], if a string is passed will be
        #   [inputstring_bftype]
        #  [via command line, --outftag <str>]
-    paramshift_module = None 
-                      
+    paramshift_module = None
+
 
     options,remainder = getopt.getopt(sys.argv[1:],'u:i:s:b:t:o:m:',['origfits=','ini=','seed=','script','outfname=','outftag=','bftype=','paramshiftmodule='])
     #print options
@@ -819,7 +818,7 @@ if __name__=="__main__":
         callscript = True
     else:
         for opt, arg in options:
-            print opt
+            print(opt)
             if opt in ('-u','--origfits'):
                 unblindedfile = arg
             elif opt in ('-s','--seed'):
@@ -836,11 +835,9 @@ if __name__=="__main__":
                 paramshift_module = arg
 
     if callscript:
-        print "CALLING SCRIPT"
+        print("CALLING SCRIPT")
         # for now is just defaults, could set this to something specific later if we wanted
         do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module)
     else:
-        print "LISTENING TO COMMAND LINE ARGS"
+        print("LISTENING TO COMMAND LINE ARGS")
         do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module)
-        
-
