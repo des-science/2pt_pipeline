@@ -6,7 +6,7 @@ from .stage import PipelineStage, NOFZ_NAMES
 import subprocess
 import os
 import warnings
-import destest
+from destest import destest
 import yaml
 import importlib
 import h5py
