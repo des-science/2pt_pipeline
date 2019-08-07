@@ -1,4 +1,5 @@
 from __future__ import print_function, division
+from .stage import PipelineStage
 import numpy as np
 import treecorr
 import h5py
