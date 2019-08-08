@@ -31,7 +31,7 @@ this image by specifying this image in your submission script with the SLURM arg
 
 e.g. in an interactive job:
 
-`salloc -N 1 -A des -q interactive -t 4:00:00 --image=docker:jderose/2pt_pipeline`
+`salloc -N 1 -A des -C haswell -q interactive -t 4:00:00 --image=docker:jderose/2pt_pipeline`
 
 or in a normal batch submission script:
 ```
