@@ -35,13 +35,13 @@ e.g. in an interactive job:
 
 or in a normal batch submission script:
 ```
-&#35SBATCH -p regular
-&#35SBATCH -A des
-&#35SBATCH -t 36:00:00
-&#35SBATCH -N 1
-&#35SBATCH -C haswell
-&#35SBATCH -L SCRATCH
-&#35SBATCH --image=docker:jderose/2pt_pipeline
+#SBATCH -p regular
+#SBATCH -A des
+#SBATCH -t 36:00:00
+#SBATCH -N 1
+#SBATCH -C haswell
+#SBATCH -L SCRATCH
+#SBATCH --image=docker:jderose/2pt_pipeline
 
 srun -n 32 shifter python3 -m /2pt_pipeline/pipeline --stage 2pt <config>
 ```
@@ -49,14 +49,14 @@ srun -n 32 shifter python3 -m /2pt_pipeline/pipeline --stage 2pt <config>
 You will also likely need to specify a filesystem to mount to the docker image. For example, extending on the above SLURM script:
 
 ```
-&#35SBATCH -p regular
-&#35SBATCH -A des
-&#35SBATCH -t 36:00:00
-&#35SBATCH -N 1
-&#35SBATCH -C haswell
-&#35SBATCH -L SCRATCH
-&#35SBATCH --image=docker:jderose/2pt_pipeline
-&#35SBATCH --volume="/global/cscratch1/sd/<username>/output/:/output;/global/cscratch1/sd/<username>/input/:/input"
+#SBATCH -p regular
+#SBATCH -A des
+#SBATCH -t 36:00:00
+#SBATCH -N 1
+#SBATCH -C haswell
+#SBATCH -L SCRATCH
+#SBATCH --image=docker:jderose/2pt_pipeline
+#SBATCH --volume="/global/cscratch1/sd/<username>/output/:/output;/global/cscratch1/sd/<username>/input/:/input"
 
 srun -n 32 shifter python3 -m /2pt_pipeline/pipeline --stage 2pt <config>
 
