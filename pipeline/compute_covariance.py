@@ -52,7 +52,7 @@ class ComputeCovariance(PipelineStage):
     def run_mpi(self):
         from .mpi_pool import MPIPool
         pool = MPIPool(comm=self.comm,debug=True)
-        
+
         if pool.is_master():
             self.prepare_covariance_runs()
             commands = self.generate_commands()
@@ -119,7 +119,7 @@ class ComputeCovariance(PipelineStage):
 
         for filename in files:
             os.system("cat {} >> {}".format(filename, cov_filename))
-        
+
 #        self.cleanup_cov()
 
 
@@ -137,11 +137,11 @@ class ComputeCovariance(PipelineStage):
 
     def prepare_covariance_runs(self):
         """
-        Write a covariance ini file, based on a default dictionary of values. Uses imported binning and file pointers info from 2point fits file and pipeline.ini file. 
+        Write a covariance ini file, based on a default dictionary of values. Uses imported binning and file pointers info from 2point fits file and pipeline.ini file.
         """
 
         self.load_metadata()
-        
+
         # Default dictionary.
         cov_dict = {
         'Omega_m'                   : 0.286,
@@ -211,13 +211,13 @@ class ComputeCovariance(PipelineStage):
             f.write('# n_gal,lens_n_gal in gals/arcmin^2\n')
 
             for x in ['area', 'sourcephotoz', 'lensphotoz', 'source_tomobins', 'lens_tomobins', 'sigma_e', 'shear_REDSHIFT_FILE', 'clustering_REDSHIFT_FILE']:
-                f.write(x + ' : ' + str(cov_dict[x]) + '\n')                    
+                f.write(x + ' : ' + str(cov_dict[x]) + '\n')
 
             for x in ['source_n_gal', 'lens_n_gal', 'lens_tomogbias']:
                 if hasattr(cov_dict[x],"__len__"):
                     f.write(x + ' : ' + ','.join(np.around(cov_dict[x],4).astype(str)) + '\n')
                 else:
-                    f.write(x + ' : ' + str(cov_dict[x]) + '\n')                    
+                    f.write(x + ' : ' + str(cov_dict[x]) + '\n')
 
             f.write('#\n')
             f.write('# Covariance paramters\n')
@@ -240,7 +240,7 @@ class ComputeCovariance(PipelineStage):
     def load_metadata(self):
         import yaml
         filename = self.input_path('metadata')
-        data = yaml.load(open(filename))
+        data = yaml.unsafe_load(open(filename))
         self.neff = np.array(data['neff'])
         self.tomobins = data['tomobins']
         self.sigma_e = np.array(data['sigma_e'])
@@ -248,4 +248,3 @@ class ComputeCovariance(PipelineStage):
         if self.params['lensfile'] != 'None':
             self.lens_neff = np.array(data['lens_neff'])
             self.lens_tomobins = data['lens_tomobins']
-

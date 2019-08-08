@@ -250,7 +250,7 @@ class Measure2Point(PipelineStage):
         """
 
         filename = self.input_path('nofz_meta')
-        data = yaml.load(open(filename))
+        data = yaml.unsafe_load(open(filename))
         self.mean_e1 = np.array(data['mean_e1'])
         self.mean_e2 = np.array(data['mean_e2'])
         self.zbins = len(np.array(data['source_bins'])) - 1
