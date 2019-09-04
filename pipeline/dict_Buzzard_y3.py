@@ -10,8 +10,8 @@ gold_dict = {
 
 shape_dict = {
     'objid'         : 'coadd_object_id',
-    'e1'            : 'e1',
-    'e2'            : 'e2',
+    'e1'            : 'e1_matched_se',
+    'e2'            : 'e2_matched_se',
     'm1'            : 'R11',
     'm2'            : 'R22',
     'cov00'         : 'covmat_1_1',
