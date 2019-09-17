@@ -47,6 +47,7 @@ def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_di
     """
     # Input yaml file defining catalog
     params = create_destest_yaml(pipe_params, name, cal_type, group, table, select_path, name_dict)
+    print(params)
     # Load destest source class to manage access to file
     source = destest.H5Source(params)
     # Load destest selector class to manage access to data in a structured way

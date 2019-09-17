@@ -24,7 +24,7 @@ load_cache : False
 output : '.'
 
 gold_regions_group :  'regions/catalog'
-gold_regions_table :  ['metacal/unsheared']
+gold_regions_table :  [ 'metacal/unsheared' ]
 gold_regions_path :  'index/select'
 
 lens_regions_group :  'regions/catalog/redmagic'
@@ -83,7 +83,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0
+slop        : 0.1
 flip_e2     : True
 region_mode  : pixellized #both/pixellized/full
 2pt_only    : all  #shear-shear pos-shear pos-pos all

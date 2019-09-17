@@ -175,20 +175,12 @@ class ComputeCovariance(PipelineStage):
         'ng'                        : 0
         }
 
-        if self.params['lensfile'] != 'None':
-            cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_lens_txt"),
-                            'lens_tomobins'             : self.lens_tomobins,
-                            'lens_n_gal'                : self.lens_neff,
-                            'ls'                        : 'true',
-                            'll'                        : 'true',
-                            'lens_tomogbias'            : self.params['lens_gbias']})
-        else:
-            cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_source_txt"),
-                            'lens_tomobins'             : self.tomobins,
-                            'lens_n_gal'                : self.neff,
-                            'ls'                        : 'false',
-                            'll'                        : 'false',
-                            'lens_tomogbias'            : np.ones(self.tomobins)})
+        cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_lens_txt"),
+                         'lens_tomobins'             : self.lens_tomobins,
+                         'lens_n_gal'                : self.lens_neff,
+                         'ls'                        : 'true',
+                         'll'                        : 'true',
+                         'lens_tomogbias'            : self.params['lens_gbias']})
 
         # Write ini file.
         filename = self.output_path("cov_ini")
@@ -245,6 +237,5 @@ class ComputeCovariance(PipelineStage):
         self.tomobins = data['tomobins']
         self.sigma_e = np.array(data['sigma_e'])
         self.area = data['area']
-        if self.params['lensfile'] != 'None':
-            self.lens_neff = np.array(data['lens_neff'])
-            self.lens_tomobins = data['lens_tomobins']
+        self.lens_neff = np.array(data['lens_neff'])
+        self.lens_tomobins = data['lens_tomobins']
