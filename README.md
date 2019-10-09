@@ -24,7 +24,7 @@ First, run:
 
 `shifterimg -v pull docker:jderose/2pt_pipeline:latest`
 
-This loads the 2pt_pipeline docker image to NERSC. You can then run jobs using
+This loads the 2pt_pipeline docker image to NERSC. Now you should clone this branch of 2pt_pipeline to a location in your NERSC home directory. You can then run jobs using
 this image by specifying this image in your submission script with the SLURM argument:
 
 --image=docker:jderose/2pt_pipeline
@@ -58,10 +58,12 @@ You will also likely need to specify a filesystem to mount to the docker image. 
 #SBATCH --image=docker:jderose/2pt_pipeline
 #SBATCH --volume="/global/cscratch1/sd/<username>/output/:/output;/global/cscratch1/sd/<username>/input/:/input"
 
-srun -n 32 shifter python3 -m /2pt_pipeline/pipeline --stage 2pt <config>
+cd 2pt_pipeline
+
+srun -n 32 shifter python3 -m pipeline --stage 2pt <config>
 
 ```
 
-will allow you to access the directories /global/cscratch1/sd/<username>/output/ and /global/cscratch1/sd/<username>/input/ as /output/ and /input/ when running, so make sure to replace the relevant directories in your config file.
+will allow you to access the directories /global/cscratch1/sd/<username>/output/ and /global/cscratch1/sd/<username>/input/ as /output/ and /input/ when running, so make sure to replace the relevant directories in your config file.  You should replace the `cd 2pt_pipeline` command in the submission script above so that it points to the directory that you have cloned this branch of 2pt_pipeline into.
 
 For much more information about docker/shifter at NERSC, see here: https://docs.nersc.gov/programming/shifter/how-to-use/
