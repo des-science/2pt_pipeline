@@ -41,6 +41,9 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
 
+    if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
+        destest_dict['w'] = name_dict.lens_dict['weight']
+
     return destest_dict
 
 def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):
@@ -100,10 +103,10 @@ class Measure2Point(PipelineStage):
         if 'ran_factor' not in self.params:
             self.params['ran_factor'] = 999
 
-        # A dictionary to homogenize names of columns in the hdf5 master catalog 
+        # A dictionary to homogenize names of columns in the hdf5 master catalog
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
         print 'using dictionary: ',self.params['dict_file']
-                
+
         # Load data and calibration classes
         self.source_selector, self.source_calibrator = load_catalog(self.params, 'mcal', 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
         self.lens_selector, self.lens_calibrator     = load_catalog(self.params, 'lens', None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
@@ -112,7 +115,7 @@ class Measure2Point(PipelineStage):
         self.ran_selector  = load_catalog(self.params, 'ran', None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
 
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
-        
+
         global global_measure_2_point
         global_measure_2_point = self
 
@@ -175,7 +178,7 @@ class Measure2Point(PipelineStage):
 
         # Create dummy list of pairs of tomographic bins up to nbin (max of lenses and sources)
         all_calcs = [(i,j) for i in xrange(nbin) for j in xrange(nbin)]
-        
+
         # Get healpix values for each object and unique healpix cells
         pix = self.get_hpix()
         pix = np.unique(pix)
@@ -264,7 +267,7 @@ class Measure2Point(PipelineStage):
         # k==0: xi+-
         # k==1: gammat
         # k==2: wtheta
-        
+
         verbose = 0
         num_threads = self.params['cores_per_task']
 
@@ -278,7 +281,7 @@ class Measure2Point(PipelineStage):
     def get_zbins_R(self,i,cal):
         """
         Get the lens or source binning, calibration, and weights for a given tomographic bin.
-        """ 
+        """
 
         # Open file from nofz stage that contains the catalog tomographic binning indices and read.
         f = h5py.File( self.input_path("nz_source"), mode='r')
@@ -309,7 +312,7 @@ class Measure2Point(PipelineStage):
             # Get responses
             R1,c,w = cal.calibrate(self.Dict.shape_dict['e1'], mask=mask)
             R2,c,w = cal.calibrate(self.Dict.shape_dict['e2'], mask=mask)
-            # Return responses, source binning mask and weights            
+            # Return responses, source binning mask and weights
             return R1, R2, mask[self.Dict.ind['u']], w
 
     def get_neighbors(self,ipix):
@@ -327,7 +330,7 @@ class Measure2Point(PipelineStage):
         jpix = self.get_neighbors(ipix)
 
         if return_neighbor:
-            # Return objects in pixel ipix and all neighbors 
+            # Return objects in pixel ipix and all neighbors
 
             pixrange = [] # List of object slices in self and neighboring pixels
             tmp = 0
@@ -338,7 +341,7 @@ class Measure2Point(PipelineStage):
                     tmp += tmp2
 
         else:
-            # Return objects in pixel ipix 
+            # Return objects in pixel ipix
 
             pixrange = np.r_[int(np.searchsorted(pix, ipix)) : int(np.searchsorted(pix, ipix, side='right'))] # Find slice (np.r_) corresponding to range of pix_ that contains ipix.
 
@@ -374,7 +377,7 @@ class Measure2Point(PipelineStage):
                 # Set fixed random seed to make results reproducible
                 np.random.seed(seed=self.params['random_seed'])
                 # Downsample random catalog to be ran_factor times larger than lenses
-                downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample 
+                downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample
 
             # Load random ra,dec and calculate healpix values
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
@@ -421,7 +424,7 @@ class Measure2Point(PipelineStage):
         try:
             f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,g1,g2,w,pixrange = self.build_catalogs(self.source_calibrator,i,ipix)
@@ -435,8 +438,8 @@ class Measure2Point(PipelineStage):
             # for x in range(9):
             #     f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
             # f.close()
-            return 
-        
+            return
+
 
         print 'pixel counting for xipm i',i,j,ipix,len(w_),np.sum(w_),pixrange
         print 'Found',np.sum(w_),'objects in zbin',i,'of pixel',ipix,'(total number for pixel',ipix,'accross all zbins is',len(w_),')'
@@ -453,9 +456,9 @@ class Measure2Point(PipelineStage):
         # np.save('g21.npy',g2)
         # np.save('w_1.npy',w_)
 
-        icat = treecorr.Catalog( g1 = g1, g2   = g2, 
-                                 ra = ra, dec  = dec, 
-                                 w  = w_, wpos = np.ones(len(ra)), 
+        icat = treecorr.Catalog( g1 = g1, g2   = g2,
+                                 ra = ra, dec  = dec,
+                                 w  = w_, wpos = np.ones(len(ra)),
                                  ra_units='deg', dec_units='deg')
 
         # Build catalogs for tomographic bin j
@@ -472,8 +475,8 @@ class Measure2Point(PipelineStage):
                 sys.stdout.flush()
                 # f['2pt/xipm/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/tot'][:] = 0.
                 # f.close()
-                continue 
-    
+                continue
+
             print 'pixel counting for xipm j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
 
             # print i,j,ipix,x,np.sum(w_),pixrange[x]
@@ -511,7 +514,7 @@ class Measure2Point(PipelineStage):
 
         f.close()
 
-        return 
+        return
 
     def calc_pos_shear(self,i,j,ipix,verbose,num_threads):
         """
@@ -521,7 +524,7 @@ class Measure2Point(PipelineStage):
         try:
             f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -536,8 +539,8 @@ class Measure2Point(PipelineStage):
 
         print 'pixel counting for gammat i',i,j,ipix,len(w_),np.sum(w_),pixrange
 
-        icat = treecorr.Catalog( ra = ra, dec  = dec, 
-                                 w  = w_,  wpos = np.ones(len(ra)), 
+        icat = treecorr.Catalog( ra = ra, dec  = dec,
+                                 w  = w_,  wpos = np.ones(len(ra)),
                                  ra_units='deg', dec_units='deg')
 
         # print i,j,ipix,np.sum(w_),pixrange
@@ -551,8 +554,8 @@ class Measure2Point(PipelineStage):
             sys.stdout.flush()
             return
 
-        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                  w  = w_,  wpos = np.ones(len(ran_ra)), 
+        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec,
+                                  w  = w_,  wpos = np.ones(len(ran_ra)),
                                   ra_units='deg', dec_units='deg')
 
         # print ran_ra[pixrange].min(),ran_ra[pixrange].max(),ran_ra[pixrange].mean()
@@ -570,7 +573,7 @@ class Measure2Point(PipelineStage):
             if np.sum(w_)==0:
                 print 'gammat not doing objects for '+str(ipix)+' '+str(x)+' '+str(i)+' '+str(j)+'. No objects in jpix.'
                 sys.stdout.flush()
-                continue 
+                continue
             print 'pixel counting for gammat j',i,j,ipix,x,len(w_),np.sum(w_),pixrange
             jcat = treecorr.Catalog( g1 = g1, g2   = g2,
                                      ra = ra, dec  = dec,
@@ -606,7 +609,7 @@ class Measure2Point(PipelineStage):
             self.write_h5(f,path,'rgweight',rg.weight,size=self.params['tbins'])
 
         f.close()
-        return 
+        return
 
     def calc_pos_pos(self,i,j,ipix,verbose,num_threads):
         """
@@ -616,7 +619,7 @@ class Measure2Point(PipelineStage):
         try:
             f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='r+')#, driver='mpio', comm=self.comm)
         except:
-            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)            
+            f = h5py.File(self.params['prefix']+'2pt_'+str(self.rank)+'.h5',mode='w')#, driver='mpio', comm=self.comm)
 
         # Build catalog for tomographic bin i
         ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,i,ipix)
@@ -630,10 +633,10 @@ class Measure2Point(PipelineStage):
             for x in range(9):
                 path = '2pt/wtheta/'+str(ipix)+'/'+str(x)+'/'+str(i)+'/'+str(j)+'/'
                 self.write_h5(f,path,'nntot',0.,size=1)
-            return 
+            return
 
-        icat = treecorr.Catalog( ra = ra, dec  = dec, 
-                                 w  = w_, wpos = np.ones(len(ra)), 
+        icat = treecorr.Catalog( ra = ra, dec  = dec,
+                                 w  = w_, wpos = np.ones(len(ra)),
                                  ra_units='deg', dec_units='deg')
 
         # print i,j,ipix,np.sum(w_),pixrange
@@ -653,13 +656,13 @@ class Measure2Point(PipelineStage):
                 self.write_h5(f,path,'nntot',0.,size=1)
             return
 
-        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                  w  = w_,     wpos = np.ones(len(ran_ra)), 
+        ircat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec,
+                                  w  = w_,     wpos = np.ones(len(ran_ra)),
                                   ra_units='deg', dec_units='deg')
 
 
         # Build catalogs for tomographic bin j
-        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,ipix,return_neighbor=True)  
+        ra,dec,ran_ra,ran_dec,w,pixrange,rpixrange = self.build_catalogs(self.lens_calibrator,j,ipix,return_neighbor=True)
 
         # Loop over pixels
         for x in range(len(pixrange)):
@@ -674,8 +677,8 @@ class Measure2Point(PipelineStage):
                 self.write_h5(f,path,'nntot',0.,size=1)
                 continue
 
-            jcat = treecorr.Catalog( ra = ra, dec  = dec, 
-                                     w  = w_,  wpos = np.ones(len(ra)), 
+            jcat = treecorr.Catalog( ra = ra, dec  = dec,
+                                     w  = w_,  wpos = np.ones(len(ra)),
                                      ra_units='deg', dec_units='deg')
             # print ra[pixrange[x]].min(),ra[pixrange[x]].max(),ra[pixrange[x]].mean()
             # print dec[pixrange[x]].min(),dec[pixrange[x]].max(),dec[pixrange[x]].mean()
@@ -688,8 +691,8 @@ class Measure2Point(PipelineStage):
                 self.write_h5(f,path,'nntot',0.,size=1)
                 continue
 
-            jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec, 
-                                      w  = w_,  wpos = np.ones(len(ran_ra)), 
+            jrcat = treecorr.Catalog( ra = ran_ra, dec  = ran_dec,
+                                      w  = w_,  wpos = np.ones(len(ran_ra)),
                                       ra_units='deg', dec_units='deg')
             # print ran_ra[pixrange[x]].min(),ran_ra[pixrange[x]].max(),ran_ra[pixrange[x]].mean()
             # print ran_dec[pixrange[x]].min(),ran_dec[pixrange[x]].max(),ran_dec[pixrange[x]].mean()
@@ -723,7 +726,7 @@ class Measure2Point(PipelineStage):
             self.write_h5(f,path,'nrtot',nr.tot,size=1)
             self.write_h5(f,path,'rntot',rn.tot,size=1)
             self.write_h5(f,path,'rrtot',rr.tot,size=1)
-            
+
         f.close()
 
         return
