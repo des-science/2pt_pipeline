@@ -157,7 +157,7 @@ class ComputeCovariance(PipelineStage):
         'f_NL'                      : 0.0,
         'pdelta_runmode'            : 'Halofit',
         'area'                      : self.area,
-        'source_n_gal'              : self.neff,
+        'source_n_gal'              : self.neff*(np.mean(self.sigma_e)/self.sigma_e)**2,
         'source_tomobins'           : self.tomobins,
         'sigma_e'                   : np.mean(self.sigma_e)*np.sqrt(2.),
         'm_lim'                     : 24.0,
