@@ -207,8 +207,6 @@ class nofz(PipelineStage):
         pzstack = self.lens_pz_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
         weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)
 
-        print(len(weight))
-        print(len(pzbin))
         if self.params['lens_group'] != 'None':
             # Calculate lens n(z)s and write to file
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
@@ -375,10 +373,14 @@ class nofz(PipelineStage):
                 # Stack n(z)
                 if np.isscalar(weight_):
 
-                    nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]))
+                    nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(self.binlow, self.binhigh[-1]))
                 else:
-
-                    nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                    if stack_col.shape>1:
+                        for j in range(stack_col.shape[1]):
+                            nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                            nofz[i,:] += nz
+                    else:
+                        nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
 
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
