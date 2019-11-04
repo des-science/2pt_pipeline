@@ -203,6 +203,8 @@ class nofz(PipelineStage):
         pzstack = self.lens_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
         weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)
 
+        print(len(weight))
+        print(len(pzbin))
         if self.params['lens_group'] != 'None':
             # Calculate lens n(z)s and write to file
             lens_zbin, self.lens_nofz = self.build_nofz_bins(
@@ -358,13 +360,13 @@ class nofz(PipelineStage):
                     else:
                         print("not a metacal catalogue")
                         weight_ = np.ones(np.shape(stack_col[mask])) #this is the line that worked in buzz pipeline
-                        #weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+#                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print('weight',weight_)
                         # raise ParamError('Not updated to support non-metacal catalogs.')
 
                 else:
-
-                    weight_ = weight
+                    weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+#                    weight_ = weight
 
                 # Stack n(z)
                 if np.isscalar(weight_):
