@@ -216,6 +216,8 @@ class Measure2Point(PipelineStage):
                 self.params, 'mcal', 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.MetaCalib)
             self.lens_selector, self.lens_calibrator = load_catalog(
                 self.params, 'lens', None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.lens_pz_selector, self.lens_pz_calibrator = load_catalog(
+                self.params, 'pz', None, self.params['lens_pz_group'], self.params['lens_pz_table'], self.params['lens_pz_path'], self.Dict, return_calibrator=destest.NoCalib)
             self.gold_selector = load_catalog(
                 self.params, 'gold', 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
             self.pz_selector = load_catalog(
@@ -227,6 +229,8 @@ class Measure2Point(PipelineStage):
                 self.params, 'mcal', 'mcal', self.params['source_group'], self.params['source_table'], self.params['source_path'], self.Dict, return_calibrator=destest.NoCalib)
             self.lens_selector, self.lens_calibrator = load_catalog(
                 self.params, 'lens', None, self.params['lens_group'], self.params['lens_table'], self.params['lens_path'], self.Dict, return_calibrator=destest.NoCalib)
+            self.lens_pz_selector, self.lens_pz_calibrator = load_catalog(
+                self.params, 'pz', None, self.params['lens_pz_group'], self.params['lens_pz_table'], self.params['lens_pz_path'], self.Dict, return_calibrator=destest.NoCalib)
             self.gold_selector = load_catalog(
                 self.params, 'gold', 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
             self.pz_selector = load_catalog(
