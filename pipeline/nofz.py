@@ -375,7 +375,7 @@ class nofz(PipelineStage):
 
                     nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(self.binlow, self.binhigh[-1]))
                 else:
-                    if stack_col.shape>1:
+                    if len(stack_col.shape)>1:
                         for j in range(stack_col.shape[1]):
                             nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
                             nofz[i,:] += nz
