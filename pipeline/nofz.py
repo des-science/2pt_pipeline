@@ -135,6 +135,16 @@ class nofz(PipelineStage):
             self.binlow  = self.z - self.dz/2. # Lower bin edges
             self.binhigh = self.z + self.dz/2. # Upper bin edges
 
+        elif self.params['pdf_type'] == 'som_pdf':
+            with open(self.params['datafile'], 'r') as fp:
+                somdata = fp['{}/pzdata'.format(self.params['pz_group'])]
+
+            self.pz_chat = somdata['pz_chat'][:]
+            self.binlow = somdata['zlow'][:]
+            self.binhigh = somdata['zhigh'][:]
+            self.z = (self.binlow + self.binhigh) / 2
+            self.dz = self.binhigh[0] - self.binlow[0]
+
         else:
             # Adopt pdf binning
 
@@ -328,7 +338,6 @@ class nofz(PipelineStage):
             xbins = xbins0[0]
 
         else:
-
             raise ParamError('Not updated to support non-metacal catalogs.')
 
         # Create empty n(z) array
@@ -348,7 +357,8 @@ class nofz(PipelineStage):
             for i in range(zbins):
                 # Get array masks for the tomographic bin for unsheared and sheared catalogs
                 print(i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1])))
-                mask        =  (xbins == i)
+                mask =  (xbins == i)
+
                 if shape:
                     if self.params['has_sheared']:
                         mask_1p = (xbins0[1] == i)
@@ -372,8 +382,8 @@ class nofz(PipelineStage):
 
                 # Stack n(z)
                 if np.isscalar(weight_):
-
                     nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(self.binlow, self.binhigh[-1]))
+
                 else:
                     if len(stack_col.shape)>1:
                         for j in range(stack_col.shape[1]):
@@ -384,10 +394,42 @@ class nofz(PipelineStage):
 
                 nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
 
-        # Stacking pdfs
-        elif pdf_type == 'pdf':
 
-             raise ParamError('Not updated to work with full pdfs.')
+        elif pdf_type == 'som_pdf':
+
+            for i in range(zbins):
+                # Get array masks for the tomographic bin for unsheared and sheared catalogs
+                print(i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1])))
+                mask        =  (xbins == i)
+                if shape:
+                    if self.params['has_sheared']:
+                        mask_1p = (xbins0[1] == i)
+                        mask_1m = (xbins0[2] == i)
+                        mask_2p = (xbins0[3] == i)
+                        mask_2m = (xbins0[4] == i)
+
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        print('weight',weight_)
+
+                    else:
+                        print("not a metacal catalogue")
+                        weight_ = np.ones(np.shape(stack_col[mask])) #this is the line that worked in buzz pipeline
+#                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        print('weight',weight_)
+                        # raise ParamError('Not updated to support non-metacal catalogs.')
+
+                else:
+                    weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+
+                # Stack p(z)
+                if np.isscalar(weight_):
+                    chat_counts, _ = np.histogram(stack_col[mask], bins=np.arange(-1, self.pz_chat.shape[0]))
+                else:
+                    chat_counts, _ = np.histogram(stack_col[mask], bins=np.arange(-1, self.pz_chat.shape[0]), weights=weight_)
+
+                nofz[i,:] = np.sum(chat_counts.reshape(-1,1) * self.pz_chat, axis=0)
+
+                nofz[i,:] /= np.sum(chat_counts)
 
         return xbins0, nofz
 
