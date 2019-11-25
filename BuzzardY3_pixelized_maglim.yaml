@@ -19,7 +19,9 @@ ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding 
 
 # catalog info
 
-datafile : '/output/sampleselection/Y3a/Buzzard-3_v1.9.8_Y3a_mastercat.h5'
+datafile : /output/sampleselection/Y3a/mastercat/Buzzard-3_v1.9.8_Y3a_mastercat.h5
+# '/project/projectdirs/des/jderose/Chinchilla/Herd/Chinchilla-3/v1.9.8/sampleselection/Y3a/mastercat/Buzzard-3_v1.9.8_Y3a_mastercat.h5'
+# 
 load_cache : False
 output : '.'
 
