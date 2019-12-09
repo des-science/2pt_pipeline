@@ -126,7 +126,18 @@ class nofz(PipelineStage):
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
         # Setup n(z) array binning for sources
-        if self.params['pdf_type']!='pdf':
+        if self.params['pdf_type'] == 'som_pdf':
+            print('som_pdf')
+            with h5py.File(self.params['datafile'], 'r') as fp:
+                somdata = fp['{}/pzdata'.format(self.params['pz_group'])]
+
+            self.pz_chat = somdata['pz_chat'][:]
+            self.binlow = somdata['zlow'][:]
+            self.binhigh = somdata['zhigh'][:]
+            self.z = (self.binlow + self.binhigh) / 2
+            self.dz = self.binhigh[0] - self.binlow[0]
+
+        elif self.params['pdf_type']!='pdf':
             # Define z binning of returned n(z)s
 
             self.z       = np.linspace(0., self.params['nzmax'], self.params['nzbins']+1)
@@ -135,15 +146,6 @@ class nofz(PipelineStage):
             self.binlow  = self.z - self.dz/2. # Lower bin edges
             self.binhigh = self.z + self.dz/2. # Upper bin edges
 
-        elif self.params['pdf_type'] == 'som_pdf':
-            with open(self.params['datafile'], 'r') as fp:
-                somdata = fp['{}/pzdata'.format(self.params['pz_group'])]
-
-            self.pz_chat = somdata['pz_chat'][:]
-            self.binlow = somdata['zlow'][:]
-            self.binhigh = somdata['zhigh'][:]
-            self.z = (self.binlow + self.binhigh) / 2
-            self.dz = self.binhigh[0] - self.binlow[0]
 
         else:
             # Adopt pdf binning
