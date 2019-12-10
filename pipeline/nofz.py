@@ -51,10 +51,13 @@ def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_di
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
+    print("name: ", name)
     # Input yaml file defining catalog
     params = create_destest_yaml(pipe_params, name, cal_type, group, table, select_path, name_dict)
+    print("params: ", params)
     # Load destest source class to manage access to file
     source = destest.H5Source(params)
+    print("source: ", source)
     # Load destest selector class to manage access to data in a structured way
     if inherit is None:
         sel = destest.Selector(params,source)
@@ -107,6 +110,8 @@ class nofz(PipelineStage):
                 self.params, 'gold', 'mcal', self.params['gold_group'], self.params['gold_table'], self.params['gold_path'], self.Dict, inherit=self.source_selector)
             self.pz_selector = load_catalog(
                 self.params, 'pz', 'mcal', self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
+            self.pzdata_selector = load_catalog(
+                self.params, 'pz', None, self.params['pz_group'], self.params['pz_table2'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
             self.ran_selector = load_catalog(
                 self.params, 'ran', None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
         else:
@@ -122,7 +127,8 @@ class nofz(PipelineStage):
                 self.params, 'pz', None, self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
             self.ran_selector = load_catalog(
                 self.params, 'ran', None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
-
+            self.pzdata_selector = load_catalog(
+                self.params, 'pz', None, self.params['pz_group'], self.params['pz_table2'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
         # Setup n(z) array binning for sources
@@ -183,7 +189,8 @@ class nofz(PipelineStage):
         print(self.pz_selector.params)
         pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
         print('len pzbin',len(pzbin),len(pzbin[0]))
-        pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
+        print(self.pzdata_selector.source.cols)
+        pzstack = self.pzdata_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
 
         if self.params['pdf_type']!='pdf':
             # Get binning and n(z) by stacking a scalar derived from pdf
