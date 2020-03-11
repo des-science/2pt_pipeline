@@ -1,6 +1,6 @@
 prefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /output/y3data_sompz_redmagic #/global/cscratch1/sd/aamon/Y3 #y3_subsampled
+run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.21
 
 # blinding configurations
 
@@ -12,7 +12,8 @@ ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding 
 
 # catalog info
 
-datafile : '/project/Y3_mastercat_12_3_19.h5'
+datafile : '/project/Y3_mastercat_12_3_19_SOMv0.21.h5'
+#'/project/Y3_mastercat_12_3_19.h5'
 load_cache : False
 output : '.'
 
@@ -73,18 +74,18 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 # nofz parameters
 
 zbins       : [-0.5, 0.5, 1.5, 2.5, 3.5]
-lens_zbins  : [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
-zlims       : [0.2, 1.3] # None indicates to use binning column in gold file
-nzbins      : 400 # Number of n(z) array z bins
-nzmax       : 4.0 # Max z for n(z)
+lens_zbins  : [ 0.15, 0.35, 0.5, 0.65, 0.8, 0.9 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
+zlims       : [0., 1.5] # None indicates to use binning column in gold file
+nzbins      : 200 # Number of n(z) array z bins
+nzmax       : 3.0 # Max z for n(z)
 pdf_type    : som_pdf # pdf for stacking pdfs
 lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
 
 # correlation 
 
 tbins       : 20
-tbounds     : [0.5,250.]
-slop        : 0.0
+tbounds     : [2.5,250.]
+slop        : 0.1
 flip_e2     : False
 region_mode  : pixellized #both/pixellized/full
 2pt_only    : shear-shear  #shear-shear pos-shear pos-pos all
@@ -96,6 +97,6 @@ separation_factor : 4.
 
 cov_source_dir : /global/cscratch1/sd/troxel/cosmolike/top-level/des_mpp/multi_covariances_real_mpp
 ng          : False
-area        : 5000.
+area        : 4143.2
 ggl_overlap_cut : 0.1
-lens_gbias : [1.54, 1.64, 1.75, 2.17, 2.05]
+lens_gbias : [1.7,1.7,1.7,2.0,2.0]
