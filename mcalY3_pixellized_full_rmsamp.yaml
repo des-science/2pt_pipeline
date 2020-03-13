@@ -76,8 +76,8 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 zbins       : [-0.5, 0.5, 1.5, 2.5, 3.5]
 lens_zbins  : [ 0.15, 0.35, 0.5, 0.65, 0.8, 0.9 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
 zlims       : [0., 1.5] # None indicates to use binning column in gold file
-nzbins      : 200 # Number of n(z) array z bins
-nzmax       : 3.0 # Max z for n(z)
+lens_nzbins : 200 # Number of lens n(z) array z bins
+lens_nzmax  : 1.5 # Max z for lens n(z)
 pdf_type    : som_pdf # pdf for stacking pdfs
 lens_pdf_type    : sample # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
                           # sample for using the MC draws (zredmagic_samp, or Z_MC)

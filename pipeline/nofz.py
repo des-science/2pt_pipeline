@@ -148,11 +148,26 @@ class nofz(PipelineStage):
             self.binlow  = self.z - self.dz/2. # Lower bin edges
             self.binhigh = self.z + self.dz/2. # Upper bin edges
 
-
         else:
             # Adopt pdf binning
 
             raise ParamError('Not updated to work with full pdfs.')
+
+        # Setup n(z) array binning for lenses
+        try:
+            #load the lens numbers 
+            self.lens_z       = np.linspace(0., self.params['lens_nzmax'], self.params['lens_nzbins']+1)
+            self.lens_z       = (self.lens_z[1:] + self.lens_z[:-1]) / 2. + 1e-4 # is 1e-4 needed for lenses?
+            self.lens_dz      = self.lens_z[1] - self.lens_z[0] # N(z) binning width
+            self.lens_binlow  = self.lens_z - self.lens_dz/2. # Lower bin edges
+            self.lens_binhigh = self.lens_z + self.lens_dz/2. # Upper bin edges
+            
+        except KeyError:
+            print('Using source nz histogram binning for lenses as well')
+            self.lens_z = self.z
+            self.lens_binlow = self.binlow
+            self.lens_binhigh = self.binhigh
+            self.lens_dz = self.dz
 
         # Setup tomographic bin edges for sources
         if hasattr(self.params['zbins'], "__len__"):
@@ -274,16 +289,16 @@ class nofz(PipelineStage):
             # Create lens twopoint number density object
             nz_lens      = twopoint.NumberDensity(
                             NOFZ_NAMES[1],
-                            self.binlow,
-                            self.z,
-                            self.binhigh,
+                            self.lens_binlow,
+                            self.lens_z,
+                            self.lens_binhigh,
                             [self.lens_nofz[i,:] for i in range(self.lens_tomobins)])
 
             # Add metatdata
             nz_lens.ngal = self.lens_neff
             nz_lens.area = self.area
             kernels.append(nz_lens)
-            np.savetxt(self.output_path("nz_lens_txt"), np.vstack((self.binlow, self.lens_nofz)).T)
+            np.savetxt(self.output_path("nz_lens_txt"), np.vstack((self.lens_binlow, self.lens_nofz)).T)
 
         # Write to twopoint fits file
         data             = twopoint.TwoPointFile([], kernels, None, None)
@@ -345,7 +360,10 @@ class nofz(PipelineStage):
             raise ParamError('Not updated to support non-metacal catalogs.')
 
         # Create empty n(z) array
-        nofz  = np.zeros((zbins, len(self.z)))
+        if shape:
+            nofz  = np.zeros((zbins, len(self.z)))
+        else:
+            nofz  = np.zeros((zbins, len(self.lens_z)))
 
         # N(z) is created from stacking scalar value derived from the pdf
         if (pdf_type == 'sample') | (pdf_type == 'rm'):
@@ -379,24 +397,31 @@ class nofz(PipelineStage):
 #                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print('weight',weight_)
                         # raise ParamError('Not updated to support non-metacal catalogs.')
-
+                    
+                    dz = self.dz
+                    binlow = self.binlow
+                    binhigh = self.binhigh
+                    
                 else:
                     weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    dz = self.lens_dz
+                    binlow = self.lens_binlow
+                    binhigh = self.lens_binhigh
 #                    weight_ = weight
 
                 # Stack n(z)
                 if np.isscalar(weight_):
-                    nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(self.binlow, self.binhigh[-1]))
+                    nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(binlow, binhigh[-1]))
 
                 else:
                     if len(stack_col.shape)>1:
                         for j in range(stack_col.shape[1]):
-                            nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                            nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(binlow, binhigh[-1]), weights=weight_)
                             nofz[i,:] += nz
                     else:
-                        nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                        nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(binlow, binhigh[-1]), weights=weight_)
 
-                nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
+                nofz[i,:]   /= np.sum(nofz[i,:]) * dz
 
 
         elif pdf_type == 'som_pdf':
