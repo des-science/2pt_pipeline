@@ -616,13 +616,13 @@ class nofz(PipelineStage):
 
                 #raise ParamError('Not updated to support non-metacal catalogs.')
 
-            if np.isscalar(w):
+            if np.isscalar(w_):
                 # Calculate mean shear without calibration factor
                 self.mean_e1.append( np.asscalar( np.average(e1,) ) )
                 self.mean_e2.append( np.asscalar( np.average(e2) ) )
                 # Calculate components of the sigma_e and n_eff calculations
-                sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
-                sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
+                sum_we2_1 = np.sum( w_**2 * ( e1 - self.mean_e1[i] )**2 )
+                sum_we2_2 = np.sum( w_**2 * ( e2 - self.mean_e2[i] )**2 )
                 sum_w2    = np.sum( mask )
                 sum_ws    = np.sum( mask ) * s
                 sum_w     = np.sum( mask )
