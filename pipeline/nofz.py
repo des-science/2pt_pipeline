@@ -588,7 +588,9 @@ class nofz(PipelineStage):
                 R,c,w = self.source_calibrator.calibrate(self.Dict.shape_dict['e2'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 print('response',R)
                 if type(w) is list:
-                    w = w[0]
+                    w_ = w[0]
+                else:
+                    w_ = w
 
                 # print np.sum(mask),'objects found in this bin'
                 # Select objects in bin and get e and e cov arrays
@@ -608,7 +610,7 @@ class nofz(PipelineStage):
                     self.Dict.ind['u']][mask]
                 e2 = self.source_selector.get_col(self.Dict.shape_dict['e2'], nosheared=True)[
                     self.Dict.ind['u']][mask]
-                w = 1.0
+                w_ = 1.0
                 s = 1.0
                 var = 0.0
 
@@ -616,7 +618,7 @@ class nofz(PipelineStage):
 
             if np.isscalar(w):
                 # Calculate mean shear without calibration factor
-                self.mean_e1.append( np.asscalar( np.average(e1) ) )
+                self.mean_e1.append( np.asscalar( np.average(e1,) ) )
                 self.mean_e2.append( np.asscalar( np.average(e2) ) )
                 # Calculate components of the sigma_e and n_eff calculations
                 sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
@@ -627,8 +629,8 @@ class nofz(PipelineStage):
                 sum_w2s2  = np.sum( mask ) * s**2
             else:
                 # Calculate mean shear without calibration factor
-                self.mean_e1.append( np.asscalar( np.average(e1, weights=w) ) )
-                self.mean_e2.append( np.asscalar( np.average(e2, weights=w) ) )
+                self.mean_e1.append( np.asscalar( np.average(e1, weights=w_) ) )
+                self.mean_e2.append( np.asscalar( np.average(e2, weights=w_) ) )
                 # Calculate components of the sigma_e and n_eff calculations
                 sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
                 sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
