@@ -41,9 +41,10 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     destest_dict['select_path'] = select_path
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
-
-    if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
-        destest_dict['w'] = name_dict.lens_dict['weight']
+    destest_dict['w'] = name_dict.shape_dict['weight']
+    
+    #if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
+    #    destest_dict['w'] = name_dict.lens_dict['weight']
 
     return destest_dict
 
@@ -51,10 +52,13 @@ def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_di
     """
     Loads data access and calibration classes from destest for a given yaml setup file.
     """
+    print("name: ", name)
     # Input yaml file defining catalog
     params = create_destest_yaml(pipe_params, name, cal_type, group, table, select_path, name_dict)
+    print("params: ", params)
     # Load destest source class to manage access to file
     source = destest.H5Source(params)
+    print("source: ", source)
     # Load destest selector class to manage access to data in a structured way
     if inherit is None:
         sel = destest.Selector(params,source)
@@ -122,11 +126,21 @@ class nofz(PipelineStage):
                 self.params, 'pz', None, self.params['pz_group'], self.params['pz_table'], self.params['pz_path'], self.Dict, inherit=self.source_selector)
             self.ran_selector = load_catalog(
                 self.params, 'ran', None, self.params['ran_group'], self.params['ran_table'], self.params['ran_path'], self.Dict)
-
         self.Dict.ind = self.Dict.index_dict #a dictionary that takes unsheared,sheared_1p/1m/2p/2m as u-1-2-3-4 to deal with tuples of values returned by get_col()
 
         # Setup n(z) array binning for sources
-        if self.params['pdf_type']!='pdf':
+        if self.params['pdf_type'] == 'som_pdf':
+            print('som_pdf')
+            with h5py.File(self.params['datafile'], 'r') as fp:
+                somdata = fp['{}/pzdata'.format(self.params['pz_group'])]
+
+            self.pz_chat = somdata['pz_chat'][:]
+            self.binlow = somdata['zlow'][:]
+            self.binhigh = somdata['zhigh'][:]
+            self.z = (self.binlow + self.binhigh) / 2
+            self.dz = self.binhigh[0] - self.binlow[0]
+
+        elif self.params['pdf_type']!='pdf':
             # Define z binning of returned n(z)s
 
             self.z       = np.linspace(0., self.params['nzmax'], self.params['nzbins']+1)
@@ -139,6 +153,22 @@ class nofz(PipelineStage):
             # Adopt pdf binning
 
             raise ParamError('Not updated to work with full pdfs.')
+
+        # Setup n(z) array binning for lenses
+        try:
+            #load the lens numbers 
+            self.lens_z       = np.linspace(0., self.params['lens_nzmax'], self.params['lens_nzbins']+1)
+            self.lens_z       = (self.lens_z[1:] + self.lens_z[:-1]) / 2. + 1e-4 # is 1e-4 needed for lenses?
+            self.lens_dz      = self.lens_z[1] - self.lens_z[0] # N(z) binning width
+            self.lens_binlow  = self.lens_z - self.lens_dz/2. # Lower bin edges
+            self.lens_binhigh = self.lens_z + self.lens_dz/2. # Upper bin edges
+            
+        except KeyError:
+            print('Using source nz histogram binning for lenses as well')
+            self.lens_z = self.z
+            self.lens_binlow = self.binlow
+            self.lens_binhigh = self.binhigh
+            self.lens_dz = self.dz
 
         # Setup tomographic bin edges for sources
         if hasattr(self.params['zbins'], "__len__"):
@@ -174,8 +204,9 @@ class nofz(PipelineStage):
         pzbin   = self.pz_selector.get_col(self.Dict.pz_dict['pzbin'])
         print('len pzbin',len(pzbin),len(pzbin[0]))
         pzstack = self.pz_selector.get_col(self.Dict.pz_dict['pzstack'])[self.Dict.ind['u']]
-
+        print("here")
         if self.params['pdf_type']!='pdf':
+            print("pdf")
             # Get binning and n(z) by stacking a scalar derived from pdf
 
             print(pzbin, pzstack,self.binedges,self.tomobins)
@@ -194,6 +225,7 @@ class nofz(PipelineStage):
             raise ParamError('Not updated to work with full pdfs.')
 
         # Calculate sigma_e and n_eff
+        print("going to get sigmae and eff")
         self.get_sige_neff(zbin,self.tomobins)
 
         # Write source tomographic binning indicies to file for use later in the pipeline
@@ -260,16 +292,16 @@ class nofz(PipelineStage):
             # Create lens twopoint number density object
             nz_lens      = twopoint.NumberDensity(
                             NOFZ_NAMES[1],
-                            self.binlow,
-                            self.z,
-                            self.binhigh,
+                            self.lens_binlow,
+                            self.lens_z,
+                            self.lens_binhigh,
                             [self.lens_nofz[i,:] for i in range(self.lens_tomobins)])
 
             # Add metatdata
             nz_lens.ngal = self.lens_neff
             nz_lens.area = self.area
             kernels.append(nz_lens)
-            np.savetxt(self.output_path("nz_lens_txt"), np.vstack((self.binlow, self.lens_nofz)).T)
+            np.savetxt(self.output_path("nz_lens_txt"), np.vstack((self.lens_binlow, self.lens_nofz)).T)
 
         # Write to twopoint fits file
         data             = twopoint.TwoPointFile([], kernels, None, None)
@@ -319,7 +351,7 @@ class nofz(PipelineStage):
 
         # Create tomographic bin indicies from bin edges.
         if (~shape)|(self.params['has_sheared']):
-
+            print("here1")  
             # Loop over unsheared and sheared catalogs (bin_col list)
             xbins0=[]
             for x in bin_col:
@@ -328,12 +360,14 @@ class nofz(PipelineStage):
             xbins = xbins0[0]
 
         else:
-
             raise ParamError('Not updated to support non-metacal catalogs.')
 
         # Create empty n(z) array
-        nofz  = np.zeros((zbins, len(self.z)))
-
+        if shape:
+            nofz  = np.zeros((zbins, len(self.z)))
+        else:
+            nofz  = np.zeros((zbins, len(self.lens_z)))
+        print("nofz", nofz)
         # N(z) is created from stacking scalar value derived from the pdf
         if (pdf_type == 'sample') | (pdf_type == 'rm'):
 
@@ -345,6 +379,58 @@ class nofz(PipelineStage):
                 stack_col = np.random.normal(stack_col, self.lens_selector.get_col(self.Dict.lens_pz_dict['pzerr'])[self.Dict.ind['u']])
 
             # Stack scalar values into n(z) looping over tomographic bins
+            for i in range(zbins):
+                # Get array masks for the tomographic bin for unsheared and sheared catalogs
+                print("printing a bunch of stuff")
+                print(i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1])))
+                mask =  (xbins == i)
+
+                if shape:
+                    print("if shape")
+                    if self.params['has_sheared']:
+                        mask_1p = (xbins0[1] == i)
+                        mask_1m = (xbins0[2] == i)
+                        mask_2p = (xbins0[3] == i)
+                        mask_2m = (xbins0[4] == i)
+                        print("I'm here")
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        print('weight',weight_)
+
+                    else:
+                        print("not a metacal catalogue")
+                        weight_ = np.ones(np.shape(stack_col[mask])) #this is the line that worked in buzz pipeline
+#                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        print('weight',weight_)
+                        # raise ParamError('Not updated to support non-metacal catalogs.')
+                    
+                    dz = self.dz
+                    binlow = self.binlow
+                    binhigh = self.binhigh
+                    
+                else:
+                    weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    dz = self.lens_dz
+                    binlow = self.lens_binlow
+                    binhigh = self.lens_binhigh
+#                    weight_ = weight
+
+                # Stack n(z)
+                if np.isscalar(weight_):
+                    nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(binlow, binhigh[-1]))
+
+                else:
+                    if len(stack_col.shape)>1:
+                        for j in range(stack_col.shape[1]):
+                            nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(binlow, binhigh[-1]), weights=weight_)
+                            nofz[i,:] += nz
+                    else:
+                        nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(binlow, binhigh[-1]), weights=weight_)
+
+                nofz[i,:]   /= np.sum(nofz[i,:]) * dz
+
+
+        elif pdf_type == 'som_pdf':
+
             for i in range(zbins):
                 # Get array masks for the tomographic bin for unsheared and sheared catalogs
                 print(i,xbins,edge,bin_col,len(xbins),np.sum(xbins == i),np.sum((bin_col[0]>edge[i])&(bin_col[0]<edge[i+1])))
@@ -368,26 +454,16 @@ class nofz(PipelineStage):
 
                 else:
                     weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
-#                    weight_ = weight
 
-                # Stack n(z)
+                # Stack p(z)
                 if np.isscalar(weight_):
-
-                    nofz[i,:],b =  np.histogram(stack_col[mask].flatten(), bins=np.append(self.binlow, self.binhigh[-1]))
+                    chat_counts, _ = np.histogram(stack_col[mask], bins=np.arange(-1, self.pz_chat.shape[0]))
                 else:
-                    if len(stack_col.shape)>1:
-                        for j in range(stack_col.shape[1]):
-                            nz, _ =  np.histogram(stack_col[mask,j], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
-                            nofz[i,:] += nz
-                    else:
-                        nofz[i,:],b =  np.histogram(stack_col[mask], bins=np.append(self.binlow, self.binhigh[-1]), weights=weight_)
+                    chat_counts, _ = np.histogram(stack_col[mask], bins=np.arange(-1, self.pz_chat.shape[0]), weights=weight_)
 
-                nofz[i,:]   /= np.sum(nofz[i,:]) * self.dz
+                nofz[i,:] = np.sum(chat_counts.reshape(-1,1) * self.pz_chat, axis=0)
 
-        # Stacking pdfs
-        elif pdf_type == 'pdf':
-
-             raise ParamError('Not updated to work with full pdfs.')
+                nofz[i,:] /= np.sum(chat_counts)
 
         return xbins0, nofz
 
@@ -516,8 +592,12 @@ class nofz(PipelineStage):
                 print('response',R)
                 R,c,w = self.source_calibrator.calibrate(self.Dict.shape_dict['e2'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m])
                 print('response',R)
+                print('weight',w)
                 if type(w) is list:
-                    w = w[0]
+                    w_ = w[0]
+                else:
+                    w_ = w
+                print('weight',w_)
 
                 # print np.sum(mask),'objects found in this bin'
                 # Select objects in bin and get e and e cov arrays
@@ -537,27 +617,27 @@ class nofz(PipelineStage):
                     self.Dict.ind['u']][mask]
                 e2 = self.source_selector.get_col(self.Dict.shape_dict['e2'], nosheared=True)[
                     self.Dict.ind['u']][mask]
-                w = 1.0
+                w_ = 1.0
                 s = 1.0
                 var = 0.0
 
                 #raise ParamError('Not updated to support non-metacal catalogs.')
 
-            if np.isscalar(w):
+            if np.isscalar(w_):
                 # Calculate mean shear without calibration factor
-                self.mean_e1.append( np.asscalar( np.average(e1) ) )
+                self.mean_e1.append( np.asscalar( np.average(e1,) ) )
                 self.mean_e2.append( np.asscalar( np.average(e2) ) )
                 # Calculate components of the sigma_e and n_eff calculations
-                sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
-                sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )
+                sum_we2_1 = np.sum( w_**2 * ( e1 - self.mean_e1[i] )**2 )
+                sum_we2_2 = np.sum( w_**2 * ( e2 - self.mean_e2[i] )**2 )
                 sum_w2    = np.sum( mask )
                 sum_ws    = np.sum( mask ) * s
                 sum_w     = np.sum( mask )
                 sum_w2s2  = np.sum( mask ) * s**2
             else:
                 # Calculate mean shear without calibration factor
-                self.mean_e1.append( np.asscalar( np.average(e1, weights=w) ) )
-                self.mean_e2.append( np.asscalar( np.average(e2, weights=w) ) )
+                self.mean_e1.append( np.asscalar( np.average(e1, weights=w_) ) )
+                self.mean_e2.append( np.asscalar( np.average(e2, weights=w_) ) )
                 # Calculate components of the sigma_e and n_eff calculations
                 sum_we2_1 = np.sum( w**2 * ( e1 - self.mean_e1[i] )**2 )
                 sum_we2_2 = np.sum( w**2 * ( e2 - self.mean_e2[i] )**2 )

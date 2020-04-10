@@ -144,18 +144,18 @@ class ComputeCovariance(PipelineStage):
 
         # Default dictionary.
         cov_dict = {
-        'Omega_m'                   : 0.286,
-        'Omega_v'                   : 0.714,
-        'sigma_8'                   : 0.82,
-        'n_spec'                    : 0.96,
+        'Omega_m'                   : 0.30,
+        'Omega_v'                   : 0.7,
+        'sigma_8'                   : 0.82355,
+        'n_spec'                    : 0.97,
         'w0'                        : -1.0,
         'wa'                        : 0.0,
-        'omb'                       : 0.05,
-        'h0'                        : 0.7,
+        'omb'                       : 0.048,
+        'h0'                        : 0.69,
         'coverH0'                   : 2997.92458,
         'rho_crit'                  : 7.4775e+21,
         'f_NL'                      : 0.0,
-        'pdelta_runmode'            : 'Halofit',
+        'pdelta_runmode'            : 'halofit',
         'area'                      : self.area,
         'source_n_gal'              : self.neff*(np.mean(self.sigma_e)/self.sigma_e)**2,
         'source_tomobins'           : self.tomobins,
@@ -172,7 +172,7 @@ class ComputeCovariance(PipelineStage):
         'filename'                  : "run",
         'ggl_overlap_cut'           : self.params['ggl_overlap_cut'],
         'ss'                        : 'true',
-        'ng'                        : 0
+        'ng'                        : 1
         }
 
         cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_lens_txt"),

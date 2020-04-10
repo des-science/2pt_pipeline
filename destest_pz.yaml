@@ -60,7 +60,7 @@ Rg          : ['R11','R22']
 # len 2 array with column names for c (additive correction)
 # c           : None
 # column name for weight
-# w           : None
+w           : 'weight'
 
 
 # Pretty name dicts
