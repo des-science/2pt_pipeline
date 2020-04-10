@@ -17,8 +17,8 @@ RUN pip install --upgrade pip
 COPY requirements.txt /tmp/
 RUN cat /tmp/requirements.txt | xargs -n 1 -L 1 pip3 install
 RUN pip3 install six
+ARG CSBUST=9
 RUN git clone https://github.com/des-science/destest.git && cd destest && git fetch && git checkout setup && python3 setup.py build && python3 setup.py install && rm -rf /build/
-ARG CSBUST=6
 RUN git clone https://github.com/des-science/2pt_pipeline.git && cd 2pt_pipeline && git fetch && git checkout python3
 
 ENV XDG_CACHE_HOME=/srv/cache
