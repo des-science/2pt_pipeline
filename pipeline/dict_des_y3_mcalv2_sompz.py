@@ -23,6 +23,7 @@ shape_dict = {
     'ra'            : 'ra',
     'dec'           : 'dec',
     'flags'         : 'flags_select',
+    'weight'        : 'weight'
     }
 
 pz_bin_dict = {
