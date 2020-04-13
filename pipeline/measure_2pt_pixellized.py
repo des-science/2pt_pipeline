@@ -38,11 +38,13 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     destest_dict['select_path'] = select_path
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
-    destest_dict['weight'] = name_dict.shape_dict['weight']
+    destest_dict['w'] = name_dict.shape_dict['weight']
+    print("using source weights", destest_dict['w'])
     
     if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
-        destest_dict['w'] = name_dict.lens_dict['weight']
-
+        destest_dict['wl'] = name_dict.lens_dict['weight']
+        print("using lens weights",destest_dict['wl'])
+        
     return destest_dict
 
 def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):
@@ -1462,4 +1464,4 @@ class Measure2Point(PipelineStage):
 
 
 
-        retu
+        return
