@@ -38,7 +38,8 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     destest_dict['select_path'] = select_path
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
-
+    destest_dict['weight'] = name_dict.shape_dict['weight']
+    
     if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
         destest_dict['w'] = name_dict.lens_dict['weight']
 
@@ -1461,4 +1462,4 @@ class Measure2Point(PipelineStage):
 
 
 
-        return
+        retu
