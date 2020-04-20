@@ -24,6 +24,6 @@
 
 export OMP_NUM_THREADS=64
 #run the application:
-srun -u -N 50 -n 160 shifter python3 -s -m pipeline --mpi --stage 2pt BuzzardY3_pixelized_true_zs_true_zl_weighted.yaml
+srun -u -N 50 -n 50 shifter python3 -s -m pipeline --mpi --stage 2pt BuzzardY3_pixelized_sompz_bin_true_zs_true_zl.yaml
 
 
