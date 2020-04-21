@@ -46,6 +46,9 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     #if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
     #    destest_dict['w'] = name_dict.lens_dict['weight']
 
+    if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
+        destest_dict['w'] = name_dict.lens_dict['weight']
+
     return destest_dict
 
 def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):

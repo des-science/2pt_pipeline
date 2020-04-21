@@ -106,6 +106,7 @@ class Measure2Point(PipelineStage):
 
         # A dictionary to homogenize names of columns in the hdf5 master catalog
         self.Dict = importlib.import_module('.'+self.params['dict_file'],'pipeline')
+
         print('using dictionary: ',self.params['dict_file'])
 
         # Load data and calibration classes
