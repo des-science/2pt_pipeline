@@ -1,0 +1,12 @@
+numpy
+scipy
+healpy
+#TreeCorr==3.3.7
+h5py
+matplotlib
+astropy
+fitsio
+#ChainConsumer==0.26.0
+mpi4py
+#twopoint==1.1
+PyYAML

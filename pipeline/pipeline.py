@@ -21,7 +21,7 @@ stages = {
 
 def run_stage(param_file, stage_name, mpi):
     if mpi:
-        print "mpi mode"
+        print("mpi mode")
         import mpi4py.MPI
         comm = mpi4py.MPI.COMM_WORLD
     else:
@@ -63,6 +63,6 @@ def launch_pipeline(param_file, manual_submission):
     jobid_collate = submit_single("00:05:00", "fits2txt", "fits2txt.sub", cmd, do_submit, previous_jobs=[jobid_2pt,jobid_cov])
   
     cmd = "python -m pipeline {} --stage cosmo --mpi".format(param_file)
-    print cmd
+    print(cmd)
     submit_mpi(1, "regular", "2:00:00", "cosmo", "cosmo.sub", cmd, do_submit, previous_jobs=[jobid_collate])
 

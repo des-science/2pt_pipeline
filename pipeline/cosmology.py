@@ -1,8 +1,7 @@
+from __future__ import print_function
 from .stage import PipelineStage
 import os
-import yaml
 import copy
-import collections
 import string
 import numpy as np
 
@@ -201,7 +200,7 @@ class ParameterEstimation(PipelineStage):
         for param, cosmosis_param in [("source_z_bias", "bias_"), ("lens_z_bias","bias_"), ("shear_m", "m")]:
             name, value = self.gaussian_priors_to_cosmosis_priors(param, cosmosis_param)
             modified_params[name] = value
-        print modified_params.keys()
+        print(list(modified_params.keys()))
         priors = priors_template.format(**modified_params)
         open(self.output_path('cosmosis_priors'),'w').write(priors)
 
@@ -216,7 +215,7 @@ class ParameterEstimation(PipelineStage):
         # turn that into the multiple values that cosmosis wants
         nbin_lens = len(self.params['lens_z_bias_mean'])
         _,bias_range = self.flat_prior_to_range('bias')
-        modified_params['bias_range'] = '\n'.join(['b_{} = {}'.format(i+1, bias_range) for i in xrange(nbin_lens)])
+        modified_params['bias_range'] = '\n'.join(['b_{} = {}'.format(i+1, bias_range) for i in range(nbin_lens)])
 
 
         for param, cosmosis_param in [("source_z_bias", "bias_"), ("lens_z_bias","bias_"), ("shear_m", "m")]:
@@ -259,13 +258,13 @@ class ParameterEstimation(PipelineStage):
             cosmosis_exe.main(args)
 
         if self.comm is not None:
-            print "<Waiting for master to finish test run>"
+            print("<Waiting for master to finish test run>")
             self.comm.Barrier()
         # reset to using the original sampler again and run
         # MPI Pool is handled within cosmosis
         args.inifile = inifile
         args.mpi = (self.comm is not None)
-        
+
         if args.mpi:
             with cosmosis_exe.mpi_pool.MPIPool() as pool:
                 cosmosis_exe.main(args,pool)
@@ -291,7 +290,5 @@ class ParameterEstimation(PipelineStage):
         params['data_file'] = self.input_path("2pt_text")
         if master:
             params['cosmolike_fid_datavector'] = self.output_path('cosmolike_fid_datavector')
-        
+
         run_cosmolike_mpp.main(params, pool=pool)
-    
-        

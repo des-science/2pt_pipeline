@@ -6,9 +6,9 @@ import os
 import sys
 
 def run_cmd(cmd):
-    print "Running command:"
-    print cmd
-    print
+    print("Running command:")
+    print(cmd)
+    print()
     os.system(cmd)
 
 
@@ -43,25 +43,25 @@ class ComputeCovariance(PipelineStage):
 
     def run(self):
         if self.comm is None:
-            print "Running single core"
+            print("Running single core")
             self.run_single_core()
         else:
-            print "Running MPI"
+            print("Running MPI")
             self.run_mpi()
 
     def run_mpi(self):
         from .mpi_pool import MPIPool
         pool = MPIPool(comm=self.comm,debug=True)
-        
+
         if pool.is_master():
             self.prepare_covariance_runs()
             commands = self.generate_commands()
-            print "will run these commands:"
+            print("will run these commands:")
             for command in commands:
-                print command
+                print(command)
             sys.stdout.flush()
-            print
-            print
+            print()
+            print()
         else:
             commands = None
         self.comm.Barrier()
@@ -73,7 +73,7 @@ class ComputeCovariance(PipelineStage):
     def run_single_core(self):
         self.prepare_covariance_runs()
         for command in self.generate_commands():
-            print command
+            print(command)
             status = os.system(command)
             if status!=0:
                 raise ValueError("Failed command: {}".format(command))
@@ -111,7 +111,7 @@ class ComputeCovariance(PipelineStage):
         import glob
         files = glob.glob(self.output_path("cov_chunks"))
 
-        print "final number of files = ", len(files)
+        print("final number of files = ", len(files))
         #int int double double int int int int double double
         cov_filename = self.output_path("cov")
         if os.path.exists(cov_filename):
@@ -119,7 +119,7 @@ class ComputeCovariance(PipelineStage):
 
         for filename in files:
             os.system("cat {} >> {}".format(filename, cov_filename))
-        
+
 #        self.cleanup_cov()
 
 
@@ -137,25 +137,25 @@ class ComputeCovariance(PipelineStage):
 
     def prepare_covariance_runs(self):
         """
-        Write a covariance ini file, based on a default dictionary of values. Uses imported binning and file pointers info from 2point fits file and pipeline.ini file. 
+        Write a covariance ini file, based on a default dictionary of values. Uses imported binning and file pointers info from 2point fits file and pipeline.ini file.
         """
 
         self.load_metadata()
-        
+
         # Default dictionary.
         cov_dict = {
-        'Omega_m'                   : 0.286,
-        'Omega_v'                   : 0.714,
-        'sigma_8'                   : 0.82,
-        'n_spec'                    : 0.96,
+        'Omega_m'                   : 0.30,
+        'Omega_v'                   : 0.7,
+        'sigma_8'                   : 0.82355,
+        'n_spec'                    : 0.97,
         'w0'                        : -1.0,
         'wa'                        : 0.0,
-        'omb'                       : 0.05,
-        'h0'                        : 0.7,
+        'omb'                       : 0.048,
+        'h0'                        : 0.69,
         'coverH0'                   : 2997.92458,
         'rho_crit'                  : 7.4775e+21,
         'f_NL'                      : 0.0,
-        'pdelta_runmode'            : 'Halofit',
+        'pdelta_runmode'            : 'halofit',
         'area'                      : self.area,
         'source_n_gal'              : self.neff*(np.mean(self.sigma_e)/self.sigma_e)**2,
         'source_tomobins'           : self.tomobins,
@@ -172,23 +172,15 @@ class ComputeCovariance(PipelineStage):
         'filename'                  : "run",
         'ggl_overlap_cut'           : self.params['ggl_overlap_cut'],
         'ss'                        : 'true',
-        'ng'                        : 0
+        'ng'                        : 1
         }
 
-        if self.params['lensfile'] != 'None':
-            cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_lens_txt"),
-                            'lens_tomobins'             : self.lens_tomobins,
-                            'lens_n_gal'                : self.lens_neff,
-                            'ls'                        : 'true',
-                            'll'                        : 'true',
-                            'lens_tomogbias'            : self.params['lens_gbias']})
-        else:
-            cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_source_txt"),
-                            'lens_tomobins'             : self.tomobins,
-                            'lens_n_gal'                : self.neff,
-                            'ls'                        : 'false',
-                            'll'                        : 'false',
-                            'lens_tomogbias'            : np.ones(self.tomobins)})
+        cov_dict.update({'clustering_REDSHIFT_FILE' : self.input_path("nz_lens_txt"),
+                         'lens_tomobins'             : self.lens_tomobins,
+                         'lens_n_gal'                : self.lens_neff,
+                         'ls'                        : 'true',
+                         'll'                        : 'true',
+                         'lens_tomogbias'            : self.params['lens_gbias']})
 
         # Write ini file.
         filename = self.output_path("cov_ini")
@@ -211,13 +203,13 @@ class ComputeCovariance(PipelineStage):
             f.write('# n_gal,lens_n_gal in gals/arcmin^2\n')
 
             for x in ['area', 'sourcephotoz', 'lensphotoz', 'source_tomobins', 'lens_tomobins', 'sigma_e', 'shear_REDSHIFT_FILE', 'clustering_REDSHIFT_FILE']:
-                f.write(x + ' : ' + str(cov_dict[x]) + '\n')                    
+                f.write(x + ' : ' + str(cov_dict[x]) + '\n')
 
             for x in ['source_n_gal', 'lens_n_gal', 'lens_tomogbias']:
                 if hasattr(cov_dict[x],"__len__"):
                     f.write(x + ' : ' + ','.join(np.around(cov_dict[x],4).astype(str)) + '\n')
                 else:
-                    f.write(x + ' : ' + str(cov_dict[x]) + '\n')                    
+                    f.write(x + ' : ' + str(cov_dict[x]) + '\n')
 
             f.write('#\n')
             f.write('# Covariance paramters\n')
@@ -234,18 +226,16 @@ class ComputeCovariance(PipelineStage):
         exe = self.params['cov_source_dir']
         ini = self.output_path("cov_ini")
         command = "{} {} 0".format(exe, ini, 0)
-        print "Running command:", command
+        print("Running command:", command)
         os.system(command)
 
     def load_metadata(self):
         import yaml
         filename = self.input_path('metadata')
-        data = yaml.load(open(filename))
+        data = yaml.unsafe_load(open(filename))
         self.neff = np.array(data['neff'])
         self.tomobins = data['tomobins']
         self.sigma_e = np.array(data['sigma_e'])
         self.area = data['area']
-        if self.params['lensfile'] != 'None':
-            self.lens_neff = np.array(data['lens_neff'])
-            self.lens_tomobins = data['lens_tomobins']
-
+        self.lens_neff = np.array(data['lens_neff'])
+        self.lens_tomobins = data['lens_tomobins']

@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import subprocess
 import os
 
@@ -10,7 +11,7 @@ def get_cores_per_node():
         cores_per_node = 32
     elif nersc_host == "None":
         cores_per_node = 4
-        print "Guessing {} cores per node".format(cores_per_node)
+        print("Guessing {} cores per node".format(cores_per_node))
     else:
         raise ValueError("Unknown number of cores on this machine - fix in submit.py")
     return cores_per_node
@@ -39,7 +40,7 @@ hybrid_template = """#!/bin/bash -l
 #SBATCH -t {time}
 #SBATCH -J {name}
 #SBATCH -o {name}.log
-#SBATCH -C haswell 
+#SBATCH -C haswell
 {dependency}
 
 cd $SLURM_SUBMIT_DIR
@@ -55,7 +56,7 @@ single_template = """#!/bin/bash -l
 #SBATCH -t {time}
 #SBATCH -J {name}
 #SBATCH -o {name}.log
-#SBATCH -C haswell 
+#SBATCH -C haswell
 {dependency}
 
 cd $SLURM_SUBMIT_DIR
@@ -71,7 +72,7 @@ def make_deps(previous_jobs):
             dependency = "#SBATCH -d afterok:{0}".format(":".join(previous_jobs))
     else:
         dependency = ""
-    return dependency    
+    return dependency
 
 def submit(script, script_file, do_submit):
     f = open(script_file, 'w')
@@ -79,7 +80,7 @@ def submit(script, script_file, do_submit):
     f.close()
     cmd = "sbatch {}".format(script_file)
     if not do_submit:
-        print cmd
+        print(cmd)
         return None
 
     #will raise error on failure of submission
@@ -91,7 +92,7 @@ def submit(script, script_file, do_submit):
 
 def submit_mpi(nodes, queue, time, name, script_file, command, do_submit, previous_jobs=None):
     dependency = make_deps(previous_jobs)
-    print "Assuming 32 cores per node - modify for edison"
+    print("Assuming 32 cores per node - modify for edison")
     cores = nodes*32
     job_script = mpi_template.format(**locals())
     return submit(job_script, script_file, do_submit)
@@ -100,7 +101,7 @@ def submit_mpi(nodes, queue, time, name, script_file, command, do_submit, previo
 def submit_hybrid(nodes, queue, time, name, script_file, command, do_submit, previous_jobs=None):
     #edison value
     cores_per_node = get_cores_per_node()
-    print "Assuming 32 cores per node - modify for edison"
+    print("Assuming 32 cores per node - modify for edison")
     dependency = make_deps(previous_jobs)
     job_script = hybrid_template.format(**locals())
     return submit(job_script, script_file, do_submit)

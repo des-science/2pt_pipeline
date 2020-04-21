@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import twopoint
 import numpy as np
 from .stage import PipelineStage
@@ -41,8 +42,8 @@ class Text2Point(PipelineStage):
         for xi in [xip,xim,ggl,wtheta]:
             n1 = xi.bin1.max()
             n2 = xi.bin2.max()
-            for i in xrange(n1):
-                for j in xrange(n2):
+            for i in range(n1):
+                for j in range(n2):
                     theta, data = xi.get_pair(i+1,j+1)
                     if len(theta)==0:
                         continue
@@ -63,7 +64,7 @@ class Text2Point(PipelineStage):
         # This bit actually gets done twice, once in the nofz
         # stage so that the compute_covariance has what it needs,
         # and once here, so that if we want to use this code more
-        # generally then we still save nz.  It can't hurt and 
+        # generally then we still save nz.  It can't hurt and
         # the files should be the same.
         nz_pos = self.data.get_kernel("nz_lens")
         nz_shape = self.data.get_kernel("nz_source")
@@ -93,4 +94,3 @@ class Text2Point(PipelineStage):
                     for d in data:
                         output.write("{} {}\n".format(row, d))
                         row += 1
-                        

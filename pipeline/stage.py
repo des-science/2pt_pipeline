@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import time
 import os
 import errno
@@ -23,15 +24,15 @@ class PipelineStage(object):
     @classmethod
     def execute(cls, param_file, comm):
         name = cls.__name__
-        print "Preparing stage {}".format(name)
+        print("Preparing stage {}".format(name))
         stage = cls(param_file)
         stage.comm = comm
         t0 = time.time()
-        print "Running stage {}".format(name)
+        print("Running stage {}".format(name))
         stage.run()
         stage.write()
         t1 = time.time()
-        print "Done stage {} in {} seconds".format(name, t1-t0)
+        print("Done stage {} in {} seconds".format(name, t1-t0))
 
     def input_path(self, name):
         section, filename = self.inputs[name]
@@ -56,7 +57,7 @@ def mkdir(path):
                 #error is that file with name of dir exists already
                 raise ValueError("Tried to create dir %s but file with name exists already"%path)
         elif error.errno == errno.ENOTDIR:
-            #some part of the path (not the end) already exists as a file 
+            #some part of the path (not the end) already exists as a file
             raise ValueError("Tried to create dir %s but some part of the path already exists as a file"%path)
         else:
             #Some other kind of error making directory

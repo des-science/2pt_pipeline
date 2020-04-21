@@ -1,3 +1,6 @@
+regions_dict = {
+   'region' : 'region'}
+
 gold_dict = {
     'objid'         : 'coadd_objects_id',
     'ra'            : 'ra',
@@ -10,8 +13,8 @@ gold_dict = {
 
 shape_dict = {
     'objid'         : 'coadd_object_id',
-    'e1'            : 'e1_matched_se',
-    'e2'            : 'e2_matched_se',
+    'e1'            : 'e_1',
+    'e2'            : 'e_2',
     'm1'            : 'R11',
     'm2'            : 'R22',
     'cov00'         : 'covmat_1_1',
@@ -20,6 +23,7 @@ shape_dict = {
     'ra'            : 'ra',
     'dec'           : 'dec',
     'flags'         : 'flags_select',
+    'weight'        : 'weight'
     }
 
 pz_bin_dict = {
@@ -31,8 +35,8 @@ pz_bin_dict = {
 
 pz_dict = {
     'objid' : 'coadd_object_id',
-    'pzbin' : 'zmean_sof', #this will only work for 'catalog/bpz/unsheared'
-    'pzstack' : 'zmean_sof' #z for truth; zmean_sof for BPZ
+    'pzbin' : 'bhat', #this will only work for 'catalog/bpz/unsheared'
+    'pzstack' : 'cell_wide'
     #'pz_1p' : 'bpz_zmean_sof_1p',
     #'pz_1m' : 'bpz_zmean_sof_1m',
     #'pz_2p' : 'bpz_zmean_sof_2p',
@@ -49,7 +53,7 @@ pz_stack_dict = {
 lens_pz_dict = {
     'objid'         : 'coadd_object_id',
     'pzbin'         : 'zredmagic',
-    'pzstack'       : 'zredmagic',  #for truth we want zspec
+    'pzstack'       : 'zredmagic',
     'pzerr'         : 'zredmagic_e',
     'weight'        : None
     }
@@ -58,7 +62,7 @@ lens_dict = {
     'objid'         : 'COADD_OBJECTS_ID',
     'ra'            : 'ra',
     'dec'           : 'dec',
-    'weight'        : 'weights'
+    'weight'        : 'weight'
     }
 
 ran_dict = {
@@ -74,6 +78,3 @@ index_dict = {
     '2p':3,
     '2m':4
 }
-regions_dict = {
-    'region'         : 'region'
-    }

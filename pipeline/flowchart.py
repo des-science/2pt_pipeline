@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 from .pipeline import stages
 
 sequence = [
@@ -10,22 +11,22 @@ sequence = [
 ]
 
 def print_flowcart_dot_language():
-	print "digraph {"
+	print("digraph {")
 	for s,stage in enumerate(sequence):
 		cls = stages[stage]
-		print "subgraph cluster_{} {{".format(s)
-		print 'style=filled;'
-		print 'color=lightgrey;'
-		for out in cls.outputs.values():
-			print '"{0}/{1}" [label="{1}"];'.format(cls.name, out.replace("{rank}", "*"))
-		for out in cls.outputs.values():
-			print '"{0}"->"{0}/{1}";'.format(cls.name, out.replace("{rank}", "*"))
-		print 'label = "{}"'.format(cls.name)
-		print "}"
-		for inp in cls.inputs.values():
+		print("subgraph cluster_{} {{".format(s))
+		print('style=filled;')
+		print('color=lightgrey;')
+		for out in list(cls.outputs.values()):
+			print('"{0}/{1}" [label="{1}"];'.format(cls.name, out.replace("{rank}", "*")))
+		for out in list(cls.outputs.values()):
+			print('"{0}"->"{0}/{1}";'.format(cls.name, out.replace("{rank}", "*")))
+		print('label = "{}"'.format(cls.name))
+		print("}")
+		for inp in list(cls.inputs.values()):
 			section,name = inp
-			print '"{0}/{1}"->"{2}";'.format(section,name,cls.name)
-	print "}"
+			print('"{0}/{1}"->"{2}";'.format(section,name,cls.name))
+	print("}")
 
 
 if __name__ == '__main__':
