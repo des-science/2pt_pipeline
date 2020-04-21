@@ -9,6 +9,7 @@ import yaml
 from destest import destest
 import importlib
 import timeit
+import time
 import pickle
 
 
@@ -38,13 +39,13 @@ def create_destest_yaml( params, name, cal_type, group, table, select_path, name
     destest_dict['select_path'] = select_path
     destest_dict['e'] = [name_dict.shape_dict['e1'],name_dict.shape_dict['e2']]
     destest_dict['Rg'] = [name_dict.shape_dict['m1'],name_dict.shape_dict['m2']]
-    destest_dict['w'] = name_dict.shape_dict['weight']
-    print("using source weights", destest_dict['w'])
+
+    if 'weight' in name_dict.shape_dict.keys():
+      destest_dict['w'] = name_dict.shape_dict['weight']
     
     if (name == 'lens') & ('weight' in name_dict.lens_dict.keys()):
-        destest_dict['wl'] = name_dict.lens_dict['weight']
-        print("using lens weights",destest_dict['wl'])
-        
+        destest_dict['w'] = name_dict.lens_dict['weight']
+
     return destest_dict
 
 def load_catalog(pipe_params, name, cal_type, group, table, select_path, name_dict, inherit=None, return_calibrator=None):
@@ -114,7 +115,7 @@ def task(ijk):
 
     lla = '{0}'.format(jc)
     if not os.path.exists(path_save+lla+'.pkl'):
-        #print "computing ", path_save+lla
+        print ("computing {} on rank {}".format(path_save+lla, self.comm.rank))
 
         pairsCC1 = global_measure_2_point.calc_correlation(i,j,k,o1, [jc])
         pairsCC2 = global_measure_2_point.calc_correlation(i,j,k,[jc], o2)
@@ -319,6 +320,8 @@ class Measure2Point(PipelineStage):
         jack_info_tot.update({'n_jck':np.array(f['regions']['centers']['number'][0])})
         jack_info_tot.update({'centers':centers})
         self.jack_dict_tot = jack_info_tot
+
+
     def setup_jobs(self,pool):
         """
         Set up the list of jobs that must be distributed across nodes.
@@ -440,6 +443,7 @@ class Measure2Point(PipelineStage):
 
         # I should also load into memory ra,dec,weights and hpix..loading them for every jackknife region takes too long.
         bins_dict = dict()
+        start = time.time()
         for i in range(nbin):
             # Loop over tomographic bin pairs
             if (i<self.zbins) & (self.params['2pt_only'].lower() in ['pos-shear','shear-shear','all']):
@@ -450,7 +454,8 @@ class Measure2Point(PipelineStage):
                 if (i<self.lens_zbins)&(self.params['2pt_only'].lower() in ['pos-pos','pos-shear','all']):
                     ra,dec,ran_ra,ran_dec,w,down = self.build_catalogs_tot(self.lens_calibrator,i)
                     bins_dict.update({'lens_{0}'.format(i):[ra,dec,ran_ra,ran_dec,w,down]})
-
+        end = time.time()
+        print('Loading in all columns took: {}'.format(end-start))
         self.bins_dict = bins_dict
 
 
@@ -543,6 +548,7 @@ class Measure2Point(PipelineStage):
         """
 
         # run full ************************************
+        print("I am rank: {}".format(self.comm.rank))
         if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
             if self.comm:
                 # Parallel execution
@@ -701,7 +707,7 @@ class Measure2Point(PipelineStage):
         Treecorr wrapper for shear-shear,shear-pos,pos-pos calculations.
         """
 
-        #print ("slope",self.params['slop'])
+        print("slop",self.params['slop'])
         num_threads = self.params['cores_per_task']
 
         if k ==0:
@@ -710,8 +716,12 @@ class Measure2Point(PipelineStage):
             # shear cat i
             jck_fold = self.jack_dict_tot['{0}_shears'.format(i)]
             if not full:
+                start = time.time()
                 mask_jck = np.in1d(jck_fold['hpix'],pix1)
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)][0][mask_jck],self.bins_dict['shear_{0}'.format(i)][1][mask_jck],self.bins_dict['shear_{0}'.format(i)][2][mask_jck],self.bins_dict['shear_{0}'.format(i)][3][mask_jck],self.bins_dict['shear_{0}'.format(i)][4][mask_jck]
+                end = time.time()
+
+                print("time to mask: {}s".format(end - start))
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)]
 
@@ -727,8 +737,12 @@ class Measure2Point(PipelineStage):
             # shear cat j
             jck_fold = self.jack_dict_tot['{0}_shears'.format(j)]
             if not full:
+                start = time.time()
                 mask_jck = np.in1d(jck_fold['hpix'],pix2)
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
+                end = time.time()
+                print("time to mask: {}s".format(end - start))
+                
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
 
@@ -746,7 +760,11 @@ class Measure2Point(PipelineStage):
 
 
                 gg = treecorr.GGCorrelation(nbins=self.params['tbins'], min_sep=self.params['tbounds'][self.Dict.ind['u']], max_sep=self.params['tbounds'][1], sep_units='arcmin', bin_slop=self.params['slop'], num_threads=num_threads)
+                start = time.time()
                 gg.process(icat, jcat)
+                end = time.time()
+                print("time to process 2pt corr: {}s".format(end - start))                
+                
                 ggp = gg.xip
                 ggm = gg.xim
                 normalization = gg.weight
@@ -768,13 +786,15 @@ class Measure2Point(PipelineStage):
             # pos cat i (+random!)
             jck_fold = self.jack_dict_tot['{0}_lens'.format(i)]
             if not full:
+                start = time.time()
                 mask_jck = np.in1d(jck_fold['hpix'],pix1)
                 downsample = [self.bins_dict['lens_{0}'.format(i)][5]]
 
                 mask_jck_rndm = np.in1d(jck_fold['hpix_randoms'][downsample],pix1)
 
                 ra,dec,ran_ra,ran_dec,w = self.bins_dict['lens_{0}'.format(i)][0][mask_jck],self.bins_dict['lens_{0}'.format(i)][1][mask_jck],self.bins_dict['lens_{0}'.format(i)][2][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][3][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][4]
-
+                end = time.time()
+                print("time to mask: {}s".format(end - start))
 
             else:
                 ra,dec,ran_ra,ran_dec,w,_ = self.bins_dict['lens_{0}'.format(i)]
@@ -797,8 +817,12 @@ class Measure2Point(PipelineStage):
             # shear cat j
             jck_fold = self.jack_dict_tot['{0}_shears'.format(j)]
             if not full:
+                start = time.time()
                 mask_jck = np.in1d(jck_fold['hpix'],pix2)
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
+                end = time.time()
+                print("time to mask: {}s".format(end - start))                
+                
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
 
@@ -1460,8 +1484,4 @@ class Measure2Point(PipelineStage):
         save_obj(self.params['run_directory']+'/2pt/shear_pos_full',self.output_shear_pos_full)
 
         self.output_pos_pos_full = output_pos_pos_full
-        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full)
-
-
-
-        return
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full
