@@ -10,10 +10,6 @@ function in another script.
 
 The script uses cosmosis, so you'll need to  source its setup file before
 running this.
-
-Currently the angle ranges for the angular bins is hard coded in; look for
- "Passed check: blinding factor and fits file have same angle values" to print
-to make sure you're applying factors at the right angles.
 ............................................................
 Arguments:
   -u, --origfits : name of unblinded fits file
@@ -23,7 +19,7 @@ Arguments:
                    cosmology
   -s, --seed: string used to seed parameter shift selection
   -t, --bftype: blinding factor type. Can be 'add', 'mult', or
-                     'multNOCS' (mult with no cov scaling)
+                     'multNOCS' (mult with no cov scaling) [MULT OPTION IS DISABLED]
   -o, --outfname : output filename; only set for testing,  default behavior is
                outfname = [origfits]_[seed].fits
   -t, --outftag : string to label output filename, for testing purposes. If set
@@ -32,6 +28,8 @@ Arguments:
   -m, --paramshiftmodule : string string of a python filename (minus the .py)
                   which can be used to import a function to draw parameter
                    shifts (see draw_paramshift for more info)
+  --seedinfname: if True, appends seed to blinded data filename. Default is False. 
+  --seedinfits: if True, stores seed in KEYWORD entry in blinded fits file. Default True
 ............................................................
 
 What it does:
@@ -51,23 +49,38 @@ What it does:
    -> See run_cosmosis_togen_2ptdict
 
 4. Take ratio or difference of 2pt datavectors to get blinding factor, in same
-   dictionary format.
+   dictionary format. (NOTE, MULTIPLICATIVE BLINDING IS CURRENTLY DISABLED)
    -> See get_factordict
 
 5. Apply blinding factor to desired datafile, saving a new fits file with
    string key in filename.
    -> See apply2ptblinding_tofits
 --------------------------------------------------------------------------------
-Script maintained by Jessica Muir (jlmuir@umich.edu).
+Script maintained by Jessica Muir (jlmuir@stanford.edu).
 """
 from __future__ import print_function, division
 import numpy as np
-import getopt, sys, shutil
+import getopt, sys, shutil, os
 from astropy.io import fits
 import hashlib
 import importlib
 import time
 from scipy.interpolate import interp1d
+
+# pull type table and some other from the cosmosis 2pt likelihood dir
+# This will only work if cosmosis environment has been set up
+csd = os.environ['COSMOSIS_SRC_DIR'] + '/'
+typefilepath = csd + 'cosmosis-standard-library/likelihood/2pt/twopoint_cosmosis.py'
+# get dir and file name
+dirname, filename = os.path.split(typefilepath)
+# split off .py
+impname, ext = os.path.splitext(filename)
+# add directory to path
+sys.path.insert(0, dirname)
+# import the library
+twopoint_cosmosis = __import__(impname)
+from twopoint_cosmosis import type_table
+
 
 #############################################################################
 # FUNCTIONS FOR GETTING SHIFT IN PARAMETER SPACE
@@ -75,7 +88,8 @@ from scipy.interpolate import interp1d
 
 DEFAULT_PARAM_RANGE = {'cosmological_parameters--sigma8_input':(0.834-3*.04,0.834+3*0.04),\
                        'cosmological_parameters--w':(-1.5,-.5)}
-HARD_CODED_BLINDING = 'I_desperately_need_coffee' #keyword is the one truth that unites us all
+HARD_CODED_BLINDING = 'testblinding' #'I_desperately_need_coffee' #keyword is the one truth that unites us all
+
 
 def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
                     importfrom = None):
@@ -106,13 +120,9 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
     'for parameter in pipeline.parameters' in run_cosmosis_togen_2ptdict
     will work.
     """
-
-
-
     #do something convoluted to turn the string into a number that can be
     # used to seed numpy.random
-    seedstring = HARD_CODED_BLINDING
-    seedind = int(int(hashlib.md5(seedstring).hexdigest(),16)%1.e8)
+    seedind = int(int(hashlib.md5(seedstring.encode('utf-8')).hexdigest(),16)%1.e8)
     np.random.seed(seedind)
     #do the paramter shifts
     if importfrom is None:
@@ -169,7 +179,6 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
         # set parameters as desired
     for parameter in pipeline.parameters:
         key = str(parameter)
-        #print 'working on parameter',key
 
         #set the values
         if doshifts:
@@ -189,21 +198,32 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
         pipeline.set_fixed(parameter.section, parameter.name, parameter.start)
 
     if doshifts:
-        print('haveshifted',haveshifted)
+        #print('haveshifted',haveshifted)
+        pass
     if doshifts and (len(haveshifted)!= len(list(pdict.keys())) -1):
         print("WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE.")
-        print("  asked for shifts in:",list(pdict.keys()))
-        print("  did shifts in:",haveshifted)
+        #print("  asked for shifts in:",list(pdict.keys()))
+        #print("  did shifts in:",haveshifted)
 
     # run pipeline to generate 2pt functions for that cosmology
     print("RUNNING PIPELINE=============== [{0:s}]".format(time.strftime("%Y-%m-%d %H:%M")))
     data = pipeline.run_parameters([])
     print(' at end of run_cosmosis_togen_datavec [{0:s}]'.format(time.strftime("%Y-%m-%d %H:%M")))
-    twoptdict = get_twoptdict_from_pipelinedata(data)
+    twoptdict =  get_twoptdict_from_pipelinedata(data)
 
     return twoptdict
 
 #============================================================
+def get_bin_pairs(bin1,bin2):
+    """
+    This is pulled from cosmosis-standard-library/likelihood/2pt/twopoint.py
+    """
+    unique_pairs = []
+    for p in zip(bin1,bin2):
+        if p not in unique_pairs:
+            unique_pairs.append(p)
+    return unique_pairs
+
 def get_twoptdict_from_pipelinedata(data):
     """
     Given datablock object returned by cosmosis pipeline.run_parameters([]),
@@ -213,85 +233,43 @@ def get_twoptdict_from_pipelinedata(data):
     For auto spectra where z bin label order doesn't matter, both orders
     will be stored. (e.g. the same data will be there for bins 1-2 and 2-1).
 
-    The angular data will be returned in a format where all theory theta
-    values will be stored, so the arrays will be big. We'll interpolate these
-    to match the unblinded fits file's theta values when we apply the blinding
-    factors.
-    (previously had hardcoded angle bins, change made for more flexibility)
     """
-    #these are the types
-    galaxy_position_fourier = "GPF"
-    galaxy_shear_emode_fourier = "GEF"
-    galaxy_shear_bmode_fourier = "GBF"
-    galaxy_position_real = "GPR"
-    galaxy_shear_plus_real = "G+R"
-    galaxy_shear_minus_real = "G-R"
+    #type_table #keys are (type1,type2), values are (section, x, y)
+    # get list of possible sections
+    outdict={}
+    for k in type_table.keys():
+        section,  xlabel, binformat= type_table[k]
+        # xlabel is either ell or theta
+        # binformat will be bin_{0}_{1} or similar
+        if data.has_section(section):
+            types = k
+            xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
+            x,y,bins, is_binavg = spectrum_array_from_block(data,section,types, xlabel, binformat)
+            outdict[xkey]=x
+            outdict[ykey]=y
+            outdict[ykey+'_bins'] = bins
+            outdict[ykey+'_binavg']=is_binavg
 
-    # we don't apply any bin or angular cuts here. When we apply blinding
-    # factors we'll make sure bin numbers and angular bin numbers match up
-    # with those in the unblinded fits file. So, as long as the angular and
-    # z bin indices correpond to the same angles and bins, cuts will be handled
-    # in that stage.
-
-    outdict = {}
-    if data.has_section('galaxy_xi'):
-        types = (galaxy_position_real,galaxy_position_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'galaxy_xi',types,True)
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
-    if data.has_section('galaxy_shear_xi'):
-        types = (galaxy_position_real,galaxy_shear_plus_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'galaxy_shear_xi',types,True)
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
-    if data.has_section('shear_xi'):
-        #xip
-        types = (galaxy_shear_plus_real,galaxy_shear_plus_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'xiplus_{0}_{1}')
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
-        #xim
-        types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'shear_xi',types,True,bin_format = 'ximinus_{0}_{1}')
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
-
-    if data.has_section('shear_xi_minus'):
-        types = (galaxy_shear_minus_real,galaxy_shear_minus_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'shear_xi_minus',types,True)
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
-    if data.has_section('shear_xi_plus'):
-        types = (galaxy_shear_plus_real,galaxy_shear_plus_real)
-        xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-        x,y,bins = spectrum_array_from_block(data,'shear_xi_plus',types,True)
-        outdict[xkey]=x
-        outdict[ykey]=y
-        outdict[ykey+'_bins'] = bins
     return outdict
 
+
 #-----------------------------------------------
-def spectrum_array_from_block(block, section_name, types, real_space, bin_format = 'bin_{0}_{1}'):
+#def spectrum_array_from_block(block, section_name, types, real_space, bin_format = 'bin_{0}_{1}'):
+def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_format = 'bin_{0}_{1}'):
     """
-    Adapting this from save_2pt.py's spectrum_measurement_from_block.
-    (adaptations included removing interpolation step, symmetrizing
-    bin labels for is_auto=True)
+    >> Updated 4/21/20 to work with bin averaging implemented for DES Y3
+    
+    Initially adapting this from save_2pt.py and 2pt_like code.
 
     No scale cutting implemented or angular sampling;
     that will be handled later. Since we
     track bin numbers and angle values, which will be checked against
     the unblinded fits file in get_dictdat_tomatch_fitsdat.
     """
+    if xlabel=='theta':
+        is_binavg = block[section_name,"bin_avg"]
+    else:
+        is_binavg = False #no bin averaging in fourier space
 
     # for cross correlations we must save bin_ji as well as bin_ij.
     # but not for auto-correlations.
@@ -304,26 +282,20 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
 
 
     #This is the ell/theta values that have been calculated by cosmosis,
-    # so will generally be more densely sampled than values in fits files.
-    if real_space:
-        # This is in radians
-        theory_angle = block[section_name, "theta"]
-    else:
-        theory_angle = block[section_name, "ell"]
-
-    #This is the length of the angle array
-    n_angle = len(theory_angle) #whatevers in the block
-
+    # if bin averaging, these should match what's in the fits files (up to rounding)
+    # if interpolating, angles will be more densely sampled than values in fits files.
+    theory_angle = block[section_name,xlabel]
+    n_angle = len(theory_angle) #whatevers in the block, length of array
 
     #The fits format stores all the measurements
     #as one long vector.  So we build that up here from the various
     #bins that we will load in.  These are the different columns
     value = []
-    #angle = []
     bin1 = []
     bin2 = []
-    #angular_bin = []
     angles = []
+
+    # n.b. don't have suffix option implemented here
 
     #Bin pairs. Varies depending on auto-correlation
     for i in range(nbin_a):
@@ -333,19 +305,20 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
             jmax = nbin_b
         for j in range(jmax):
             #Load and interpolate from the block
-            cl = block[section_name, bin_format.format(i+1,j+1)]
-
-            bin1.append(np.repeat(i + 1, n_angle))
-            bin2.append(np.repeat(j + 1, n_angle))
-            angles.append(theory_angle)
-            value.append(cl)
-
-            if is_auto and i!=j: #also store under flipped z bin labels
-                # this allows the script to work w fits files uing either convention
-                bin1.append(np.repeat(j + 1, n_angle))
-                bin2.append(np.repeat(i + 1, n_angle))
-                value.append(cl)
+            binlabel = bin_format.format(i+1,j+1)
+            if block.has_value(section_name, binlabel):
+                cl = block[section_name, binlabel]
+                bin1.append(np.repeat(i + 1, n_angle))
+                bin2.append(np.repeat(j + 1, n_angle))
                 angles.append(theory_angle)
+                value.append(cl)
+
+                if is_auto and i!=j: #also store under flipped z bin labels
+                    # this allows the script to work w fits files uing either convention
+                    bin1.append(np.repeat(j + 1, n_angle))
+                    bin2.append(np.repeat(i + 1, n_angle))
+                    value.append(cl)
+                    angles.append(theory_angle)
 
     #Convert all the lists of vectors into long single vectors
     value = np.concatenate(value)
@@ -354,12 +327,16 @@ def spectrum_array_from_block(block, section_name, types, real_space, bin_format
     bins = (bin1,bin2)
     angles = np.concatenate(angles)
 
-    return angles, value, bins
+    return angles, value, bins, is_binavg
 
 #-----------------------------------------------
 class SpectrumInterp(object):
     """
-    This is copied from 2pt_like, for use in spectrum_array_from_block
+    This is copied from 2pt_like, for get_data_from_dict_for_2pttype
+
+    Should not get used if bin averaging is being used; is in place
+    for if theory vector in datablock is very densely sampled, this 
+    gets used to pick out values corresponding to desired angle positions
     """
     def __init__(self,angle,spec,bounds_error=True):
         if np.all(spec>0):
@@ -384,35 +361,55 @@ class SpectrumInterp(object):
 
 
 #============================================================
-def get_twoptdict_fromfits_1darrays(fitsfile):
-    """
-    Given  fits files containing two point functions, read in data.
+# ONLY USED FOR MULT BLINDING, SO COMMENTING OUT
+# def get_twoptdict_fromfits_1darrays(fitsfile):
+#     """
+#     Given  fits files containing two point functions, read in data.
 
-    Returns a dictionary with keys specified in get_2pttype_fordictkey
-    with angle and 2pt data in entries specified by xkey and ykey.
-    """
-    outdict = {}
-    # for indexing: [which 2pt func][which input file]
-    # for each file there will be a dictionary where tuples (bin1,bin2) are keys
-    h = fits.open(fitsfile)
-    for table in h:
-        if table.header.get('2PTDATA'):
-            t = table
-            type1 = t.header['QUANT1']
-            type2 = t.header['QUANT2']
-            xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-            xgrid = t.data['ANG']
-            ygrid = t.data['VALUE']
-            bin1 = t.data['BIN1']
-            print('\n\n\n JUST GOT THE VALUE \n\n\n')
-            bin2 = t.data['BIN2']
-            angbins = t.data['ANGBIN']
-            outdict[xkey] = xgrid
-            outdict[ykey] = ygrid
-            outdict[ykey+'_bins'] = (bin1,bin2)
-            #outdict[ykey+'_angbins'] = angbins
-    h.close()
-    return outdict
+#     Returns a dictionary with keys specified in get_2pttype_fordictkey
+#     with angle and 2pt data in entries specified by xkey and ykey.
+#     """
+#     outdict = {}
+#     # for indexing: [which 2pt func][which input file]
+#     # for each file there will be a dictionary where tuples (bin1,bin2) are keys
+#     h = fits.open(fitsfile)
+#     for table in h:
+#         if table.header.get('2PTDATA'):
+#             t = table
+#             type1 = t.header['QUANT1']
+#             type2 = t.header['QUANT2']
+
+#             galaxy_position_fourier = "GPF"
+#             galaxy_shear_emode_fourier = "GEF"
+#             galaxy_shear_bmode_fourier = "GBF"
+#             galaxy_position_real = "GPR"
+#             galaxy_shear_plus_real = "G+R"
+#             galaxy_shear_minus_real = "G-R"
+#             cmb_kappa_real = "CKR"
+            
+#             xkey,ykey = get_dictkey_for_2pttype(type1,type2)
+            
+#             xgrid = t.data['ANG']
+#             ygrid = t.data['VALUE']
+#             bin1 = t.data['BIN1']
+#             print('\n\n\n JUST GOT THE VALUE \n\n\n')
+#             bin2 = t.data['BIN2']
+#             angbins = t.data['ANGBIN']
+#             outdict[xkey] = xgrid
+#             outdict[ykey] = ygrid
+#             outdict[ykey+'_bins'] = (bin1,bin2)
+#             #outdict[ykey+'_angbins'] = angbins
+
+#             #>>>NEW
+#             #for bin average stuff
+#             if "ANGLEMIN" in t.data.names:
+#                 xkeymin = xkey+'_min'
+#                 outdict[xkeymin]= t.data['ANGLEMIN']
+#             if "ANGLEMAX" in t.data.names:
+#                 xkeymax = xkey+'_max'
+#                 outdict[xkeymax]= t.data['ANGLEMAX']
+#     h.close()
+#     return outdict
 #============================================================
 def get_factordict(refdict,shiftdict,bftype='add'):
     """
@@ -423,14 +420,12 @@ def get_factordict(refdict,shiftdict,bftype='add'):
              'add' : bf = - ref + shift
              'mult': bf = shift/ref
     """
-    #print bftype,'in get_factordict'
     factordict = {}
     for key in refdict:
-
         end = key[key.rfind('_')+1:]
-        print(key,end)
+        #print(key,end)
         # don't take ratios or differences of angle/multipole info
-        if end in ['ell','l','theta','bins','angbins']:
+        if end in ['ell','l','theta','bins','angbins','binavg']:
             #print '    no change'
             factordict[key] = refdict[key]
         else:
@@ -456,66 +451,9 @@ def get_2pttype_for_dictkey(dictkey):
     in the fits file to designate which kind of 2pt function is being analyzed.
     (this script's naming -> fits file 2pt table naming)
     """
-    if dictkey == 'gal_gal_cl':
-        return 'GPF','GPF'
-    elif dictkey == 'gal_shear_cl':
-        return 'GPF','GEF'
-    elif dictkey == 'shear_shear_cl':
-        return 'GEF','GEF'
-    elif dictkey == 'gal_gal_xi':
-        return 'GPR','GPR'
-    elif dictkey == 'gal_shear_xi':
-        return 'GPR','G+R'
-    elif dictkey == 'shear_shear_xip':
-        return 'G+R','G+R'
-    elif dictkey == 'shear_shear_xim':
-        return 'G-R','G-R'
-
-def get_dictkey_forcovname(covname):
-    """
-    Convert string used to label covmat entries into dictkeys that can be used
-    with dictionaries read in with get_twoptdict_fromfits_1darrays()
-    (fits file covmat table naming -> this script's naming)
-    """
-    if covname=='xip':
-        ykey = 'shear_shear_xip'
-        xkey = 'shear_shear_theta'
-    elif covname=='xim':
-        ykey = 'shear_shear_xim'
-        xkey =  'shear_shear_theta'
-    elif covname=='gammat':
-        ykey = 'gal_shear_xi'
-        xkey = 'gal_shear_theta'
-    elif covname=='wtheta':
-        ykey = 'gal_gal_xi'
-        xkey = 'gal_gal_theta'
-    else:
-        raise ValueError("Spectra type {0:s} not recognized in get_dictkey_forcovname.".format(covname))
-    return xkey,ykey
-
-def get_covname_for2pttype(type1,type2):
-    """
-    (fits file 2pt table naming -> fits file covmat table naming)
-    type1 and type2 are  spectra type codes in fits file,
-    under hdutable.header['quant1'] and quant2
-    """
-    galaxy_position_fourier = "GPF"
-    galaxy_shear_emode_fourier = "GEF"
-    galaxy_shear_bmode_fourier = "GBF"
-    galaxy_position_real = "GPR"
-    galaxy_shear_plus_real = "G+R"
-    galaxy_shear_minus_real = "G-R"
-
-    if  type1==galaxy_position_real and type2 == galaxy_position_real:
-        return 'wtheta'
-    elif (type2==galaxy_shear_plus_real and type1 == galaxy_position_real):
-        return 'gammat'
-    elif (type1==galaxy_shear_plus_real and type2 == galaxy_shear_plus_real):
-        return 'xip'
-    elif (type1==galaxy_shear_minus_real and type2 == galaxy_shear_minus_real):
-        return 'xim'
-    else:
-        raise ValueError("Spectra type {0:s} - {1:s} not recognized in get_covname_for2pttype.".format(type1,type2))
+    for k in type_table.keys():
+        if type_table[k][0]==dictkey:
+            return k
 
 def get_dictkey_for_2pttype(type1,type2):
     """
@@ -523,41 +461,27 @@ def get_dictkey_for_2pttype(type1,type2):
      dictionary keys expected by this script's functions.
      (fits file 2pt table naming -> this script's naming)
     """
+    firstdict = {'G':'galaxy', 'C':'cmb' }
+    seconddict = {'P':'position','E':'shear_emode','B':'shear_bmode','+':'shear_plus','-':'shear_minus','K':'kappa'}
+    thirddict = {'R':'real', 'F':'fourier' }
+    
+    if type1 in ("GPF","GEF","GBF","GPR","G+R","G-R","CKR","GPF","GEF","GBF"):
+        #translate short codes into longer strings
+        newtypes = ['_'.join([firstdict[t[0]],seconddict[t[1]],thirddict[t[2]]]) for t in [type1,type2]]
+        type1 = newtypes[0]
+        type2 = newtypes[1]           
 
-    galaxy_position_fourier = "GPF"
-    galaxy_shear_emode_fourier = "GEF"
-    galaxy_shear_bmode_fourier = "GBF"
-    galaxy_position_real = "GPR"
-    galaxy_shear_plus_real = "G+R"
-    galaxy_shear_minus_real = "G-R"
+    try:
+        section, xlabel, ylabel = type_table[(type1,type2)]
 
-    if type1==galaxy_position_fourier and type2 == galaxy_position_fourier:
-        ykey = 'gal_gal_cl'
-        xkey = 'gal_gal_l'
-    elif (type2==galaxy_shear_emode_fourier and type1 == galaxy_position_fourier):
-        ykey ='gal_shear_cl'
-        xkey = 'gal_shear_l'
-    elif (type1==galaxy_shear_emode_fourier and type2 == galaxy_shear_emode_fourier):
-        ykey = 'shear_shear_cl'
-        xkey = 'shear_shear_l'
-    elif type1==galaxy_position_real and type2 == galaxy_position_real:
-        ykey = 'gal_gal_xi'
-        xkey = 'gal_gal_theta'
-    elif (type2==galaxy_shear_plus_real and type1 == galaxy_position_real):
-        # not symmetric
-        ykey = 'gal_shear_xi'
-        xkey = 'gal_shear_theta'
-    elif (type1==galaxy_shear_plus_real and type2 == galaxy_shear_plus_real):
-        ykey = 'shear_shear_xip'
-        xkey = 'shear_shear_theta'
-    elif (type1==galaxy_shear_minus_real and type2 == galaxy_shear_minus_real):
-        ykey = 'shear_shear_xim'
-        xkey =  'shear_shear_theta'
-    else:
-        raise ValueError("Spectra type {0:s} - {1:s} not recognized.".format(type1,type2))
+        ykey = section
+        xkey = section+'_'+xlabel
+    except:
+        raise ValueError("Spectra type not recognized: {0:s}, {1:s} ".format(type1,type2))
+
     return xkey,ykey
 #---------------------------------------
-def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict):
+def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,fits_is_binavg=True):
     """
     Given info about 2pt data in a fits file (spectra type, z bin numbers,
     and angular bin numbers, extracts 2pt data from a dictionary of
@@ -565,8 +489,13 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     as the fits file data.
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-    print((xkey,ykey))
     xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
+
+    dict_is_binavg = datadict[ykey+'_binavg']
+    if dict_is_binavg != fits_is_binavg:
+        raise ValueError("Theory calc and fits file aren't consistent in whether they do bin averaging vs interpolation for 2pt calculations.")
+
+    is_binavg = dict_is_binavg
 
     if 'theta' in xkey: #if realspace, put angle data into arcmin
         xmult = 60.*180./np.pi # change to arcmin
@@ -578,32 +507,41 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict)
     b1dict = binsdict[0]
     b2dict = binsdict[1]
 
+    #if get theory calcs in same format as fits ones
     Nentries = bin1fits.size
     yout = np.zeros(Nentries)
-
     #this structure will store interp functions for b1-b2 combos
     # so we don't have to keep recreating them
-    Nb1fits = max(bin1fits)
-    Nb2fits = max(bin2fits)
-    interpfuncs = [[None for b2f in range(Nb2fits)]\
-                   for b1f in range(Nb1fits)]
-
+    if not is_binavg:
+        Nb1fits = max(bin1fits)
+        Nb2fits = max(bin2fits)
+        interpfuncs = [[None for b2f in range(Nb2fits)]\
+                       for b1f in range(Nb1fits)]
+    xfromdict_arcmin = xfromdict*xmult
     for i in range(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
-        if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
-            #get x and y data for this bin combo,
-            whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
-            tempx = xfromdict[whichinds]*xmult
-            tempy = yfromdict[whichinds]
-            #set up interpolator
-            yinterp = SpectrumInterp(tempx,tempy)
-            interpfuncs[b1-1][b2-1] = yinterp
+        if is_binavg:
+            wherebinsmatch = (b1==b1dict)*(b2==b2dict)
+
+            roundto=6 #round for matching, since there are more decimals in fits than datablock
+            wherexmatch = np.around(xfits[i],roundto)==np.around(xfromdict_arcmin,roundto)                     
+            whichinds = wherebinsmatch*wherexmatch
+            yout[i] = yfromdict[whichinds]
         else:
-            yinterp = interpfuncs[b1-1][b2-1]
-        yout[i] =  yinterp(xfits[i])
-    # We're returning the y data from the dictionary's array
-    # interpolated to match the theta values in the fits file.
+            whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
+            # get x and y info for that bin combo
+            tempx = xfromdict_arcmin[whichinds]
+            tempy = yfromdict[whichinds]
+            if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
+                yinterp = SpectrumInterp(tempx,tempy)
+                interpfuncs[b1-1][b2-1] = yinterp
+            else:
+                yinterp = interpfuncs[b1-1][b2-1]
+            yout[i] =  yinterp(xfits[i])
+            # We're returning the y data from the dictionary's array
+            # interpolated to match the theta values in the fits file.
+    
     return yout
 
 #---------------------------------------
@@ -616,13 +554,6 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
     z and theta values (i.e. matches up bin numbers but doesn't do
     any interpolation). Theta values will be checked, but z values won't.
     """
-    #print '\n\n TABLE is ',table,'\n\n'
-    #print '\n table.data=',table.data,'\n\n'
-    #print "\n table.data['bin1']=",table.data['bin1']
-    #print "\n table.data['BIN1']=",table.data['BIN1']
-    #print "\n table.data['ANG']=",table.data['ANG']
-
-
     if not table.header.get('2PTDATA'):
         print("Can't match dict data: this fits table doesn't contain 2pt data. Is named:",table.name)
         return
@@ -632,16 +563,20 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
     bin1 = table.data['BIN1'] #which bin is quant1 from?
     bin2 = table.data['BIN2'] #which bin is quant2 from?
 
+    # check for bin averaging
+    if "ANGLEMIN" in table.data.names:
+        fits_is_binavg = True
     xfromfits = table.data['ANG']
 
-    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata)
+    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata,fits_is_binavg=fits_is_binavg)
+    
     return yfromdict
 
 #############################################################################
 # APPLY BLINDING FACTORS TO FITS FILE
 #############################################################################
 
-def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfname = None, outftag = None, justfname = False,bftype='add'):
+def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfname = None, outftag = "_BLINDED", justfname = False,bftype='add',storeseed='notsaved'):
     """
     Given the dictionary of one set of blinding factors,
     the name of a  of a fits file containing unblinded 2pt data,
@@ -654,6 +589,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
     that the outfname is different than the original, unblinded file. If they
     match, it will revert to default behavior for naming the blinded file
     so that the unblinded file isn't overwritten.
+    > if storeseed=True, will save whatever string is there to entry in fits file
 
     If justfname == True, doesn't do any file manipulation, just returns
     string of output filename. (for testing)
@@ -683,7 +619,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
         #  unblinded file
         if outftag == None or outftag =='':
             outftag = 'BLINDED-{0:s}-defaulttag'.format(bftype)
-        outfname = origfitsfile.replace('.fits','_BLINDED.fits'.format(outftag))
+        outfname = origfitsfile.replace('.fits','{0}.fits'.format(outftag))
         #outfname = origfitsfile.replace('.fits','_{0:s}.fits'.format(outftag))
 
     if not justfname:
@@ -691,7 +627,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 
         hdulist = fits.open(outfname,mode='update') #update lets us write over
         covscaledict = {}
-        # apply blinding factors
+        #apply blinding factors
         for table in hdulist: #look all tables
             if table.header.get('2PTDATA'):
                 factor = get_dictdat_tomatch_fitsdat(table, factordict)
@@ -702,9 +638,12 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
                     if bftype=='mult': #store info about how to scale covmat
                         type1 = table.header['QUANT1']
                         type2 = table.header['QUANT2']
-                        cname = get_covname_for2pttype(type1,type2)
-                        covscaledict[cname] = factor
-                        print('added entry to covscaledict:',cname)
+                        raise ValueError('Not currently set up to do covariance scaling needed for multiplicative blinding.')
+
+                        # ONLY USED FOR MULT BLINDING, SO COMMENTING OUT
+                        # cname = get_covname_for2pttype(type1,type2)
+                        # covscaledict[cname] = factor
+                        # print('added entry to covscaledict:',cname)
                 elif bftype=='add':
                     #print 'adding!'
                     table.data['value'] += factor
@@ -713,37 +652,39 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 
                 #add new header entry to note that blinding has occurred, and what type
                 table.header['BLINDED'] = bftype
-                table.header['KEYWORD'] = HARD_CODED_BLINDING
+                table.header['KEYWORD'] = storeseed
+
+        # ONLY USED FOR MULT BLINDING, SO COMMENTING OUT
         #print 'covscaledict is',covscaledict
-        if bftype=='mult': #doc cov scaling
-            covmatname = "COVMAT"
-            table = hdulist[covmatname]
-            Ndat = table.data.shape[0] #length of datavector
+        # if bftype=='mult': #doc cov scaling
+        #     covmatname = "COVMAT"
+        #     table = hdulist[covmatname]
+        #     Ndat = table.data.shape[0] #length of datavector
 
-            #get covmat info:
-            covmat = table.data
-            headerkeys = list(table.header.keys())
-            names = []
-            startinds =[]
-            for i in range(len(headerkeys)):
-                key = headerkeys[i]
-                if key[:5] == 'STRT_':
-                    startinds.append(table.header[key])
-                if key[:5] == 'NAME_':
-                    name = table.header[key]
-                    names.append(name)
-            startinds.append(Ndat)
+        #     #get covmat info:
+        #     covmat = table.data
+        #     headerkeys = list(table.header.keys())
+        #     names = []
+        #     startinds =[]
+        #     for i in range(len(headerkeys)):
+        #         key = headerkeys[i]
+        #         if key[:5] == 'STRT_':
+        #             startinds.append(table.header[key])
+        #         if key[:5] == 'NAME_':
+        #             name = table.header[key]
+        #             names.append(name)
+        #     startinds.append(Ndat)
 
-            bf = np.zeros(Ndat)
-            #print names,startinds
-            for i,covname in enumerate(names):
-                starti = startinds[i]
-                endi = startinds[i+1]
-                bfi = covscaledict[covname]
-                #print i,covname, endi-starti,bfi.shape
-                bf[starti:endi] = bfi
-                # Do cov_new[i,j] = cov[i,j]*bf[i]*bf[j]
-            table.data = bf.reshape((bf.size,1))*table.data*bf
+        #     bf = np.zeros(Ndat)
+        #     #print names,startinds
+        #     for i,covname in enumerate(names):
+        #         starti = startinds[i]
+        #         endi = startinds[i+1]
+        #         bfi = covscaledict[covname]
+        #         #print i,covname, endi-starti,bfi.shape
+        #         bf[starti:endi] = bfi
+        #         # Do cov_new[i,j] = cov[i,j]*bf[i]*bf[j]
+        #     table.data = bf.reshape((bf.size,1))*table.data*bf
 
         hdulist.close() # will save new data to file if 'update' was passed when opened
         print(">>>>Stored blinded data in",outfname)
@@ -752,7 +693,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 #############################################################################
 # WRAPPER: Put everything together
 #############################################################################
-def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag = None,bftype='add',paramshift_module = None):
+def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag = "_BLINDED",bftype='add',paramshift_module = None, seedinfname=False, seedinfits = True):
     """
     This is the function that gets called using command line args.
     See docstring at top of file for more info.
@@ -763,7 +704,11 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     initemplate - cosmosis parameter inifile to be used as a template.
     unblinded fits - fits file containing unblinded data
     outfname - if passed, will be name of output file. If not passed, will defaulted to
-                [unblinded filename]_[bftype].[seedstring].fits
+                [unblinded filename]_BLINDED.fits
+      >>> outftag - string added to end of filename to differentiated blinded file
+      >>> seedinfname - if true, _seedstring will be added to end of filename
+    seedinfits - if true, seedstring will be saved as KEYWORD in fits file. 
+                 if false it the string 'notsaved' will be put there instead
     """
     #get parameter shifts
     paramshifts = draw_paramshift(seedstring, importfrom = paramshift_module)
@@ -774,10 +719,20 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
     factordict = get_factordict(refdict,shiftdict,bftype = bftype)
 
     #apply them
-    tagstr = bftype+'.'
+    #tagstr = bftype+'.'
     if outftag is not None:
-        tagstr = outftag+'_'+tagstr
-    apply2ptblinding_tofits(factordict, origfitsfile = unblindedfits, outfname = outfname, outftag = tagstr+seedstring, bftype = bftype)
+        tagstr = outftag # +'_'+tagstr
+        if seedinfname:
+            tagstr = tagstr+'_'+seedstring
+    elif seedinfname:
+        tagstr = '_'+seedstring
+
+    if seedinfits:
+        storeseed = seedstring
+    else:
+        storeseed = 'notsaved'
+        
+    apply2ptblinding_tofits(factordict, origfitsfile = unblindedfits, outfname = outfname, outftag = tagstr, bftype = bftype, storeseed = storeseed)
 
 ##############################################################################
 ##############################################################################
@@ -796,7 +751,7 @@ if __name__=="__main__":
        # [set on command line with -i <fname> or --ini <fname>]
 
     bftype = 'add' # type of blinding to use, can be 'add', 'mult', or
-        # 'multNOCS' (mult with no cov scaling)
+        # 'multNOCS' (mult with no cov scaling) >> mult currently disabled
 
     seed = HARD_CODED_BLINDING #will translate string into some deterministed shift
        #in parameter space
@@ -805,24 +760,25 @@ if __name__=="__main__":
     outfname = None # name of output file containing blinded data.
        #If None, defaults to [unblided fname]_[outftag].fits
        # [via command line, --outfname <str>]
-    outftag = None # string tag that can be used to label output file.
-       # By default will be [bftype], if a string is passed will be
-       #   [inputstring_bftype]
+    outftag = '_BLINDED' # string tag that can be used to label output file.
+       # By default will be _BLINDED, if a string is passed will be that
        #  [via command line, --outftag <str>]
     paramshift_module = None
+    seedinfname = False
+    seedinfits = True
 
 
-    options,remainder = getopt.getopt(sys.argv[1:],'u:i:s:b:t:o:m:',['origfits=','ini=','seed=','script','outfname=','outftag=','bftype=','paramshiftmodule='])
+    options,remainder = getopt.getopt(sys.argv[1:],'u:i:s:b:t:o:m:',['origfits=','ini=','seed=','script','outfname=','outftag=','bftype=','paramshiftmodule=','seedinfname=','seedinfits='])
     #print options
     if ('--script') in options:
         callscript = True
     else:
         for opt, arg in options:
-            print(opt)
+            #print(opt,arg)
             if opt in ('-u','--origfits'):
                 unblindedfile = arg
             elif opt in ('-s','--seed'):
-                seed = HARD_CODED_BLINDING
+                seed = arg 
             elif opt in ('-i', '--ini'):
                 initemplate = arg
             elif opt in ('-o','--outfname'):
@@ -833,11 +789,15 @@ if __name__=="__main__":
                 bftype = arg
             elif opt in ('-m','--paramshiftmodule'):
                 paramshift_module = arg
+            elif opt in ('--seedinfname'):
+                seedinfname = arg
+            elif opt in ('--seedinfits'):
+                seedinfits = arg
 
     if callscript:
         print("CALLING SCRIPT")
         # for now is just defaults, could set this to something specific later if we wanted
-        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module)
+        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits)
     else:
         print("LISTENING TO COMMAND LINE ARGS")
-        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module)
+        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits)
