@@ -115,7 +115,7 @@ def task(ijk):
 
     lla = '{0}'.format(jc)
     if not os.path.exists(path_save+lla+'.pkl'):
-        print ("computing {} on rank {}".format(path_save+lla, self.comm.rank))
+        print ("computing {}".format(path_save+lla))
 
         pairsCC1 = global_measure_2_point.calc_correlation(i,j,k,o1, [jc])
         pairsCC2 = global_measure_2_point.calc_correlation(i,j,k,[jc], o2)
@@ -707,7 +707,7 @@ class Measure2Point(PipelineStage):
         Treecorr wrapper for shear-shear,shear-pos,pos-pos calculations.
         """
 
-        print("slop",self.params['slop'])
+#        print("slop",self.params['slop'])
         num_threads = self.params['cores_per_task']
 
         if k ==0:
@@ -721,7 +721,7 @@ class Measure2Point(PipelineStage):
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)][0][mask_jck],self.bins_dict['shear_{0}'.format(i)][1][mask_jck],self.bins_dict['shear_{0}'.format(i)][2][mask_jck],self.bins_dict['shear_{0}'.format(i)][3][mask_jck],self.bins_dict['shear_{0}'.format(i)][4][mask_jck]
                 end = time.time()
 
-                print("time to mask: {}s".format(end - start))
+#                print("time to mask: {}s".format(end - start))
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(i)]
 
@@ -741,7 +741,7 @@ class Measure2Point(PipelineStage):
                 mask_jck = np.in1d(jck_fold['hpix'],pix2)
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
                 end = time.time()
-                print("time to mask: {}s".format(end - start))
+#                print("time to mask: {}s".format(end - start))
                 
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
@@ -763,7 +763,7 @@ class Measure2Point(PipelineStage):
                 start = time.time()
                 gg.process(icat, jcat)
                 end = time.time()
-                print("time to process 2pt corr: {}s".format(end - start))                
+#                print("time to process 2pt corr: {}s".format(end - start))                
                 
                 ggp = gg.xip
                 ggm = gg.xim
@@ -794,7 +794,7 @@ class Measure2Point(PipelineStage):
 
                 ra,dec,ran_ra,ran_dec,w = self.bins_dict['lens_{0}'.format(i)][0][mask_jck],self.bins_dict['lens_{0}'.format(i)][1][mask_jck],self.bins_dict['lens_{0}'.format(i)][2][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][3][mask_jck_rndm],self.bins_dict['lens_{0}'.format(i)][4]
                 end = time.time()
-                print("time to mask: {}s".format(end - start))
+#                print("time to mask: {}s".format(end - start))
 
             else:
                 ra,dec,ran_ra,ran_dec,w,_ = self.bins_dict['lens_{0}'.format(i)]
@@ -821,7 +821,7 @@ class Measure2Point(PipelineStage):
                 mask_jck = np.in1d(jck_fold['hpix'],pix2)
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)][0][mask_jck],self.bins_dict['shear_{0}'.format(j)][1][mask_jck],self.bins_dict['shear_{0}'.format(j)][2][mask_jck],self.bins_dict['shear_{0}'.format(j)][3][mask_jck],self.bins_dict['shear_{0}'.format(j)][4][mask_jck]
                 end = time.time()
-                print("time to mask: {}s".format(end - start))                
+#                print("time to mask: {}s".format(end - start))                
                 
             else:
                 ra,dec,g1,g2,w = self.bins_dict['shear_{0}'.format(j)]
@@ -1484,4 +1484,8 @@ class Measure2Point(PipelineStage):
         save_obj(self.params['run_directory']+'/2pt/shear_pos_full',self.output_shear_pos_full)
 
         self.output_pos_pos_full = output_pos_pos_full
-        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full
+        save_obj(self.params['run_directory']+'/2pt/pos_pos_full',self.output_pos_pos_full)
+
+
+
+        return
