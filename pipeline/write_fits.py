@@ -5,6 +5,7 @@ import twopoint
 import fitsio as fio
 import glob
 import yaml
+import math
 import os
 import collections
 from . import blind_2pt_usingcosmosis as blind
@@ -162,6 +163,15 @@ v        """
             else:
                 return n*(n+1)/2
 
+        nbins = self.params['tbins']
+        min_sep, max_sep = self.params['tbounds']
+        bin_size = math.log(max_sep / min_sep)/ nbins        
+        logr = np.linspace(0, nbins*bin_size, nbins, endpoint=False,
+                                   dtype=float)        
+        rnom = np.exp(logr)
+        half_bin = np.exp(0.5*bin_size)
+        left_edges = rnom / half_bin
+        right_edges = rnom * half_bin
 
         # Cosmic shear
         if (self.params['region_mode'] == 'pixellized') or (self.params['region_mode'] == 'both'):
@@ -170,12 +180,16 @@ v        """
             print("here")
             self.exts[0].angular_bin = np.zeros(length)
             self.exts[0].angle       = np.zeros(length)
+            self.exts[0].angle_min   = np.zeros(length)
+            self.exts[0].angle_max   = np.zeros(length)            
             self.exts[0].bin1        = np.zeros(length)
             self.exts[0].bin2        = np.zeros(length)
             self.exts[0].value       = np.zeros(length)
             self.exts[0].npairs      = np.zeros(length)
             self.exts[0].weight      = np.zeros(length)
             self.exts[1].angular_bin = np.zeros(length)
+            self.exts[1].angle_min   = np.zeros(length)
+            self.exts[1].angle_max   = np.zeros(length)                        
             self.exts[1].angle       = np.zeros(length)
             self.exts[1].bin1        = np.zeros(length)
             self.exts[1].bin2        = np.zeros(length)
@@ -186,6 +200,8 @@ v        """
                 self.exts[0].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[0].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[0].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[0].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = left_edges
+                self.exts[0].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = right_edges                
                 self.exts[0].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[0].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['xip']
                 self.exts[0].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
@@ -193,6 +209,8 @@ v        """
                 self.exts[1].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[1].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[1].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[1].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = left_edges
+                self.exts[1].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = right_edges
                 self.exts[1].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[1].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['xim']
                 self.exts[1].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
@@ -203,6 +221,8 @@ v        """
             f = load_obj(self.input_path("gammat")+'_pixellized')
             length = int(get_length(self.zbins,n2=self.lens_zbins)*self.params['tbins'])
             self.exts[2].angular_bin   = np.zeros(length)
+            self.exts[2].angle_min     = np.zeros(length)
+            self.exts[2].angle_max     = np.zeros(length)                        
             self.exts[2].angle         = np.zeros(length)
             self.exts[2].bin1          = np.zeros(length)
             self.exts[2].bin2          = np.zeros(length)
@@ -213,6 +233,8 @@ v        """
             self.exts[2].random_weight = np.zeros(length)
             self.exts[3].angular_bin   = np.zeros(length)
             self.exts[3].angle         = np.zeros(length)
+            self.exts[3].angle_min     = np.zeros(length)
+            self.exts[3].angle_max     = np.zeros(length)                        
             self.exts[3].bin1          = np.zeros(length)
             self.exts[3].bin2          = np.zeros(length)
             self.exts[3].value         = np.zeros(length)
@@ -224,6 +246,8 @@ v        """
                 self.exts[2].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[2].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[2].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[2].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = left_edges
+                self.exts[2].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = right_edges
                 self.exts[2].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[2].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens']
                 self.exts[2].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
@@ -233,6 +257,8 @@ v        """
                 self.exts[3].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[3].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[3].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[3].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = left_edges
+                self.exts[3].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = right_edges                
                 self.exts[3].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[3].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['gammat_compens_im']
                 self.exts[3].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
@@ -246,6 +272,8 @@ v        """
             length = int(get_length(self.lens_zbins)*self.params['tbins'])
             self.exts[4].angular_bin   = np.zeros(length)
             self.exts[4].angle         = np.zeros(length)
+            self.exts[4].angle_min     = np.zeros(length)
+            self.exts[4].angle_max     = np.zeros(length)                        
             self.exts[4].bin1          = np.zeros(length)
             self.exts[4].bin2          = np.zeros(length)
             self.exts[4].value         = np.zeros(length)
@@ -261,6 +289,8 @@ v        """
                 self.exts[4].bin1[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[0])+1
                 self.exts[4].bin2[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]        = int(bins[-1])+1
                 self.exts[4].angular_bin[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = np.arange(int(self.params['tbins']))
+                self.exts[4].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = left_edges
+                self.exts[4].angle_min[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])] = right_edges                
                 self.exts[4].angle[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]       = np.exp(f[bins]['meanlogr'])
                 self.exts[4].value[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]     = f[bins]['w']
                 self.exts[4].npairs[i*int(self.params['tbins']):(i+1)*int(self.params['tbins'])]      = f[bins]['npairs']
