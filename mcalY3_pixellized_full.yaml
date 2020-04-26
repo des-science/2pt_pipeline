@@ -1,6 +1,6 @@
 prefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40    #_TESTlensw
+run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_bothw    #_TESTlensw
 
 # blinding configurations
 
