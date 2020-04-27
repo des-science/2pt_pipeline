@@ -71,7 +71,9 @@ v        """
 
         import os
 
-        os.system('bash pipeline/BASHTEST.sh')
+        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_extended")))
+        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_g")))
+        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_ng")))        
 
         return
 
