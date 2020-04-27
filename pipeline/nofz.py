@@ -444,7 +444,7 @@ class nofz(PipelineStage):
                         mask_2p = (xbins0[3] == i)
                         mask_2m = (xbins0[4] == i)
 
-                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
+                        weight_ = self.source_calibrator.calibrate(self.Dict.shape_dict['e1'],mask=[mask,mask_1p,mask_1m,mask_2p,mask_2m],return_wRg=True) # This returns an array of (Rg1+Rg2)/2*w for weighting the n(z)
                         print('weight',weight_)
 
                     else:
