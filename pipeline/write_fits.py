@@ -59,6 +59,7 @@ v        """
 
         if 'no_blinding' in self.params:
             if self.params['no_blinding']:
+                print("Not blinding")
                 return
         print('\nBlinding will be applied to the file being written\nThis is hard-coded.')
         print('To unblind, set do_Blinding=False in write_fits.py')
@@ -167,7 +168,9 @@ v        """
         min_sep, max_sep = self.params['tbounds']
         bin_size = math.log(max_sep / min_sep)/ nbins        
         logr = np.linspace(0, nbins*bin_size, nbins, endpoint=False,
-                                   dtype=float)        
+                                   dtype=float)
+        logr += math.log(min_sep) + 0.5*bin_size
+        
         rnom = np.exp(logr)
         half_bin = np.exp(0.5*bin_size)
         left_edges = rnom / half_bin
