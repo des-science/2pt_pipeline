@@ -1,2 +1,5 @@
 #!/bin/bash
-python blind_2pt_usingcosmosis.py  -i blinding_params_template.ini -b add -u ${1}
+export DEMODEL=lcdm
+echo $1
+python pipeline/blind_2pt_usingcosmosis.py  -i pipeline/blinding_params_template.ini -b add -u ${1}
+rm $1
