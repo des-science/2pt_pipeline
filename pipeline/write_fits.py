@@ -71,9 +71,12 @@ v        """
 
         import os
 
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_extended")))
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_g")))
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_ng")))        
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_extended"))):
+            raise ValueError('....Blinding failed....')
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_g"))):
+            raise ValueError('....Blinding failed....')
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_ng"))):
+            raise ValueError('....Blinding failed....')
 
         return
 
