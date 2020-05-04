@@ -128,9 +128,8 @@ v        """
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
+        self.strip_wtheta(fits)
         if self.covmat is not None:
-        #AA: I think these things should happen for g and ng, even if no cov
-            self.strip_wtheta(fits)
             self.strip_missing_gglensing(fits)
             length=self.get_cov_lengths(fits)
 
