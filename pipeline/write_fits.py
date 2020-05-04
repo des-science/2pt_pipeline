@@ -71,9 +71,12 @@ v        """
 
         import os
 
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_extended")))
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_g")))
-        os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_ng")))        
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_extended"))):
+            raise ValueError('....Blinding failed....')
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_g"))):
+            raise ValueError('....Blinding failed....')
+        if os.system('bash pipeline/BLIND.sh {}'.format(self.output_path("2pt_ng"))):
+            raise ValueError('....Blinding failed....')
 
         return
 
@@ -128,9 +131,8 @@ v        """
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
 
+        self.strip_wtheta(fits)
         if self.covmat is not None:
-        #AA: I think these things should happen for g and ng, even if no cov
-            self.strip_wtheta(fits)
             self.strip_missing_gglensing(fits)
             length=self.get_cov_lengths(fits)
 
