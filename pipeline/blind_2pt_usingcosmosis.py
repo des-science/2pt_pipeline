@@ -88,7 +88,7 @@ from twopoint_cosmosis import type_table
 
 DEFAULT_PARAM_RANGE = {'cosmological_parameters--sigma8_input':(0.834-3*.04,0.834+3*0.04),\
                        'cosmological_parameters--w':(-1.5,-.5)}
-HARD_CODED_BLINDING = 'I_desperately_need_coffee' #'testblinding' #'I_desperately_need_coffee' #keyword is the one truth that unites us all
+HARD_CODED_BLINDING = 'testblinding' #'I_desperately_need_coffee' #'testblinding'  #keyword is the one truth that unites us all
 
 
 def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
@@ -149,7 +149,7 @@ def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\
 
 
 # Generate 2pt funcs for set of params
-def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_template.ini'):
+def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_template.ini',nz_file = None, angles_file = None):
     """
     Runs cosmosis pipeline to generate 2pt functions.
 
@@ -160,6 +160,21 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
     Otherwise, it will be set to whatever value is in values file.
 
     Note that you'll need to source the cosmosis setup file before running this.
+
+    The nz_file and angles_file variables: WARNING: USE WITH CAUTION.
+    These are optional strings pointing to fits files where 
+    to get n(z) distributions (nz_file) or theta values (angles_file). 
+    >>  will only work with set-up matching module labels and set-up 
+    >>  These entries are here to accommodate some quirks in how  DES Y3 2pt 
+    measurement pipeline works. The default behavior  is that the theory
+    calculations will be done following whatever fits files are listed in 
+    the template cosmosis in file. This ini file should have the same settings
+    you would be using to parameter estimation. These string variables 
+    can be sued if you want to pull n(z)'s or angle values from other files. 
+    Use with caution! The names this feature uses to change filename settings
+    in the cosmosis datablock may be  specific to the DES Y3
+    2pt pipeline, and using this feature will make it harder to check
+    that you're blinding using the same modeling pipeline as for parameter estimation.
     """
     from cosmosis.runtime.config import Inifile
     from cosmosis.runtime.pipeline import LikelihoodPipeline
@@ -167,6 +182,39 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
     ini=Inifile(inifile)
     print('     cosmosis ini object initialized from',inifile)
     #ini.set('fits_nz','nz_file',unblfile)
+
+    # change some settings to make sure we don't accidently ouptut info
+    if 'test' in ini.__dict__['_sections'].keys():
+        ini.__dict__['_sections']['test']['save_dir']=''
+    if 'output' in ini.__dict__['_sections'].keys():
+        ini.__dict__['_sections']['output']['filename']=''
+    ini.__dict__['_sections']['pipeline']['debug']='F'
+    ini.__dict__['_sections']['pipeline']['quiet']='T'
+
+    # a structure like what follows could be used to make sure
+    # angles and n(z) are being used consistently with file being blinded
+    # as in, make sure that they are referencing it for angles and n(z).
+    # However, this isn't really ideal, as how it is set up will be specific
+    #   to the 3x2pt pipeline and may cause issues when/if the same script
+    #   is bein used for 5x2pt or other observables. Really the template ini
+    #   file should handle these choices, and hsould be set up in the same way
+    #   that you would set up an ini file to do parameter estimation on your
+    #   data file. 
+    if angles_file is not None:  #fits file to get theta ranges from
+        hadsections=[]
+        for section in ['shear_2pt_eplusb','shear_2pt_eminusb','2pt_gal','2pt_gal_shear']:
+            if section in ini.__dict__['_sections'].keys():
+                ini.__dict__['_sections'][section]['theta_file']=angles_file
+                hadsections.append(section)
+        print("CHANGED theta_file TO ",angles_file," FOR:",hadsections," \n IF YOU MEANT TO CHANGE IT FOR OTHER 2PT FUNCTIONS, SOMETHING WENT WRONG.")
+                
+    if nz_file is not None:   # fits file to get n(z) from
+        section = 'fits_nz'
+        if section in ini.__dict__['_sections'].keys():
+            ini.__dict__['_sections'][section]['nz_file']=nz_file
+        else:
+            raise ValueError("You specified nz_file as "+nz_file+", but I can't find the fits_nz module settings in  your ini file.")
+
 
     pipeline = LikelihoodPipeline(ini)
     print('     cosmosis pipeline object initialized')
@@ -199,9 +247,11 @@ def run_cosmosis_togen_2ptdict(pdict={},inifile='pipeline/blinding_params_templa
 
     if doshifts:
         #print('haveshifted',haveshifted)
+        #print('pdictkeys',pdict.keys())
         pass
+
     if doshifts and (len(haveshifted)!= len(list(pdict.keys())) -1):
-        print("WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE.")
+        raise ValueError("WARNING: YOU ASKED FOR SHIFTS IN PARAMTERS NOT IN THE COSMOSIS PIPELINE.")
         #print("  asked for shifts in:",list(pdict.keys()))
         #print("  did shifts in:",haveshifted)
 
@@ -244,11 +294,14 @@ def get_twoptdict_from_pipelinedata(data):
         if data.has_section(section):
             types = k
             xkey,ykey = get_dictkey_for_2pttype(types[0],types[1])
-            x,y,bins, is_binavg = spectrum_array_from_block(data,section,types, xlabel, binformat)
+            x,y,bins, is_binavg, x_mins, x_maxs = spectrum_array_from_block(data,section,types, xlabel, binformat)
             outdict[xkey]=x
             outdict[ykey]=y
             outdict[ykey+'_bins'] = bins
             outdict[ykey+'_binavg']=is_binavg
+            if is_binavg:
+                outdict[xkey+'_mins'] = x_mins
+                outdict[xkey+'_maxs'] = x_maxs
 
     return outdict
 
@@ -286,6 +339,8 @@ def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_fo
     # if interpolating, angles will be more densely sampled than values in fits files.
     theory_angle = block[section_name,xlabel]
     n_angle = len(theory_angle) #whatevers in the block, length of array
+    if is_binavg:
+        theory_angle_edges = block[section_name,xlabel+'_edges'] #angle bin edges
 
     #The fits format stores all the measurements
     #as one long vector.  So we build that up here from the various
@@ -294,6 +349,9 @@ def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_fo
     bin1 = []
     bin2 = []
     angles = []
+    # these will only be used if averaging over angular bins
+    angle_mins = []
+    angle_maxs = []
 
     # n.b. don't have suffix option implemented here
 
@@ -311,6 +369,9 @@ def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_fo
                 bin1.append(np.repeat(i + 1, n_angle))
                 bin2.append(np.repeat(j + 1, n_angle))
                 angles.append(theory_angle)
+                if is_binavg:
+                    angle_mins.append(theory_angle_edges[:-1])
+                    angle_maxs.append(theory_angle_edges[1:])
                 value.append(cl)
 
                 if is_auto and i!=j: #also store under flipped z bin labels
@@ -319,6 +380,10 @@ def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_fo
                     bin2.append(np.repeat(i + 1, n_angle))
                     value.append(cl)
                     angles.append(theory_angle)
+                    if is_binavg:
+                        angle_mins.append(theory_angle_edges[:-1])
+                        angle_maxs.append(theory_angle_edges[1:])
+                    
 
     #Convert all the lists of vectors into long single vectors
     value = np.concatenate(value)
@@ -326,8 +391,14 @@ def spectrum_array_from_block(block, section_name, types, xlabel='theta', bin_fo
     bin2 = np.concatenate(bin2)
     bins = (bin1,bin2)
     angles = np.concatenate(angles)
+    if is_binavg:
+        angle_mins = np.concatenate(angle_mins)
+        angle_maxs = np.concatenate(angle_maxs)
+    else:
+        angle_mins = None
+        angle_maxs = None
 
-    return angles, value, bins, is_binavg
+    return angles, value, bins, is_binavg, angle_mins, angle_maxs
 
 #-----------------------------------------------
 class SpectrumInterp(object):
@@ -425,7 +496,7 @@ def get_factordict(refdict,shiftdict,bftype='add'):
         end = key[key.rfind('_')+1:]
         #print(key,end)
         # don't take ratios or differences of angle/multipole info
-        if end in ['ell','l','theta','bins','angbins','binavg']:
+        if end in ['ell','l','theta','bins','angbins','binavg','mins','maxs']:
             #print '    no change'
             factordict[key] = refdict[key]
         else:
@@ -481,7 +552,7 @@ def get_dictkey_for_2pttype(type1,type2):
 
     return xkey,ykey
 #---------------------------------------
-def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,fits_is_binavg=True):
+def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,fits_is_binavg=True, xfits_mins = None, xfits_maxs = None):
     """
     Given info about 2pt data in a fits file (spectra type, z bin numbers,
     and angular bin numbers, extracts 2pt data from a dictionary of
@@ -489,11 +560,12 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,
     as the fits file data.
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
-    xfromdict = datadict[xkey] #will be in radians, pulled from cosmosis block
 
     dict_is_binavg = datadict[ykey+'_binavg']
     if dict_is_binavg != fits_is_binavg:
         raise ValueError("Theory calc and fits file aren't consistent in whether they do bin averaging vs interpolation for 2pt calculations.")
+    if fits_is_binavg and ((xfits_mins is None) or (xfits_maxs is None)):
+        raise ValueError("Fits file is bin-averaged but I couldn't find theta values for bin edges.")
 
     is_binavg = dict_is_binavg
 
@@ -501,7 +573,12 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,
         xmult = 60.*180./np.pi # change to arcmin
     else:
         xmult = 1. #fourier space
-
+        
+    xfromdict = datadict[xkey]*xmult #in arcmin (is in radians in datablock)
+    xfromdict = xfromdict*xmult
+    if is_binavg:
+        xfromdict_mins = datadict[xkey+'_mins']*xmult
+        xfromdict_maxs = datadict[xkey+'_maxs']*xmult
     yfromdict = datadict[ykey]
     binsdict = datadict[ykey+'_bins']
     b1dict = binsdict[0]
@@ -517,21 +594,30 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,
         Nb2fits = max(bin2fits)
         interpfuncs = [[None for b2f in range(Nb2fits)]\
                        for b1f in range(Nb1fits)]
-    xfromdict_arcmin = xfromdict*xmult
+
     for i in range(Nentries):
         b1 = bin1fits[i]
         b2 = bin2fits[i]
         if is_binavg:
             wherebinsmatch = (b1==b1dict)*(b2==b2dict)
 
-            roundto=6 #round for matching, since there are more decimals in fits than datablock
-            wherexmatch = np.around(xfits[i],roundto)==np.around(xfromdict_arcmin,roundto)                     
+            roundto=4 #round for matching, since there are more decimals in fits than datablock
+            wherexmatch_mins = np.around(xfits_mins[i],roundto)==np.around(xfromdict_mins,roundto)
+            wherexmatch_maxs = np.around(xfits_maxs[i],roundto)==np.around(xfromdict_maxs,roundto)
+            wherexmatch = wherexmatch_mins*wherexmatch_maxs
+            #wherexmatch = np.around(xfits[i],roundto)==np.around(xfromdict,roundto)                     
             whichinds = wherebinsmatch*wherexmatch
+            howmany = np.sum(whichinds)
+            if howmany==0: #no matches
+                raise ValueError("No theory calc match for data point: {0:s}, z bins = ({1:d},{2:d}), theta between [{3:0.2f},{4:0.2f}]".format(ykey,b1,b2,xfits_mins[i],xfits_maxs[i]))
+            elif howmany>1: #duplicate matches
+                raise ValueError("More than one theory calc match for data point: {0:s}, z bins = ({1:d},{2:d}), theta between [{3:0.2f},{4:0.2f}]".format(ykey,b1,b2,xfits_mins[i],xfits_maxs[i]))
+                
             yout[i] = yfromdict[whichinds]
         else:
             whichinds = (b1==b1dict)*(b2==b2dict)#*(ab==angbdict)
             # get x and y info for that bin combo
-            tempx = xfromdict_arcmin[whichinds]
+            tempx = xfromdict[whichinds]
             tempy = yfromdict[whichinds]
             if interpfuncs[b1-1][b2-1] is None: #no interpfunc yet, set it up
                 yinterp = SpectrumInterp(tempx,tempy)
@@ -566,9 +652,14 @@ def get_dictdat_tomatch_fitsdat(table,dictdata):
     # check for bin averaging
     if "ANGLEMIN" in table.data.names:
         fits_is_binavg = True
+        xfromfits_mins =  table.data['ANGLEMIN']
+        xfromfits_maxs =  table.data['ANGLEMAX']
+    else:
+        xfromfits_mins = None
+        xfromfits_maxs = None
     xfromfits = table.data['ANG']
 
-    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata,fits_is_binavg=fits_is_binavg)
+    yfromdict = get_data_from_dict_for_2pttype(type1,type2,bin1,bin2,xfromfits,dictdata,fits_is_binavg=fits_is_binavg,xfits_mins = xfromfits_mins, xfits_maxs = xfromfits_maxs)
     
     return yfromdict
 
@@ -693,7 +784,7 @@ def apply2ptblinding_tofits(factordict, origfitsfile = 'two_pt_cov.fits', outfna
 #############################################################################
 # WRAPPER: Put everything together
 #############################################################################
-def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag = "_BLINDED",bftype='add',paramshift_module = None, seedinfname=False, seedinfits = True):
+def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag = "_BLINDED",bftype='add',paramshift_module = None, seedinfname=False, seedinfits = True,nz_file = None, angles_file = None):
     """
     This is the function that gets called using command line args.
     See docstring at top of file for more info.
@@ -709,13 +800,16 @@ def do2ptblinding(seedstring,initemplate,unblindedfits, outfname = None, outftag
       >>> seedinfname - if true, _seedstring will be added to end of filename
     seedinfits - if true, seedstring will be saved as KEYWORD in fits file. 
                  if false it the string 'notsaved' will be put there instead
+
+    See docstring for run_cosmosis_togen_2ptdict for info and WARNINGS
+    about using nz_file and angles_file. 
     """
     #get parameter shifts
     paramshifts = draw_paramshift(seedstring, importfrom = paramshift_module)
 
     #get blinding factors
-    refdict = run_cosmosis_togen_2ptdict(inifile = initemplate)
-    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate)
+    refdict = run_cosmosis_togen_2ptdict(inifile = initemplate, nz_file = nz_file, angles_file = angles_file )
+    shiftdict = run_cosmosis_togen_2ptdict(pdict = paramshifts, inifile = initemplate, nz_file = nz_file, angles_file = angles_file )
     factordict = get_factordict(refdict,shiftdict,bftype = bftype)
 
     #apply them
@@ -767,8 +861,16 @@ if __name__=="__main__":
     seedinfname = False
     seedinfits = True
 
+    # if we want angles or n(n) from different fits files than are
+    #  specified in in initemplate, use these variables WITH CAUTION
+    #  They require specific module names that match the DES Y3 2pt pipeline setup
+    #  so if that is changed or you're using these for different data, beware.
+    #  > it is in general probably safer to not use these and just specify
+    #    filenames in the initemplate file
+    angles_file = None # file to get angles from.
+    nz_file = None
 
-    options,remainder = getopt.getopt(sys.argv[1:],'u:i:s:b:t:o:m:',['origfits=','ini=','seed=','script','outfname=','outftag=','bftype=','paramshiftmodule=','seedinfname=','seedinfits='])
+    options,remainder = getopt.getopt(sys.argv[1:],'u:i:s:b:t:o:m:',['origfits=','ini=','seed=','script','outfname=','outftag=','bftype=','paramshiftmodule=','seedinfname=','seedinfits=','anglesfile=','nzfile='])
     #print options
     if ('--script') in options:
         callscript = True
@@ -793,11 +895,15 @@ if __name__=="__main__":
                 seedinfname = arg
             elif opt in ('--seedinfits'):
                 seedinfits = arg
-
+            elif opt in ('--nzfile'):
+                nz_file = arg
+            elif opt in ('--anglesfile'):
+                angles_file = arg
+                    
     if callscript:
         print("CALLING SCRIPT")
         # for now is just defaults, could set this to something specific later if we wanted
-        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits)
+        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits, nz_file=nz_file, angles_file=angles_file)
     else:
         print("LISTENING TO COMMAND LINE ARGS")
-        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits)
+        do2ptblinding(seed,initemplate,unblindedfile,outfname,outftag,bftype,paramshift_module, seedinfname, seedinfits, nz_file=nz_file, angles_file=angles_file)
