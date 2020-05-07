@@ -82,7 +82,7 @@ pdf_type    : som_pdf # pdf for stacking pdfs
 lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
 
 # correlation 
-
+cross_clustering : False
 tbins       : 20
 tbounds     : [2.5,250.]
 slop        : 0.01
