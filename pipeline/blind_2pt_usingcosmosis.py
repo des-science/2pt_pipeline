@@ -561,13 +561,12 @@ def get_data_from_dict_for_2pttype(type1,type2,bin1fits,bin2fits,xfits,datadict,
     """
     xkey,ykey = get_dictkey_for_2pttype(type1,type2)
 
-    dict_is_binavg = datadict[ykey+'_binavg']
-    if dict_is_binavg != fits_is_binavg:
-        raise ValueError("Theory calc and fits file aren't consistent in whether they do bin averaging vs interpolation for 2pt calculations.")
-    if fits_is_binavg and ((xfits_mins is None) or (xfits_maxs is None)):
+    is_binavg = datadict[ykey+'_binavg']
+    # this check is probably unnecessary, since the data is always bin averaged
+    # if dict_is_binavg != fits_is_binavg:
+    #     raise ValueError("Theory calc and fits file aren't consistent in whether they do bin averaging vs interpolation for 2pt calculations.")
+    if is_binavg and ((xfits_mins is None) or (xfits_maxs is None)):
         raise ValueError("Fits file is bin-averaged but I couldn't find theta values for bin edges.")
-
-    is_binavg = dict_is_binavg
 
     if 'theta' in xkey: #if realspace, put angle data into arcmin
         xmult = 60.*180./np.pi # change to arcmin
