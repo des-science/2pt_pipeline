@@ -57,14 +57,6 @@ v        """
         # Load covariance info
         self.load_cov()
 
-        if 'no_blinding' in self.params:
-            if self.params['no_blinding']:
-                print("Not blinding")
-                return
-        print('\nBlinding will be applied to the file being written\nThis is hard-coded.')
-        print('To unblind, set do_Blinding=False in write_fits.py')
-        self.blind()
-
         return
 
     def blind(self):
@@ -146,8 +138,14 @@ v        """
             fits.covmat_info=twopoint.CovarianceMatrixInfo('COVMAT',TWO_POINT_NAMES,length,self.covmat[1])
         fits.to_fits(self.output_path("2pt_ng"),clobber=True)
 
-        print("Have disabled covmat cleanup")
-        # self.cleanup_cov()
+        if 'no_blinding' in self.params:
+            if self.params['no_blinding']:
+                print("Not blinding")
+                return
+        print('\nBlinding will be applied to the file being written\nThis is hard-coded.')
+        print('To unblind, set do_Blinding=False in write_fits.py')
+        self.blind()
+
 
     def load_metadata(self):
         """
