@@ -88,7 +88,7 @@ from twopoint_cosmosis import type_table
 
 DEFAULT_PARAM_RANGE = {'cosmological_parameters--sigma8_input':(0.834-3*.04,0.834+3*0.04),\
                        'cosmological_parameters--w':(-1.5,-.5)}
-HARD_CODED_BLINDING = 'testblinding' #'I_desperately_need_coffee' #'testblinding'  #keyword is the one truth that unites us all
+HARD_CODED_BLINDING = 'I_desperately_need_coffee' #'testblinding'  #keyword is the one truth that unites us all
 
 
 def draw_paramshift(seedstring='blinded', ranges = DEFAULT_PARAM_RANGE,\

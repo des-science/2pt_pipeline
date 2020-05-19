@@ -75,7 +75,6 @@ v        """
     def strip_wtheta(self, fits):
         if self.params['cross_clustering']:
             return
-        # AA: no idea what this is for?
 
         wtheta = fits.get_spectrum(TWO_POINT_NAMES[-1])
         print(wtheta.bin1, wtheta.bin2)
@@ -109,23 +108,28 @@ v        """
 
     def cut_gammax(self,fits):
         gammax = fits.get_spectrum(TWO_POINT_NAMES[3])
-        print(gammax.bin1, gammax.bin2)
-
-
+        del fits.spectra[3]
         print("Cutting out gammax vales")
-
+        
+        
     def write(self):
 
         # Load 2point fits file with n(z) info.
         fits=twopoint.TwoPointFile.from_fits(self.input_path("2pt"),covmat_name=None)
-
+        
         # Write file without covariance (all data vectors)
         fits.spectra=self.exts
         fits.to_fits(self.output_path("2pt_extended"), clobber=True)
+        print(TWO_POINT_NAMES)
+        print(fits.spectra[3]) #[<Spectrum: xip>, <Spectrum: xim>, <Spectrum: gammat>, <Spectrum: gammax>, <Spectrum: wtheta>]
 
         self.strip_wtheta(fits)
+        self.cut_gammax(fits)
+
+        print(fits.spectra)
+        
         if self.covmat is not None:
-            self.strip_missing_gglensing(fits)
+            #self.strip_missing_gglensing(fits)
             length=self.get_cov_lengths(fits)
 
         # self.sort_2pt(fits,length) # Now fixed sorting to match cosmolike
