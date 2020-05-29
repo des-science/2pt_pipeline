@@ -1,0 +1,103 @@
+# Input file for twopt_pipeline.py
+
+prefix        : b6_y3b_b20_sompz_bin_true_zs_true_zl
+cosmo_code    : cosmosis #cosmolike 
+run_directory : /output/b6_y3b_b20_sompz_bin_true_zs_true_zl_fixed_sn
+
+# blinding configurations
+
+cosmosis_setup: /global/homes/s/seccolf/cosmosis/LOAD_STUFF #a setup file to be sourced for cosmosis
+btype: add #choose between [add, mult], regarding how the blinding factor will be applied
+seed: avocado #any string to be used as random generator seed 
+label: TEST #an output file label
+ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding pipeline 
+
+# catalog info
+
+datafile : '/output/sampleselection/Y3b/Buzzard-6_v2.0_Y3b_mastercat.h5'
+load_cache : False
+output : '.'
+
+gold_regions_group :  'regions/catalog'
+gold_regions_table :  [ 'metacal/unsheared' ]
+gold_regions_path :  'index/select'
+
+lens_regions_group :  'regions/catalog/redmagic'
+lens_regions_table :  ['combined_sample_fid']
+lens_regions_path :  'index/redmagic/combined_sample_fid/select'
+
+lens_randoms_regions_group :  'regions/randoms/redmagic'
+lens_randoms_regions_table :  ['combined_sample_fid']
+lens_randoms_regions_path :  'index/redmagic/combined_sample_fid/random_select'
+
+centers_group :  'regions/'
+centers_table :  ['centers']
+centers_path :  'index/select'
+
+source_group : 'catalog/metacal'
+source_table : ['unsheared']
+source_path  : 'index/select'
+
+gold_group : 'catalog'
+gold_table : ['gold']
+gold_path  : 'index/select'
+
+lens_group : 'catalog/redmagic'
+lens_table : ['combined_sample_fid']
+lens_path  : 'index/redmagic/combined_sample_fid/select'
+
+lens_pz_group : 'catalog/redmagic'
+lens_pz_table : ['combined_sample_fid']
+lens_pz_path  : 'index/redmagic/combined_sample_fid/select'
+
+pz_group : 'catalog/sompz'
+pz_table : ['unsheared']
+#['unsheared', 'sheared_1p', 'sheared_1m', 'sheared_2p', 'sheared_2m']
+pz_path  : 'index/select'
+
+ran_group : 'randoms/redmagic'
+ran_table : ['combined_sample_fid']
+ran_path  : 'index/redmagic/combined_sample_fid/random_select'
+
+dict_file     : dict_Buzzard_y3_sompz_bin_true_zs_true_zl
+
+#hpix_nside    : 1024
+#n_jck_regions    : 100
+
+oneplusm       : True
+has_sheared    : False
+random_seed     : 3 # Fixed seed to make things reproducible between runs.
+
+# nofz parameters
+
+zbins       : [-0.5, 0.5, 1.5, 2.5, 3.5]
+lens_zbins  : [ 0.15, 0.35, 0.5, 0.65, 0.85, 0.95 ]
+zlims       : [0.2, 1.3] # None indicates to use binning column in gold file
+nzbins      : 400 # Number of n(z) array z bins
+nzmax       : 4.0 # Max z for n(z)
+pdf_type    : sample # pdf for stacking pdfs
+lens_pdf_type    : sample # rm for stacking rm gaussians of width from column: lens_stack_col+'err'
+
+# correlation 
+
+tbins       : 20
+tbounds     : [2.5,250.]
+slop        : 0.01
+flip_e2     : True
+region_mode  : pixellized #both/pixellized/full
+2pt_only    : all  #shear-shear pos-shear pos-pos all
+ran_factor  : 10
+cores_per_task : 64
+separation_factor : 4.
+
+# cov parameters
+
+cov_source_dir : /global/cscratch1/sd/troxel/cosmolike/top-level/des_mpp/multi_covariances_real_mpp
+ng          : False
+area        : 4304.46
+ggl_overlap_cut : 0.1
+lens_gbias : [1.54, 1.64, 1.75, 2.17, 2.05]
+
+no_gold_match: Truelens
+no_blinding : True
+cross_clustering : False
