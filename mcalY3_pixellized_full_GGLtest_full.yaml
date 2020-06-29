@@ -1,6 +1,6 @@
 prefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_GGLfull
+run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_GGLfull_firstbin
 
 # blinding configurations
 
@@ -9,7 +9,7 @@ ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding 
 
 # catalog info
 
-datafile : '/project/Y3_mastercat_03_31_20.h5'
+datafile : '/out/Y3_mastercat_03_31_20.h5'
 #'/project/Y3_mastercat_12_3_19.h5'
 load_cache : False
 output : '.'
@@ -70,8 +70,8 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 
 # nofz parameters
 
-zbins       : [-0.5, 0.5, 1.5, 2.5, 3.5]
-lens_zbins  : [ 0.15, 0.35, 0.5, 0.65, 0.8, 0.9 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
+zbins       : [ -0.5, 0.5]
+lens_zbins  : [  0.15, 0.35 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
 zlims       : [0., 1.5] # None indicates to use binning column in gold file
 nzbins      : 200 # Number of n(z) array z bins
 nzmax       : 3.0 # Max z for n(z)
@@ -84,7 +84,7 @@ tbins       : 20
 tbounds     : [2.5,250.]
 slop        : 0.1
 flip_e2     : False
-region_mode  : full #both/pixellized/full
+region_mode  : both #/pixellized/full
 2pt_only    : pos-shear  #shear-shear pos-shear pos-pos all
 ran_factor  : 10
 cores_per_task : 64
