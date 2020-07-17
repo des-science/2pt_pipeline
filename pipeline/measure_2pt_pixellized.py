@@ -245,7 +245,7 @@ class Measure2Point(PipelineStage):
 
         # Added!
         self.source_regions_selector = load_catalog(self.params, 'reg_mcal', 'mcal', self.params['gold_regions_group'], self.params['gold_regions_table'], self.params['gold_regions_path'], self.Dict, inherit=self.source_selector)
-        self.lens_regions_selector = load_catalog(self.params, 'reg_lens', 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.source_selector)
+        self.lens_regions_selector = load_catalog(self.params, 'reg_lens', 'mcal', self.params['lens_regions_group'], self.params['lens_regions_table'], self.params['lens_regions_path'], self.Dict,inherit=self.lens_selector)
         self.lens_random_regions_selector = load_catalog(self.params, 'reg_ran', None, self.params['lens_randoms_regions_group'], self.params['lens_randoms_regions_table'], self.params['lens_randoms_regions_path'], self.Dict)
 
 
