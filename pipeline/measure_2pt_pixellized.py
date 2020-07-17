@@ -488,13 +488,11 @@ class Measure2Point(PipelineStage):
         R1,R2,mask,w_,rmask = self.get_zbins_R(i,cal)
 
         # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
-        ra = self.lens_selector.source.read(self.Dict.lens_dict['ra'])[
-            self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-        dec = self.lens_selector.source.read(self.Dict.lens_dict['dec'])[
-            self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-
+        ra = self.lens_selector.get_col(self.Dict.lens_dict['ra'])[self.Dict.ind['u']][mask]
+        dec = self.lens_selector.get_col(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][mask]
+        
         if not np.isscalar(w_):
-            w   = w_[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            w   = w_[mask]
         else:
             w = w_*np.ones(len(ra))
 
@@ -688,7 +686,7 @@ class Measure2Point(PipelineStage):
             dec = self.lens_selector.get_col(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][mask]
 
             if not np.isscalar(w_):
-                w   = w_[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                w   = w_[mask]
             else:
                 w = w_*np.ones(len(ra))
 
