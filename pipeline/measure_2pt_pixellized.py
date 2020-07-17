@@ -288,7 +288,8 @@ class Measure2Point(PipelineStage):
                 jack_info = dict()
                 if type(cal)==destest.NoCalib and (cal.params['cal_type'] is None):
                     R1,R2,mask,w,rmask = self.get_zbins_R(i,cal)
-                    region_lenses =   self.lens_regions_selector.source.read('region')[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+#                    region_lenses =   self.lens_regions_selector.source.read('region')[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+                    region_lenses = self.lens_regions_selector.get_col(self.Dict.lens_regions_dict['region'])[self.Dict.ind['u']][mask]
 
                     jack_info.update({'hpix' : region_lenses})
 
