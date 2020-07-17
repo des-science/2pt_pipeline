@@ -454,6 +454,11 @@ class Measure2Point(PipelineStage):
                 if (i<self.lens_zbins)&(self.params['2pt_only'].lower() in ['pos-pos','pos-shear','all']):
                     ra,dec,ran_ra,ran_dec,w,down = self.build_catalogs_tot(self.lens_calibrator,i)
                     bins_dict.update({'lens_{0}'.format(i):[ra,dec,ran_ra,ran_dec,w,down]})
+
+                    if self.params['debug_lens']:
+                        with open('{}/lens_{}.pkl'.format(self.params['run_directory'], i), 'wb') as fp:
+                            pickle.dump(bins_dict['lens_{0}'.format(i)], fp)
+                            
         end = time.time()
         print('Loading in all columns took: {}'.format(end-start))
         self.bins_dict = bins_dict
@@ -493,12 +498,20 @@ class Measure2Point(PipelineStage):
         else:
             w = w_*np.ones(len(ra))
 
-        if np.sum(rmask)>self.params['ran_factor']*np.sum(mask):
+        if bool(self.params['no_downsample']):
+            downsample = np.arange(np.sum(rmask))
+        
+            
+        elif np.sum(rmask)>self.params['ran_factor']*np.sum(mask):
             # Calculate if downsampling is possible
             # Set fixed random seed to make results reproducible
             np.random.seed(seed=self.params['random_seed'])
             # Downsample random catalog to be ran_factor times larger than lenses
             downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample
+
+        else:
+            raise(ValueError)
+        
 
         # Load random ra,dec and calculate healpix values
         ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
@@ -602,6 +615,8 @@ class Measure2Point(PipelineStage):
         f = h5py.File( self.input_path("nz_source"), mode='r')
         if (type(cal)==destest.NoCalib) and (cal.params['cal_type'] is None):
             binning = [f['nofz/lens_zbin'][:]]
+            print('Using nofz/lens_zbin')
+            sys.stdout.flush()
         else: # Source catalog
             binning = []
             if self.params['has_sheared']:
@@ -653,20 +668,44 @@ class Measure2Point(PipelineStage):
             R1,R2,mask,w_,rmask = self.get_zbins_R(i,cal)
 
             # Load ra,dec from gold catalog - source.read is necessary for the raw array to downmatch to lens catalog
-            ra = self.lens_selector.source.read(self.Dict.lens_dict['ra'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
-            dec = self.lens_selector.source.read(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask]
+            if self.params['debug_lens']:
+                print('mask lengths for debugging')
+                sys.stdout.flush()
+                cal_mask = cal.selector.get_mask()[self.Dict.ind['u']]
+                print(len(cal_mask))
+                print(np.sum(mask))
+                print(len(self.lens_selector.source.read(self.Dict.lens_dict['ra'])[self.Dict.ind['u']]))
+                print('Mean bin {} z: {}'.format(i, np.mean(self.lens_selector.source.read(self.Dict.lens_pz_dict['pzbin'])[self.Dict.ind['u']][cal.selector.get_mask()[self.Dict.ind['u']]][mask])))
+                with open('{}/lens_cal_mask_{}.pkl'.format(self.params['run_directory'], i), 'wb') as fp:
+                    pickle.dump(cal_mask, fp)
+                with open('{}/lens_mask_{}.pkl'.format(self.params['run_directory'], i), 'wb') as fp:
+                    pickle.dump(mask, fp)
+
+                    
+                sys.stdout.flush()
+                
+            ra = self.lens_selector.get_col(self.Dict.lens_dict['ra'])[self.Dict.ind['u']][mask]
+            dec = self.lens_selector.get_col(self.Dict.lens_dict['dec'])[self.Dict.ind['u']][mask]
 
             if not np.isscalar(w_):
                 w   = w_[cal.selector.get_mask()[self.Dict.ind['u']]][mask]
             else:
                 w = w_*np.ones(len(ra))
 
-            if np.sum(rmask)>self.params['ran_factor']*np.sum(mask): # Calculate if downsampling is possible
+            if bool(self.params['no_downsample']):
+                downsample = np.arange(np.sum(rmask))
+        
+            
+            elif np.sum(rmask)>self.params['ran_factor']*np.sum(mask):
+                # Calculate if downsampling is possible
                 # Set fixed random seed to make results reproducible
                 np.random.seed(seed=self.params['random_seed'])
                 # Downsample random catalog to be ran_factor times larger than lenses
                 downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample
 
+            else:
+                raise(ValueError)
+                
             # Load random ra,dec and calculate healpix values
             ran_ra  = self.ran_selector.get_col(self.Dict.ran_dict['ra'])[self.Dict.ind['u']][rmask][downsample]
             ran_dec = self.ran_selector.get_col(self.Dict.ran_dict['dec'])[self.Dict.ind['u']][rmask][downsample]
