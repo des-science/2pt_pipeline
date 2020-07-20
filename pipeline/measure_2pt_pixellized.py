@@ -497,9 +497,13 @@ class Measure2Point(PipelineStage):
         else:
             w = w_*np.ones(len(ra))
 
-        if bool(self.params['no_downsample']):
-            downsample = np.arange(np.sum(rmask))
-        
+        if 'no_downsample' in list(self.params.keys()):
+            if bool(self.params['no_downsample']):
+                downsample = np.arange(np.sum(rmask))
+            else:
+                np.random.seed(seed=self.params['random_seed'])
+                # Downsample random catalog to be ran_factor times larger than lenses
+                downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample
             
         elif np.sum(rmask)>self.params['ran_factor']*np.sum(mask):
             # Calculate if downsampling is possible
@@ -688,9 +692,13 @@ class Measure2Point(PipelineStage):
             else:
                 w = w_*np.ones(len(ra))
 
-            if bool(self.params['no_downsample']):
-                downsample = np.arange(np.sum(rmask))
-        
+            if 'no_downsample' in list(self.params.keys()):
+                if bool(self.params['no_downsample']):
+                    downsample = np.arange(np.sum(rmask))
+                else:
+                    np.random.seed(seed=self.params['random_seed'])
+                    # Downsample random catalog to be ran_factor times larger than lenses
+                    downsample = np.sort(np.random.choice(np.arange(np.sum(rmask)),self.params['ran_factor']*np.sum(mask),replace=False)) # Downsample
             
             elif np.sum(rmask)>self.params['ran_factor']*np.sum(mask):
                 # Calculate if downsampling is possible
