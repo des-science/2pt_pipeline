@@ -82,6 +82,14 @@ v        """
         mask = wtheta.bin1==wtheta.bin2
         print("Cutting out {} values from wtheta because no cross_clustering".format(len(mask)-mask.sum()))
         wtheta.apply_mask(mask)
+        wtheta.npairs = wtheta.npairs[mask]
+        
+#        spectrum_names = [fits.spectra[i].name for i in range(len(fits.spectra))]
+#        wtheta_idx = spectrum_names.index('wtheta')
+#        fits.spectra[wtheta_idx] = wtheta
+#        print(wtheta.bin1)
+
+#        return fits
 
     def strip_missing_gglensing(self, fits):
 
@@ -125,7 +133,7 @@ v        """
 
         self.strip_wtheta(fits)
         self.cut_gammax(fits)
-
+        print(fits.spectra[-1].bin1)
         print(fits.spectra)
         
         if self.covmat is not None:
