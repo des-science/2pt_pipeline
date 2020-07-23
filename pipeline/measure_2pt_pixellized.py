@@ -552,7 +552,7 @@ class Measure2Point(PipelineStage):
         """
 
         # run full ************************************
-        print("I am rank: {}".format(self.comm.rank))
+        #print("I am rank: {}".format(self.comm.rank))
         if (self.params['region_mode'] == 'full') or (self.params['region_mode'] == 'both'):
             if self.comm:
                 # Parallel execution
