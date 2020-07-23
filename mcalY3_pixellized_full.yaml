@@ -1,6 +1,7 @@
-prefix        : y3_full_newmcal #y3_subsampled
+
+1;95;0cprefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_bothw
+run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_bothw_180720
 
 # blinding configurations
 
@@ -9,7 +10,7 @@ ini: pipeline/blinding_params_template.ini #cosmosis ini file with the blinding 
 
 # catalog info
 
-datafile : '/project/Y3_mastercat_03_31_20.h5'
+datafile : '/out/Y3_mastercat_03_31_20.h5'
 #'/project/Y3_mastercat_12_3_19.h5'
 load_cache : False
 output : '.'
@@ -82,7 +83,7 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 cross_clustering : False
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0.01
+slop        : 0.0
 flip_e2     : False
 region_mode  : pixellized #both/pixellized/full
 2pt_only    : all  #shear-shear pos-shear pos-pos all
