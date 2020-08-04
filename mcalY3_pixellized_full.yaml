@@ -1,5 +1,4 @@
-
-1;95;0cprefix        : y3_full_newmcal #y3_subsampled
+cprefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
 run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_bothw_180720
 
@@ -98,3 +97,4 @@ ng          : False
 area        : 4143.2
 ggl_overlap_cut : 0.1
 lens_gbias : [1.7,1.7,1.7,2.0,2.0]
+mask_cl_file : Cl_footprint_DES_y3_03_31_30.txt
