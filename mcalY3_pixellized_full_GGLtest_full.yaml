@@ -1,6 +1,6 @@
-cprefix        : y3_full_newmcal #y3_subsampled
+prefix        : y3_full_newmcal #y3_subsampled
 cosmo_code    : cosmosis #cosmolike 
-run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_bothw_180720
+run_directory : /global/cscratch1/sd/aamon/Y3data_sompz_redmagic_v0.40_GGLfull_firstbin
 
 # blinding configurations
 
@@ -70,8 +70,8 @@ random_seed     : 3 # Fixed seed to make things reproducible between runs.
 
 # nofz parameters
 
-zbins       : [-0.5, 0.5, 1.5, 2.5, 3.5]
-lens_zbins  : [ 0.15, 0.35, 0.5, 0.65, 0.8, 0.9 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
+zbins       : [ -0.5, 0.5]
+lens_zbins  : [  0.15, 0.35 ] # [0.15, 0.35, 0.5, 0.65, 0.85, 0.95]
 zlims       : [0., 1.5] # None indicates to use binning column in gold file
 nzbins      : 200 # Number of n(z) array z bins
 nzmax       : 3.0 # Max z for n(z)
@@ -82,10 +82,10 @@ lens_pdf_type    : rm # rm for stacking rm gaussians of width from column: lens_
 cross_clustering : False
 tbins       : 20
 tbounds     : [2.5,250.]
-slop        : 0.0
+slop        : 0.1
 flip_e2     : False
-region_mode  : pixellized #both/pixellized/full
-2pt_only    : all  #shear-shear pos-shear pos-pos all
+region_mode  : both #/pixellized/full
+2pt_only    : pos-shear  #shear-shear pos-shear pos-pos all
 ran_factor  : 10
 cores_per_task : 64
 separation_factor : 4.
@@ -97,4 +97,3 @@ ng          : False
 area        : 4143.2
 ggl_overlap_cut : 0.1
 lens_gbias : [1.7,1.7,1.7,2.0,2.0]
-mask_cl_file : Cl_footprint_DES_y3_03_31_30.txt

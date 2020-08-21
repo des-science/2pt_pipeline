@@ -239,7 +239,11 @@ class nofz(PipelineStage):
         # Get the lens PZ binning and stacking arrays and weights
         pzbin   = self.lens_pz_selector.get_col(self.Dict.lens_pz_dict['pzbin'])
         pzstack = self.lens_pz_selector.get_col(self.Dict.lens_pz_dict['pzstack'])[self.Dict.ind['u']]
-        weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)
+
+        if 'weight' in self.Dict.lens_pz_dict:
+            weight  = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'],weight_only=True)
+        else:
+            weight = 1.
 
         if self.params['lens_group'] != 'None':
             # Calculate lens n(z)s and write to file
@@ -410,7 +414,10 @@ class nofz(PipelineStage):
                     binhigh = self.binhigh
                     
                 else:
-                    weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    if 'weight' in self.Dict.lens_pz_dict:
+                        weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    else:
+                        weight_ = 1
                     dz = self.lens_dz
                     binlow = self.lens_binlow
                     binhigh = self.lens_binhigh
@@ -455,7 +462,10 @@ class nofz(PipelineStage):
                         # raise ParamError('Not updated to support non-metacal catalogs.')
 
                 else:
-                    weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    if 'weight' in self.Dict.lens_pz_dict:
+                        weight_ = self.lens_calibrator.calibrate(self.Dict.lens_pz_dict['weight'], mask=[mask], weight_only=True)
+                    else:
+                        weight_ = 1
 
                 # Stack p(z)
                 if np.isscalar(weight_):

@@ -217,6 +217,7 @@ class ComputeCovariance(PipelineStage):
             f.write('# tmin,tmax in arcminutes\n')
             for x in ['tmin', 'tmax', 'ntheta', 'outdir', 'filename', 'ss', 'ls', 'll','ggl_overlap_cut','ng']:
                 f.write(x + ' : ' + str(cov_dict[x]) + '\n')
+            f.write('c_footprint_file : '+ self.params['mask_cl_file'])
 
         # Remove old files. Call zero block covariance to write out number of parallel blocks and excluded gammat bin pairs.
         import glob
